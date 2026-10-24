@@ -1,0 +1,43 @@
+# College synopsis & private project notes
+*.pdf
+*.docx
+synopsis*.txt
+*.txt
+
+# Dependencies & Environments
+node_modules/
+.next/
+out/
+build/
+dist/
+venv/
+.venv/
+env/
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Runtime Data & Artifacts
+data/
+artifacts/
+*.db
+*.sqlite
+*.sqlite3
+
+# Environment & Secrets
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# IDE & OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+.ruff_cache/
