@@ -14,6 +14,7 @@ from app.core.errors import (
     AutoMLensError,
     DatasetNotFoundError,
     FileSizeExceededError,
+    ProfileNotFoundError,
     ProjectAlreadyExistsError,
     ProjectNotFoundError,
 )
@@ -66,7 +67,7 @@ app = FastAPI(
 async def automlens_exception_handler(_: Request, exc: AutoMLensError) -> JSONResponse:
     """Format domain exceptions to consistent JSON schema."""
     status_code = status.HTTP_400_BAD_REQUEST
-    if isinstance(exc, ProjectNotFoundError | DatasetNotFoundError):
+    if isinstance(exc, ProjectNotFoundError | DatasetNotFoundError | ProfileNotFoundError):
         status_code = status.HTTP_404_NOT_FOUND
     elif isinstance(exc, ProjectAlreadyExistsError):
         status_code = status.HTTP_409_CONFLICT
@@ -79,6 +80,21 @@ async def automlens_exception_handler(_: Request, exc: AutoMLensError) -> JSONRe
             "error": {
                 "code": exc.code,
                 "message": exc.message,
+            }
+        },
+    )
+
+
+@app.exception_handler(Exception)
+async def generic_exception_handler(_: Request, exc: Exception) -> JSONResponse:
+    """Format any unhandled exceptions to prevent dropped connections and CORS errors."""
+    logger.exception("Unhandled internal server error: %s", exc)
+    return JSONResponse(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        content={
+            "error": {
+                "code": "INTERNAL_SERVER_ERROR",
+                "message": f"Internal server error: {str(exc)}",
             }
         },
     )

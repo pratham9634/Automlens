@@ -19,10 +19,11 @@ import {
   Trash2,
 } from "lucide-react";
 import { apiClient, ApiClientError } from "@/lib/api-client";
-import { DatasetPreviewResponse, Project } from "@/lib/types";
+import { DatasetPreviewResponse, DatasetProfileResponse, Project } from "@/lib/types";
 import { formatDate } from "@/lib/utils";
 import { DatasetUploadZone } from "@/components/dataset/dataset-upload-zone";
 import { DatasetPreviewTable } from "@/components/dataset/dataset-preview-table";
+import { StatisticalProfileView } from "@/components/dataset/statistical-profile-view";
 
 const projectTabs = [
   { id: "dataset", label: "Dataset & Quality", icon: Database, ready: true },
@@ -42,6 +43,9 @@ export default function ProjectWorkspacePage() {
 
   const [project, setProject] = useState<Project | null>(null);
   const [datasetPreview, setDatasetPreview] = useState<DatasetPreviewResponse | null>(null);
+  const [profile, setProfile] = useState<DatasetProfileResponse | null>(null);
+  const [datasetSubTab, setDatasetSubTab] = useState<"preview" | "profile">("preview");
+  const [profilingLoading, setProfilingLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("dataset");
@@ -61,9 +65,20 @@ export default function ProjectWorkspacePage() {
         try {
           const datasetData = await apiClient.getDataset(projectId);
           setDatasetPreview(datasetData);
+
+          // Fetch profile if already generated
+          try {
+            const profileData = await apiClient.getProfile(projectId);
+            setProfile(profileData);
+          } catch (pErr) {
+            if (pErr instanceof ApiClientError && pErr.status === 404) {
+              setProfile(null);
+            }
+          }
         } catch (dsErr) {
           if (dsErr instanceof ApiClientError && dsErr.status === 404) {
             setDatasetPreview(null);
+            setProfile(null);
           } else {
             console.error("Error fetching dataset preview:", dsErr);
           }
@@ -77,6 +92,25 @@ export default function ProjectWorkspacePage() {
 
     fetchWorkspaceData();
   }, [projectId]);
+
+  const handleGenerateProfile = async () => {
+    if (!project) return;
+    setProfilingLoading(true);
+    try {
+      const profileData = await apiClient.generateProfile(project.id);
+      setProfile(profileData);
+      setProject((prev) => (prev ? { ...prev, status: "profiled" } : null));
+      setDatasetSubTab("profile");
+    } catch (err) {
+      alert(
+        err instanceof Error
+          ? err.message
+          : "Failed to run statistical profiling."
+      );
+    } finally {
+      setProfilingLoading(false);
+    }
+  };
 
   const handleDelete = async () => {
     if (!project) return;
@@ -207,16 +241,114 @@ export default function ProjectWorkspacePage() {
       {activeTab === "dataset" && (
         <div className="space-y-6">
           {datasetPreview ? (
-            <DatasetPreviewTable
-              projectId={project.id}
-              data={datasetPreview}
-              onDeleteSuccess={() => {
-                setDatasetPreview(null);
-                setProject((prev) =>
-                  prev ? { ...prev, status: "created" } : null
-                );
-              }}
-            />
+            <div className="space-y-6">
+              {/* Dataset Sub-Tab Bar */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-hairline pb-3">
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setDatasetSubTab("preview")}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-mono transition-colors ${
+                      datasetSubTab === "preview"
+                        ? "bg-surface-2 text-ink font-semibold border border-hairline"
+                        : "text-ink-muted hover:text-ink"
+                    }`}
+                  >
+                    Raw Data Preview
+                  </button>
+                  <button
+                    onClick={() => setDatasetSubTab("profile")}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono transition-colors ${
+                      datasetSubTab === "profile"
+                        ? "bg-surface-2 text-ink font-semibold border border-hairline"
+                        : "text-ink-muted hover:text-ink"
+                    }`}
+                  >
+                    <span>Statistical Profile</span>
+                    {profile ? (
+                      <span className="w-2 h-2 rounded-full bg-telemetry-emerald" />
+                    ) : (
+                      <span className="text-[10px] px-1 py-0.2 rounded bg-surface-3 text-brand-hover">
+                        New
+                      </span>
+                    )}
+                  </button>
+                </div>
+
+                {!profile && datasetSubTab === "preview" && (
+                  <button
+                    onClick={handleGenerateProfile}
+                    disabled={profilingLoading}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-brand-lavender hover:bg-brand-hover text-ink text-xs font-mono font-medium transition-colors shadow-sm disabled:opacity-50"
+                  >
+                    {profilingLoading ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Sparkles className="w-3.5 h-3.5" />
+                    )}
+                    <span>Run Statistical Profiling</span>
+                  </button>
+                )}
+              </div>
+
+              {/* Sub-tab 1: Raw Preview */}
+              {datasetSubTab === "preview" && (
+                <DatasetPreviewTable
+                  projectId={project.id}
+                  data={datasetPreview}
+                  onDeleteSuccess={() => {
+                    setDatasetPreview(null);
+                    setProfile(null);
+                    setProject((prev) =>
+                      prev ? { ...prev, status: "created" } : null
+                    );
+                  }}
+                />
+              )}
+
+              {/* Sub-tab 2: Deep Statistical Profile */}
+              {datasetSubTab === "profile" && (
+                <div>
+                  {profile ? (
+                    <StatisticalProfileView
+                      projectId={project.id}
+                      initialProfile={profile}
+                      onProfileUpdated={(p) => setProfile(p)}
+                    />
+                  ) : (
+                    <div className="p-12 rounded-xl border border-dashed border-hairline-strong bg-surface-1/60 text-center flex flex-col items-center justify-center space-y-4">
+                      <div className="w-14 h-14 rounded-2xl bg-surface-2 border border-brand-lavender/30 flex items-center justify-center text-brand-hover">
+                        <Sparkles className="w-7 h-7" />
+                      </div>
+                      <div className="space-y-1.5 max-w-md">
+                        <h3 className="text-sm font-semibold text-ink">
+                          Compute Statistical Profile & Quality Engine
+                        </h3>
+                        <p className="text-xs text-ink-muted leading-relaxed">
+                          Analyze univariate distributions, IQR outlier boundaries,
+                          missing value distributions, and pairwise Pearson correlations across all continuous features.
+                        </p>
+                      </div>
+                      <button
+                        onClick={handleGenerateProfile}
+                        disabled={profilingLoading}
+                        className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-brand-lavender hover:bg-brand-hover text-ink text-xs font-mono font-medium transition-colors shadow-md disabled:opacity-50"
+                      >
+                        {profilingLoading ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Sparkles className="w-4 h-4" />
+                        )}
+                        <span>
+                          {profilingLoading
+                            ? "Computing Statistics & Correlations..."
+                            : "Run Statistical Profiling"}
+                        </span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           ) : (
             <DatasetUploadZone
               projectId={project.id}

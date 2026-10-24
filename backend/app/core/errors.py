@@ -75,6 +75,19 @@ class DatasetValidationError(AutoMLensError):
         )
 
 
+class ProfileNotFoundError(AutoMLensError):
+    """Raised when a statistical profile has not yet been computed."""
+
+    def __init__(self, project_id: str):
+        super().__init__(
+            message=(
+                f"Statistical profile for project '{project_id}' does not exist. "
+                "Please generate it first."
+            ),
+            code="PROFILE_NOT_FOUND",
+        )
+
+
 def raise_http_error(exc: AutoMLensError, status_code: int = status.HTTP_400_BAD_REQUEST) -> None:
     """Helper to convert domain exception to structured HTTPException."""
     raise HTTPException(
