@@ -4,12 +4,20 @@ import os
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
+from app.api.v1.router import api_router
 from app.core.config import get_settings
+from app.core.errors import (
+    AutoMLensError,
+    ProjectAlreadyExistsError,
+    ProjectNotFoundError,
+)
 from app.core.logging import get_logger, setup_logging
-from app.db.session import check_db_connection
+from app.db.models import Base
+from app.db.session import check_db_connection, engine
 
 setup_logging()
 logger = get_logger("main")
@@ -30,6 +38,13 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     os.makedirs(settings.AUTOMLENS_ARTIFACT_DIR, exist_ok=True)
     os.makedirs("./data", exist_ok=True)
 
+    # Initialize database tables
+    try:
+        Base.metadata.create_all(bind=engine)
+        logger.info("Database schema initialized successfully.")
+    except Exception as exc:
+        logger.error("Failed to initialize database tables: %s", exc)
+
     yield
 
     logger.info("Shutting down %s", settings.PROJECT_NAME)
@@ -43,6 +58,30 @@ app = FastAPI(
     redoc_url=f"{settings.API_V1_STR}/redoc",
     lifespan=lifespan,
 )
+
+
+@app.exception_handler(AutoMLensError)
+async def automlens_exception_handler(_: Request, exc: AutoMLensError) -> JSONResponse:
+    """Format domain exceptions to consistent JSON schema."""
+    status_code = status.HTTP_400_BAD_REQUEST
+    if isinstance(exc, ProjectNotFoundError):
+        status_code = status.HTTP_404_NOT_FOUND
+    elif isinstance(exc, ProjectAlreadyExistsError):
+        status_code = status.HTTP_409_CONFLICT
+
+    return JSONResponse(
+        status_code=status_code,
+        content={
+            "error": {
+                "code": exc.code,
+                "message": exc.message,
+            }
+        },
+    )
+
+
+# Mount API v1 router
+app.include_router(api_router, prefix=settings.API_V1_STR)
 
 # Configure CORS
 app.add_middleware(
