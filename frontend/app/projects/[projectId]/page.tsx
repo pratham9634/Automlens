@@ -13,18 +13,19 @@ import {
   Sparkles,
   History,
   HardDriveDownload,
-  UploadCloud,
   FileSpreadsheet,
   AlertCircle,
   Loader2,
   Trash2,
 } from "lucide-react";
-import { apiClient } from "@/lib/api-client";
-import { Project } from "@/lib/types";
+import { apiClient, ApiClientError } from "@/lib/api-client";
+import { DatasetPreviewResponse, Project } from "@/lib/types";
 import { formatDate } from "@/lib/utils";
+import { DatasetUploadZone } from "@/components/dataset/dataset-upload-zone";
+import { DatasetPreviewTable } from "@/components/dataset/dataset-preview-table";
 
 const projectTabs = [
-  { id: "dataset", label: "Dataset & Quality", icon: Database, ready: false },
+  { id: "dataset", label: "Dataset & Quality", icon: Database, ready: true },
   { id: "target", label: "AI Target & Decision", icon: Sliders, ready: false },
   { id: "training", label: "Parallel Training", icon: Cpu, ready: false },
   { id: "leaderboard", label: "Leaderboard", icon: BarChart3, ready: false },
@@ -40,6 +41,7 @@ export default function ProjectWorkspacePage() {
   const projectId = params?.projectId as string;
 
   const [project, setProject] = useState<Project | null>(null);
+  const [datasetPreview, setDatasetPreview] = useState<DatasetPreviewResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("dataset");
@@ -48,12 +50,24 @@ export default function ProjectWorkspacePage() {
   useEffect(() => {
     if (!projectId) return;
 
-    const fetchProject = async () => {
+    const fetchWorkspaceData = async () => {
       setLoading(true);
       setError(null);
       try {
-        const data = await apiClient.getProject(projectId);
-        setProject(data);
+        const projectData = await apiClient.getProject(projectId);
+        setProject(projectData);
+
+        // Fetch dataset if already uploaded
+        try {
+          const datasetData = await apiClient.getDataset(projectId);
+          setDatasetPreview(datasetData);
+        } catch (dsErr) {
+          if (dsErr instanceof ApiClientError && dsErr.status === 404) {
+            setDatasetPreview(null);
+          } else {
+            console.error("Error fetching dataset preview:", dsErr);
+          }
+        }
       } catch {
         setError(`Failed to load workspace for ID: ${projectId}.`);
       } finally {
@@ -61,7 +75,7 @@ export default function ProjectWorkspacePage() {
       }
     };
 
-    fetchProject();
+    fetchWorkspaceData();
   }, [projectId]);
 
   const handleDelete = async () => {
@@ -192,24 +206,28 @@ export default function ProjectWorkspacePage() {
       {/* Active Tab Workspace Content */}
       {activeTab === "dataset" && (
         <div className="space-y-6">
-          {/* Phase 2 Preview: Dataset Upload Prompt */}
-          <div className="rounded-xl border border-dashed border-hairline-strong bg-surface-1/50 p-12 text-center flex flex-col items-center justify-center space-y-4">
-            <div className="w-14 h-14 rounded-2xl bg-surface-2 border border-hairline flex items-center justify-center text-brand-hover">
-              <UploadCloud className="w-7 h-7" />
-            </div>
-            <div className="space-y-1.5 max-w-md">
-              <h3 className="text-sm font-semibold text-ink">
-                Ready for Phase 2: Dataset Upload
-              </h3>
-              <p className="text-xs text-ink-muted">
-                In Phase 2, you will upload CSV or Excel files with automatic schema validation,
-                missing value detection, and SHA-256 fingerprinting.
-              </p>
-            </div>
-            <div className="flex items-center gap-2 text-xs font-mono text-ink-subtle px-3 py-1.5 rounded-lg bg-surface-2 border border-hairline">
-              <span>Next Phase: POST /api/v1/projects/{project.id}/dataset/upload</span>
-            </div>
-          </div>
+          {datasetPreview ? (
+            <DatasetPreviewTable
+              projectId={project.id}
+              data={datasetPreview}
+              onDeleteSuccess={() => {
+                setDatasetPreview(null);
+                setProject((prev) =>
+                  prev ? { ...prev, status: "created" } : null
+                );
+              }}
+            />
+          ) : (
+            <DatasetUploadZone
+              projectId={project.id}
+              onUploadSuccess={(data) => {
+                setDatasetPreview(data);
+                setProject((prev) =>
+                  prev ? { ...prev, status: "dataset_uploaded" } : null
+                );
+              }}
+            />
+          )}
         </div>
       )}
     </div>

@@ -1,4 +1,4 @@
-import { Project, SystemHealth } from "./types";
+import { DatasetPreviewResponse, Project, SystemHealth } from "./types";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
@@ -17,10 +17,16 @@ export class ApiClientError extends Error {
 
 async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;
-  const headers = {
-    "Content-Type": "application/json",
-    ...(options.headers || {}),
-  };
+
+  // Do not set Content-Type for FormData so browser sets multi-part boundary automatically
+  const headers: Record<string, string> = {};
+  if (!(options.body instanceof FormData)) {
+    headers["Content-Type"] = "application/json";
+  }
+
+  if (options.headers) {
+    Object.assign(headers, options.headers);
+  }
 
   try {
     const response = await fetch(url, { ...options, headers });
@@ -86,6 +92,24 @@ export const apiClient = {
 
   deleteProject: (projectId: string) =>
     request<void>(`/projects/${projectId}`, {
+      method: "DELETE",
+    }),
+
+  // Datasets
+  uploadDataset: (projectId: string, file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    return request<DatasetPreviewResponse>(`/projects/${projectId}/dataset/upload`, {
+      method: "POST",
+      body: formData,
+    });
+  },
+
+  getDataset: (projectId: string) =>
+    request<DatasetPreviewResponse>(`/projects/${projectId}/dataset`),
+
+  deleteDataset: (projectId: string) =>
+    request<void>(`/projects/${projectId}/dataset`, {
       method: "DELETE",
     }),
 };
