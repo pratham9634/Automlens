@@ -6,6 +6,8 @@ import {
   DatasetPreviewResponse,
   DatasetProfileResponse,
   DecisionEngineResponse,
+  GlobalExplanationResponse,
+  LocalExplanationResponse,
   ModelDetailResponse,
   Project,
   SinglePredictionResponse,
@@ -223,4 +225,22 @@ export const apiClient = {
 
   getModelDownloadUrl: (projectId: string, modelId: string) =>
     `${API_BASE_URL}/projects/${projectId}/models/${modelId}/download`,
+
+  getGlobalExplanation: (projectId: string, modelId: string) =>
+    request<GlobalExplanationResponse>(
+      `/projects/${projectId}/models/${modelId}/explanations/global`
+    ),
+
+  getLocalExplanation: (
+    projectId: string,
+    modelId: string,
+    inputs: Record<string, unknown>
+  ) =>
+    request<LocalExplanationResponse>(
+      `/projects/${projectId}/models/${modelId}/explanations/local`,
+      {
+        method: "POST",
+        body: JSON.stringify({ inputs }),
+      }
+    ),
 };

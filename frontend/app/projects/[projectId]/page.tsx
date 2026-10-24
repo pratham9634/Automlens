@@ -28,6 +28,7 @@ import { TargetDecisionView } from "@/components/decision/target-decision-view";
 import { TrainingDashboard } from "@/components/training/training-dashboard";
 import { ModelLeaderboard } from "@/components/leaderboard/model-leaderboard";
 import { PredictionView } from "@/components/predictions/prediction-view";
+import { ExplanationView } from "@/components/explanations/explanation-view";
 
 const projectTabs = [
   { id: "dataset", label: "Dataset & Quality", icon: Database, ready: true },
@@ -224,7 +225,7 @@ export default function ProjectWorkspacePage() {
             (tab.id === "target" && Boolean(datasetPreview)) ||
             (tab.id === "training" &&
               ["target_confirmed", "trained", "completed"].includes(project.status)) ||
-            (["leaderboard", "predict"].includes(tab.id) &&
+            (["leaderboard", "predict", "explanations"].includes(tab.id) &&
               ["trained", "completed"].includes(project.status));
 
           return (
@@ -431,6 +432,16 @@ export default function ProjectWorkspacePage() {
         <PredictionView
           projectId={project.id}
           initialSelectedModelId={selectedPredictModelId}
+          onNavigateToTraining={() => {
+            setActiveTab("training");
+          }}
+        />
+      )}
+
+      {/* Active Tab: SHAP Model Interpretability */}
+      {activeTab === "explanations" && (
+        <ExplanationView
+          projectId={project.id}
           onNavigateToTraining={() => {
             setActiveTab("training");
           }}

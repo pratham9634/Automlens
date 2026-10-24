@@ -5,6 +5,7 @@ from fastapi import APIRouter
 from app.api.v1.routes import (
     datasets,
     decision_engine,
+    explanations,
     predictions,
     profiling,
     projects,
@@ -18,3 +19,5 @@ api_router.include_router(profiling.router)
 api_router.include_router(decision_engine.router)
 api_router.include_router(training.router)
 api_router.include_router(predictions.router)
+api_router.include_router(explanations.router)
+
