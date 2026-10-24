@@ -53,3 +53,83 @@ export interface ApiError {
     details?: unknown;
   };
 }
+
+export interface HistogramBin {
+  bin_start: number;
+  bin_end: number;
+  count: number;
+}
+
+export interface CategoryFrequency {
+  value: string;
+  count: number;
+  percentage: number;
+}
+
+export interface NumericColumnProfile {
+  name: string;
+  dtype: string;
+  count: number;
+  null_count: number;
+  null_percentage: number;
+  unique_count: number;
+  mean?: number | null;
+  std?: number | null;
+  min?: number | null;
+  max?: number | null;
+  q25?: number | null;
+  median?: number | null;
+  q75?: number | null;
+  skewness?: number | null;
+  kurtosis?: number | null;
+  outlier_count: number;
+  outlier_percentage: number;
+  histogram: HistogramBin[];
+  is_constant: boolean;
+}
+
+export interface CategoricalColumnProfile {
+  name: string;
+  dtype: string;
+  count: number;
+  null_count: number;
+  null_percentage: number;
+  unique_count: number;
+  top_categories: CategoryFrequency[];
+  is_high_cardinality: boolean;
+  is_constant: boolean;
+}
+
+export interface DataQualityWarning {
+  severity: "high" | "medium" | "low";
+  code: string;
+  column?: string | null;
+  message: string;
+}
+
+export interface HighCorrelationPair {
+  feature_a: string;
+  feature_b: string;
+  correlation: number;
+}
+
+export interface CorrelationMatrix {
+  columns: string[];
+  values: (number | null)[][];
+  high_correlations: HighCorrelationPair[];
+}
+
+export interface DatasetProfileResponse {
+  project_id: string;
+  dataset_id: string;
+  total_rows: number;
+  total_columns: number;
+  duplicate_rows_count: number;
+  duplicate_rows_percentage: number;
+  quality_score: number;
+  warnings: DataQualityWarning[];
+  numeric_columns: NumericColumnProfile[];
+  categorical_columns: CategoricalColumnProfile[];
+  correlation_matrix?: CorrelationMatrix | null;
+  created_at: string;
+}

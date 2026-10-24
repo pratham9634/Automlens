@@ -1,4 +1,9 @@
-import { DatasetPreviewResponse, Project, SystemHealth } from "./types";
+import {
+  DatasetPreviewResponse,
+  DatasetProfileResponse,
+  Project,
+  SystemHealth,
+} from "./types";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
@@ -112,4 +117,13 @@ export const apiClient = {
     request<void>(`/projects/${projectId}/dataset`, {
       method: "DELETE",
     }),
+
+  // Statistical Profiling
+  generateProfile: (projectId: string) =>
+    request<DatasetProfileResponse>(`/projects/${projectId}/profile`, {
+      method: "POST",
+    }),
+
+  getProfile: (projectId: string) =>
+    request<DatasetProfileResponse>(`/projects/${projectId}/profile`),
 };
