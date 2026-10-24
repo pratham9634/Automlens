@@ -1,10 +1,14 @@
 import {
+  BatchPredictionResponse,
   ConfirmedTargetResponse,
   ConfirmTargetRequest,
+  ConfusionMatrixResponse,
   DatasetPreviewResponse,
   DatasetProfileResponse,
   DecisionEngineResponse,
+  ModelDetailResponse,
   Project,
+  SinglePredictionResponse,
   StartTrainingResponse,
   SystemHealth,
   TargetAnalysisDetailResponse,
@@ -180,4 +184,43 @@ export const apiClient = {
 
   getTrainingStreamUrl: (runId: string) =>
     `${API_BASE_URL}/training/${runId}/stream`,
+
+  // Inference, Predictions & Model Diagnostics (Phase 6)
+  predictSingle: (
+    projectId: string,
+    modelId: string,
+    inputs: Record<string, unknown>
+  ) =>
+    request<SinglePredictionResponse>(
+      `/projects/${projectId}/models/${modelId}/predict/single`,
+      {
+        method: "POST",
+        body: JSON.stringify({ inputs }),
+      }
+    ),
+
+  predictBatch: (projectId: string, modelId: string, file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    return request<BatchPredictionResponse>(
+      `/projects/${projectId}/models/${modelId}/predict/batch`,
+      {
+        method: "POST",
+        body: formData,
+      }
+    );
+  },
+
+  getConfusionMatrix: (projectId: string, modelId: string) =>
+    request<ConfusionMatrixResponse>(
+      `/projects/${projectId}/models/${modelId}/confusion-matrix`
+    ),
+
+  getModelDetails: (projectId: string, modelId: string) =>
+    request<ModelDetailResponse>(
+      `/projects/${projectId}/models/${modelId}/details`
+    ),
+
+  getModelDownloadUrl: (projectId: string, modelId: string) =>
+    `${API_BASE_URL}/projects/${projectId}/models/${modelId}/download`,
 };

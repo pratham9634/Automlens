@@ -26,6 +26,8 @@ import { DatasetPreviewTable } from "@/components/dataset/dataset-preview-table"
 import { StatisticalProfileView } from "@/components/dataset/statistical-profile-view";
 import { TargetDecisionView } from "@/components/decision/target-decision-view";
 import { TrainingDashboard } from "@/components/training/training-dashboard";
+import { ModelLeaderboard } from "@/components/leaderboard/model-leaderboard";
+import { PredictionView } from "@/components/predictions/prediction-view";
 
 const projectTabs = [
   { id: "dataset", label: "Dataset & Quality", icon: Database, ready: true },
@@ -52,6 +54,7 @@ export default function ProjectWorkspacePage() {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("dataset");
   const [deleting, setDeleting] = useState(false);
+  const [selectedPredictModelId, setSelectedPredictModelId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!projectId) return;
@@ -220,7 +223,9 @@ export default function ProjectWorkspacePage() {
             tab.id === "dataset" ||
             (tab.id === "target" && Boolean(datasetPreview)) ||
             (tab.id === "training" &&
-              ["target_confirmed", "trained", "completed"].includes(project.status));
+              ["target_confirmed", "trained", "completed"].includes(project.status)) ||
+            (["leaderboard", "predict"].includes(tab.id) &&
+              ["trained", "completed"].includes(project.status));
 
           return (
             <button
@@ -403,6 +408,31 @@ export default function ProjectWorkspacePage() {
           }}
           onNavigateToLeaderboard={() => {
             setActiveTab("leaderboard");
+          }}
+        />
+      )}
+
+      {/* Active Tab: Model Leaderboard & Inspector */}
+      {activeTab === "leaderboard" && (
+        <ModelLeaderboard
+          projectId={project.id}
+          onNavigateToPredict={(modelId) => {
+            setSelectedPredictModelId(modelId);
+            setActiveTab("predict");
+          }}
+          onNavigateToTraining={() => {
+            setActiveTab("training");
+          }}
+        />
+      )}
+
+      {/* Active Tab: Single & Batch Predictions */}
+      {activeTab === "predict" && (
+        <PredictionView
+          projectId={project.id}
+          initialSelectedModelId={selectedPredictModelId}
+          onNavigateToTraining={() => {
+            setActiveTab("training");
           }}
         />
       )}
