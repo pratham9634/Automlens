@@ -267,3 +267,59 @@ export interface StartTrainingResponse {
   stream_url: string;
   message: string;
 }
+
+// Prediction & Leaderboard Inspection Types
+
+export interface ClassProbability {
+  label: string;
+  probability: number;
+}
+
+export interface SinglePredictionResponse {
+  model_id: string;
+  model_name: string;
+  task_type: TaskType;
+  target_column: string;
+  prediction: string | number | boolean;
+  probabilities?: ClassProbability[] | null;
+  confidence?: number | null;
+}
+
+export interface BatchPredictionResponse {
+  model_id: string;
+  model_name: string;
+  task_type: TaskType;
+  target_column: string;
+  total_rows: number;
+  preview_rows: Record<string, string | number | boolean | null>[];
+  download_url: string;
+}
+
+export interface PerClassMetric {
+  precision: number;
+  recall: number;
+  f1: number;
+}
+
+export interface ConfusionMatrixResponse {
+  model_id: string;
+  model_name: string;
+  classes: string[];
+  matrix: number[][];
+  overall_accuracy: number;
+  per_class_metrics: Record<string, PerClassMetric>;
+}
+
+export interface ModelDetailResponse {
+  model_id: string;
+  model_name: string;
+  is_baseline: boolean;
+  task_type: TaskType;
+  primary_metric_name: string;
+  primary_metric_score?: number | null;
+  primary_metric_std?: number | null;
+  all_metrics?: Record<string, MetricAggregation> | null;
+  train_time_seconds?: number | null;
+  artifact_exists: boolean;
+  artifact_path?: string | null;
+}

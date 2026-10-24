@@ -61,6 +61,12 @@ class Project(Base):
         cascade="all, delete-orphan",
         order_by="desc(TrainingRun.created_at)",
     )
+    prediction_logs: Mapped[list["PredictionLog"]] = relationship(
+        "PredictionLog",
+        back_populates="project",
+        cascade="all, delete-orphan",
+        order_by="desc(PredictionLog.created_at)",
+    )
 
     def __repr__(self) -> str:
         return f"<Project(id='{self.id}', name='{self.name}', status='{self.status}')>"
@@ -232,4 +238,41 @@ class ModelRun(Base):
         return (
             f"<ModelRun(id='{self.id}', model='{self.model_id}', "
             f"score={self.primary_metric_score})>"
+        )
+
+
+class PredictionLog(Base):
+    """Audit log of individual and batch inferences executed via AutoMLens (Rule 5)."""
+
+    __tablename__ = "prediction_logs"
+
+    id: Mapped[str] = mapped_column(
+        String(36),
+        primary_key=True,
+        default=lambda: str(uuid.uuid4()),
+        index=True,
+    )
+    project_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("projects.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    model_id: Mapped[str] = mapped_column(String(100), nullable=False)
+    prediction_type: Mapped[str] = mapped_column(String(50), nullable=False)  # "single" or "batch"
+    row_count: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    input_summary: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    output_summary: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+    )
+
+    # Relationships
+    project: Mapped["Project"] = relationship("Project", back_populates="prediction_logs")
+
+    def __repr__(self) -> str:
+        return (
+            f"<PredictionLog(id='{self.id}', type='{self.prediction_type}', rows={self.row_count})>"
         )
