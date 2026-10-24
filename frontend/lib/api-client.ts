@@ -5,10 +5,12 @@ import {
   DatasetProfileResponse,
   DecisionEngineResponse,
   Project,
+  StartTrainingResponse,
   SystemHealth,
   TargetAnalysisDetailResponse,
   TargetSuggestResponse,
   TaskType,
+  TrainingRun,
 } from "./types";
 
 const API_BASE_URL =
@@ -163,4 +165,19 @@ export const apiClient = {
 
   getConfirmedTarget: (projectId: string) =>
     request<ConfirmedTargetResponse>(`/projects/${projectId}/target/confirm`),
+
+  // Parallel Training & SSE Streaming
+  startTraining: (projectId: string) =>
+    request<StartTrainingResponse>(`/projects/${projectId}/training/start`, {
+      method: "POST",
+    }),
+
+  listTrainingRuns: (projectId: string) =>
+    request<TrainingRun[]>(`/projects/${projectId}/runs`),
+
+  getTrainingRun: (runId: string) =>
+    request<TrainingRun>(`/runs/${runId}`),
+
+  getTrainingStreamUrl: (runId: string) =>
+    `${API_BASE_URL}/training/${runId}/stream`,
 };

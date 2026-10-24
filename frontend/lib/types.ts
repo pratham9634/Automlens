@@ -214,3 +214,56 @@ export interface ConfirmedTargetResponse {
   status: string;
   confirmed_at: string;
 }
+
+// Training & Parallel Execution Types
+
+export interface MetricAggregation {
+  mean: number;
+  std: number;
+  folds: number[];
+}
+
+export interface ModelRun {
+  id: string;
+  run_id: string;
+  model_id: string;
+  model_name: string;
+  is_baseline: boolean;
+  status: "queued" | "training" | "completed" | "failed";
+  primary_metric_name: string;
+  primary_metric_score?: number | null;
+  primary_metric_std?: number | null;
+  all_metrics?: Record<string, MetricAggregation> | null;
+  train_time_seconds?: number | null;
+  artifact_path?: string | null;
+  error_message?: string | null;
+  created_at: string;
+  completed_at?: string | null;
+}
+
+export interface TrainingRun {
+  id: string;
+  project_id: string;
+  target_column: string;
+  task_type: TaskType;
+  primary_metric: string;
+  status: "pending" | "running" | "completed" | "failed";
+  total_models: number;
+  completed_models: number;
+  best_model_id?: string | null;
+  best_score?: number | null;
+  error_message?: string | null;
+  created_at: string;
+  completed_at?: string | null;
+  model_runs: ModelRun[];
+}
+
+export interface StartTrainingResponse {
+  run_id: string;
+  project_id: string;
+  status: string;
+  total_models: number;
+  primary_metric: string;
+  stream_url: string;
+  message: string;
+}

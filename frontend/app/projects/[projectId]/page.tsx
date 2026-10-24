@@ -25,6 +25,7 @@ import { DatasetUploadZone } from "@/components/dataset/dataset-upload-zone";
 import { DatasetPreviewTable } from "@/components/dataset/dataset-preview-table";
 import { StatisticalProfileView } from "@/components/dataset/statistical-profile-view";
 import { TargetDecisionView } from "@/components/decision/target-decision-view";
+import { TrainingDashboard } from "@/components/training/training-dashboard";
 
 const projectTabs = [
   { id: "dataset", label: "Dataset & Quality", icon: Database, ready: true },
@@ -387,6 +388,21 @@ export default function ProjectWorkspacePage() {
           }}
           onNavigateToTraining={() => {
             setActiveTab("training");
+          }}
+        />
+      )}
+
+      {/* Active Tab: Parallel Multi-Model Training */}
+      {activeTab === "training" && (
+        <TrainingDashboard
+          projectId={project.id}
+          onTrainingCompleted={() => {
+            setProject((prev) =>
+              prev ? { ...prev, status: "trained" } : null
+            );
+          }}
+          onNavigateToLeaderboard={() => {
+            setActiveTab("leaderboard");
           }}
         />
       )}
