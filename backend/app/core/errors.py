@@ -32,6 +32,49 @@ class ProjectAlreadyExistsError(AutoMLensError):
         )
 
 
+class DatasetNotFoundError(AutoMLensError):
+    """Raised when no active dataset exists for a project."""
+
+    def __init__(self, project_id: str):
+        super().__init__(
+            message=f"No dataset found for project with ID '{project_id}'.",
+            code="DATASET_NOT_FOUND",
+        )
+
+
+class InvalidFileFormatError(AutoMLensError):
+    """Raised when an uploaded file format is not supported."""
+
+    def __init__(self, filename: str):
+        super().__init__(
+            message=(
+                f"File '{filename}' has an unsupported format. "
+                "Only CSV (.csv) and Excel (.xlsx, .xls) are allowed."
+            ),
+            code="INVALID_FILE_FORMAT",
+        )
+
+
+class FileSizeExceededError(AutoMLensError):
+    """Raised when an uploaded file exceeds the maximum size limit."""
+
+    def __init__(self, size_mb: float, max_mb: int):
+        super().__init__(
+            message=f"File size ({size_mb:.2f} MB) exceeds maximum allowed limit of {max_mb} MB.",
+            code="FILE_SIZE_EXCEEDED",
+        )
+
+
+class DatasetValidationError(AutoMLensError):
+    """Raised when tabular data validation fails."""
+
+    def __init__(self, reason: str):
+        super().__init__(
+            message=f"Dataset validation failed: {reason}",
+            code="DATASET_VALIDATION_ERROR",
+        )
+
+
 def raise_http_error(exc: AutoMLensError, status_code: int = status.HTTP_400_BAD_REQUEST) -> None:
     """Helper to convert domain exception to structured HTTPException."""
     raise HTTPException(

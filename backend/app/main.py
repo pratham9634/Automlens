@@ -12,6 +12,8 @@ from app.api.v1.router import api_router
 from app.core.config import get_settings
 from app.core.errors import (
     AutoMLensError,
+    DatasetNotFoundError,
+    FileSizeExceededError,
     ProjectAlreadyExistsError,
     ProjectNotFoundError,
 )
@@ -64,10 +66,12 @@ app = FastAPI(
 async def automlens_exception_handler(_: Request, exc: AutoMLensError) -> JSONResponse:
     """Format domain exceptions to consistent JSON schema."""
     status_code = status.HTTP_400_BAD_REQUEST
-    if isinstance(exc, ProjectNotFoundError):
+    if isinstance(exc, ProjectNotFoundError | DatasetNotFoundError):
         status_code = status.HTTP_404_NOT_FOUND
     elif isinstance(exc, ProjectAlreadyExistsError):
         status_code = status.HTTP_409_CONFLICT
+    elif isinstance(exc, FileSizeExceededError):
+        status_code = status.HTTP_413_REQUEST_ENTITY_TOO_LARGE
 
     return JSONResponse(
         status_code=status_code,
