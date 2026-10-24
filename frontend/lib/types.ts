@@ -323,3 +323,48 @@ export interface ModelDetailResponse {
   artifact_exists: boolean;
   artifact_path?: string | null;
 }
+
+// Explainability & Interpretability Types (Phase 7)
+
+export interface FeatureImportanceItem {
+  feature_name: string;
+  original_feature: string;
+  importance_score: number;
+  mean_abs_shap: number;
+  rank: number;
+}
+
+export interface GlobalExplanationResponse {
+  project_id: string;
+  model_id: string;
+  model_name: string;
+  task_type: string;
+  method_label: string;
+  feature_importance_method: string;
+  sample_size_used: number;
+  features: FeatureImportanceItem[];
+  academic_disclaimer: string;
+  layman_summary: string;
+}
+
+export interface LocalFeatureAttribution {
+  feature_name: string;
+  original_feature: string;
+  feature_value: string | number | boolean | null;
+  attribution_value: number;
+  direction: "positive" | "negative" | "neutral";
+}
+
+export interface LocalExplanationResponse {
+  project_id: string;
+  model_id: string;
+  model_name: string;
+  prediction: string | number | boolean;
+  base_value: number;
+  predicted_value: number;
+  method_label: string;
+  attributions: LocalFeatureAttribution[];
+  academic_disclaimer: string;
+  layman_explanation: string;
+}
+
