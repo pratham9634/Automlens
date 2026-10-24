@@ -1,8 +1,14 @@
 import {
+  ConfirmedTargetResponse,
+  ConfirmTargetRequest,
   DatasetPreviewResponse,
   DatasetProfileResponse,
+  DecisionEngineResponse,
   Project,
   SystemHealth,
+  TargetAnalysisDetailResponse,
+  TargetSuggestResponse,
+  TaskType,
 } from "./types";
 
 const API_BASE_URL =
@@ -126,4 +132,35 @@ export const apiClient = {
 
   getProfile: (projectId: string) =>
     request<DatasetProfileResponse>(`/projects/${projectId}/profile`),
+
+  // Decision Engine & Target Selection
+  suggestTargets: (projectId: string) =>
+    request<TargetSuggestResponse>(`/projects/${projectId}/target/suggest`),
+
+  analyzeTarget: (
+    projectId: string,
+    data: { target_column: string; override_task_type?: TaskType | null }
+  ) =>
+    request<TargetAnalysisDetailResponse>(`/projects/${projectId}/target/analyze`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  formulateDecisions: (
+    projectId: string,
+    data: { target_column: string; override_task_type?: TaskType | null }
+  ) =>
+    request<DecisionEngineResponse>(`/projects/${projectId}/decision`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  confirmTarget: (projectId: string, data: ConfirmTargetRequest) =>
+    request<ConfirmedTargetResponse>(`/projects/${projectId}/target/confirm`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  getConfirmedTarget: (projectId: string) =>
+    request<ConfirmedTargetResponse>(`/projects/${projectId}/target/confirm`),
 };

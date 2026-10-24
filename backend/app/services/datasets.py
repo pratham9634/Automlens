@@ -118,13 +118,15 @@ class DatasetService:
             null_pct = round((null_count / row_count) * 100, 2)
             col_type = self._infer_column_type(series)
 
-            columns_meta.append({
-                "name": col_str,
-                "dtype": col_type,
-                "non_null_count": non_null_count,
-                "null_count": null_count,
-                "null_percentage": null_pct,
-            })
+            columns_meta.append(
+                {
+                    "name": col_str,
+                    "dtype": col_type,
+                    "non_null_count": non_null_count,
+                    "null_count": null_count,
+                    "null_percentage": null_pct,
+                }
+            )
 
         return df, columns_meta
 

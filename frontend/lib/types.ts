@@ -16,7 +16,7 @@ export interface Project {
   id: string;
   name: string;
   description?: string;
-  status: "created" | "dataset_uploaded" | "profiled" | "trained" | "completed";
+  status: "created" | "dataset_uploaded" | "profiled" | "target_confirmed" | "trained" | "completed";
   created_at: string;
   updated_at: string;
 }
@@ -132,4 +132,85 @@ export interface DatasetProfileResponse {
   categorical_columns: CategoricalColumnProfile[];
   correlation_matrix?: CorrelationMatrix | null;
   created_at: string;
+}
+
+// Decision Engine & Target Selection Types
+
+export type TaskType = "binary_classification" | "multiclass_classification" | "regression";
+
+export interface ClassDistributionItem {
+  label: string;
+  count: number;
+  percentage: number;
+}
+
+export interface TargetSuggestionItem {
+  name: string;
+  dtype: string;
+  inferred_task: TaskType;
+  confidence: number;
+  distinct_count: number;
+  null_percentage: number;
+  is_recommended: boolean;
+  reason: string;
+}
+
+export interface TargetSuggestResponse {
+  recommended_target: string | null;
+  suggestions: TargetSuggestionItem[];
+}
+
+export interface TargetAnalysisDetailResponse {
+  target_column: string;
+  task_type: TaskType;
+  is_overridden: boolean;
+  distinct_count: number;
+  null_count: number;
+  null_percentage: number;
+  classes: ClassDistributionItem[];
+  summary_stats: Record<string, number>;
+  reason: string;
+}
+
+export interface ModelCandidate {
+  id: string;
+  name: string;
+  is_baseline: boolean;
+  description: string;
+  default_selected: boolean;
+}
+
+export interface PreprocessingStep {
+  column: string;
+  step_type: "imputation" | "scaling" | "encoding" | "drop" | string;
+  strategy: string;
+  reason: string;
+}
+
+export interface DecisionEngineResponse {
+  target_column: string;
+  task_type: TaskType;
+  primary_metric: string;
+  available_metrics: string[];
+  preprocessing_steps: PreprocessingStep[];
+  candidate_models: ModelCandidate[];
+  engineering_rationale: string;
+  is_llm_enriched: boolean;
+}
+
+export interface ConfirmTargetRequest {
+  target_column: string;
+  task_type: TaskType;
+  selected_models: string[];
+  primary_metric: string;
+}
+
+export interface ConfirmedTargetResponse {
+  project_id: string;
+  target_column: string;
+  task_type: TaskType;
+  selected_models: string[];
+  primary_metric: string;
+  status: string;
+  confirmed_at: string;
 }

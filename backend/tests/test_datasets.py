@@ -52,11 +52,13 @@ def test_upload_excel_dataset_success(client: TestClient) -> None:
     """Verify that a valid Excel file (.xlsx) can be uploaded and parsed."""
     project_id = _create_test_project(client)
 
-    df = pd.DataFrame({
-        "FeatureA": [10, 20, 30],
-        "FeatureB": ["Low", "Med", "High"],
-        "Target": [0, 1, 0],
-    })
+    df = pd.DataFrame(
+        {
+            "FeatureA": [10, 20, 30],
+            "FeatureB": ["Low", "Med", "High"],
+            "Target": [0, 1, 0],
+        }
+    )
     excel_buffer = io.BytesIO()
     df.to_excel(excel_buffer, index=False, engine="openpyxl")
     excel_content = excel_buffer.getvalue()

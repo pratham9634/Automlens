@@ -149,15 +149,7 @@ def test_constant_column_and_iqr_outlier_warning(client: TestClient) -> None:
 def test_high_correlation_warning(client: TestClient) -> None:
     """Verify high multicollinearity detection when two features have |r| >= 0.85."""
     # ColA and ColB are perfectly collinear (B = 2 * A)
-    csv_data = (
-        b"ColA,ColB,Independent\n"
-        b"1,2,50\n"
-        b"2,4,10\n"
-        b"3,6,80\n"
-        b"4,8,20\n"
-        b"5,10,70\n"
-        b"6,12,30\n"
-    )
+    csv_data = b"ColA,ColB,Independent\n1,2,50\n2,4,10\n3,6,80\n4,8,20\n5,10,70\n6,12,30\n"
     project_id = _create_project_with_dataset(client, csv_data)
 
     res = client.post(f"/api/v1/projects/{project_id}/profile")
@@ -177,12 +169,7 @@ def test_high_correlation_warning(client: TestClient) -> None:
 def test_boolean_column_profiling(client: TestClient) -> None:
     """Verify that boolean features are categorized as categorical without numpy lerp errors."""
     csv_data = (
-        b"Id,Active,Flag\n"
-        b"1,True,False\n"
-        b"2,False,False\n"
-        b"3,True,True\n"
-        b"4,True,False\n"
-        b"5,False,True\n"
+        b"Id,Active,Flag\n1,True,False\n2,False,False\n3,True,True\n4,True,False\n5,False,True\n"
     )
     project_id = _create_project_with_dataset(client, csv_data)
 

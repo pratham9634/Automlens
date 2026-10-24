@@ -24,12 +24,7 @@ class ProjectRepository:
 
     def list_all(self, skip: int = 0, limit: int = 50) -> list[Project]:
         """List projects ordered by creation date descending."""
-        stmt = (
-            select(Project)
-            .order_by(Project.created_at.desc())
-            .offset(skip)
-            .limit(limit)
-        )
+        stmt = select(Project).order_by(Project.created_at.desc()).offset(skip).limit(limit)
         return list(self.db.execute(stmt).scalars().all())
 
     def count(self) -> int:

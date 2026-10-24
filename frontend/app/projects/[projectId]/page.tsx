@@ -24,6 +24,7 @@ import { formatDate } from "@/lib/utils";
 import { DatasetUploadZone } from "@/components/dataset/dataset-upload-zone";
 import { DatasetPreviewTable } from "@/components/dataset/dataset-preview-table";
 import { StatisticalProfileView } from "@/components/dataset/statistical-profile-view";
+import { TargetDecisionView } from "@/components/decision/target-decision-view";
 
 const projectTabs = [
   { id: "dataset", label: "Dataset & Quality", icon: Database, ready: true },
@@ -214,20 +215,32 @@ export default function ProjectWorkspacePage() {
         {projectTabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
+          const isReady =
+            tab.id === "dataset" ||
+            (tab.id === "target" && Boolean(datasetPreview)) ||
+            (tab.id === "training" &&
+              ["target_confirmed", "trained", "completed"].includes(project.status));
 
           return (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => {
+                if (isReady) {
+                  setActiveTab(tab.id);
+                }
+              }}
+              disabled={!isReady}
               className={`flex items-center gap-2 px-3.5 py-2.5 text-xs font-medium border-b-2 whitespace-nowrap transition-all ${
                 isActive
                   ? "border-brand-lavender text-brand-hover bg-surface-1/50"
-                  : "border-transparent text-ink-muted hover:text-ink hover:border-hairline"
+                  : isReady
+                  ? "border-transparent text-ink-muted hover:text-ink hover:border-hairline cursor-pointer"
+                  : "border-transparent text-ink-faint opacity-50 cursor-not-allowed"
               }`}
             >
               <Icon className="w-3.5 h-3.5" />
               <span>{tab.label}</span>
-              {!tab.ready && tab.id !== "dataset" && (
+              {!isReady && (
                 <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-surface-3 text-ink-faint">
                   Locked
                 </span>
@@ -361,6 +374,21 @@ export default function ProjectWorkspacePage() {
             />
           )}
         </div>
+      )}
+
+      {/* Active Tab: AI Target & Decision Engine */}
+      {activeTab === "target" && (
+        <TargetDecisionView
+          projectId={project.id}
+          onTargetConfirmed={() => {
+            setProject((prev) =>
+              prev ? { ...prev, status: "target_confirmed" } : null
+            );
+          }}
+          onNavigateToTraining={() => {
+            setActiveTab("training");
+          }}
+        />
       )}
     </div>
   );

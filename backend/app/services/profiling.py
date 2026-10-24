@@ -173,9 +173,7 @@ class ProfilingService:
                 )
 
             mean_val = _safe_float(non_null_series.mean()) if non_null_count > 0 else None
-            std_val = (
-                _safe_float(non_null_series.std(ddof=1)) if non_null_count > 1 else 0.0
-            )
+            std_val = _safe_float(non_null_series.std(ddof=1)) if non_null_count > 1 else 0.0
             min_val = _safe_float(non_null_series.min()) if non_null_count > 0 else None
             max_val = _safe_float(non_null_series.max()) if non_null_count > 0 else None
             q25_val = _safe_float(non_null_series.quantile(0.25)) if non_null_count > 0 else None

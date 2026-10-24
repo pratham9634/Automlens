@@ -55,9 +55,7 @@ class Settings(BaseSettings):
     def cors_origins_list(self) -> list[str]:
         """Parse comma-separated CORS origins into a list."""
         return [
-            origin.strip()
-            for origin in self.AUTOMLENS_CORS_ORIGINS.split(",")
-            if origin.strip()
+            origin.strip() for origin in self.AUTOMLENS_CORS_ORIGINS.split(",") if origin.strip()
         ]
 
 
