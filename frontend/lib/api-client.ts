@@ -1,4 +1,4 @@
-import { SystemHealth } from "./types";
+import { Project, SystemHealth } from "./types";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
@@ -39,6 +39,10 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
       );
     }
 
+    if (response.status === 204) {
+      return {} as T;
+    }
+
     return (await response.json()) as T;
   } catch (error) {
     if (error instanceof ApiClientError) {
@@ -52,6 +56,36 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
   }
 }
 
+export interface ProjectListResponse {
+  items: Project[];
+  total: number;
+}
+
 export const apiClient = {
+  // System Telemetry
   getHealth: () => request<SystemHealth>("/health"),
+
+  // Projects CRUD
+  listProjects: (skip = 0, limit = 50) =>
+    request<ProjectListResponse>(`/projects?skip=${skip}&limit=${limit}`),
+
+  getProject: (projectId: string) =>
+    request<Project>(`/projects/${projectId}`),
+
+  createProject: (data: { name: string; description?: string }) =>
+    request<Project>("/projects", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  updateProject: (projectId: string, data: { name?: string; description?: string }) =>
+    request<Project>(`/projects/${projectId}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
+
+  deleteProject: (projectId: string) =>
+    request<void>(`/projects/${projectId}`, {
+      method: "DELETE",
+    }),
 };
