@@ -89,6 +89,7 @@ class ExplainabilityService:
         self.dataset_repo = dataset_repo
         self.run_repo = run_repo
         self.storage = storage
+        self.db = project_repo.db
 
     def _load_model_and_context(
         self, project_id: str, model_id: str

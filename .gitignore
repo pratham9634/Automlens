@@ -19,7 +19,8 @@ __pycache__/
 *$py.class
 
 # Runtime Data & Artifacts
-data/
+data/*
+!data/demo/
 artifacts/
 *.db
 *.sqlite

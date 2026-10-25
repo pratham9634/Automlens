@@ -126,6 +126,11 @@ export const apiClient = {
     });
   },
 
+  loadDemoDataset: (projectId: string, sampleName: string) =>
+    request<DatasetPreviewResponse>(`/projects/${projectId}/dataset/demo/${sampleName}`, {
+      method: "POST",
+    }),
+
   getDataset: (projectId: string) =>
     request<DatasetPreviewResponse>(`/projects/${projectId}/dataset`),
 

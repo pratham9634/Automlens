@@ -1,6 +1,7 @@
 import hashlib
 import io
 import json
+import os
 import uuid
 from pathlib import Path
 from typing import Any
@@ -319,3 +320,31 @@ class DatasetService:
             )
         except Exception as audit_err:
             logger.warning("Failed to record dataset_deleted audit event: %s", audit_err)
+
+    def load_demo_dataset(self, project_id: str, sample_name: str) -> DatasetPreviewResponse:
+        """Load a built-in benchmark demonstration dataset (Titanic or California Housing)."""
+        demo_map = {
+            "titanic": "titanic.csv",
+            "california_housing": "california_housing.csv",
+        }
+        if sample_name not in demo_map:
+            raise DatasetValidationError(
+                f"Unknown demo dataset '{sample_name}'. Supported: {', '.join(demo_map.keys())}"
+            )
+
+        filename = demo_map[sample_name]
+        demo_dir = os.path.abspath(
+            os.path.join(os.path.dirname(__file__), "..", "..", "..", "data", "demo")
+        )
+        file_path = os.path.join(demo_dir, filename)
+
+        if not os.path.exists(file_path):
+            raise DatasetValidationError(
+                f"Demo dataset file '{filename}' was not found at '{file_path}'."
+            )
+
+        with open(file_path, "rb") as f:
+            content = f.read()
+
+        return self.upload_dataset(project_id, filename, content)
+
