@@ -80,12 +80,7 @@ def test_batch_prediction_flow(client: TestClient) -> None:
     """Verify batch CSV inference and export download."""
     project_id, model_id = _create_trained_project(client)
 
-    batch_csv = (
-        b"Age,Salary,Department\n"
-        b"24,45000,Engineering\n"
-        b"32,65000,Sales\n"
-        b"40,85000,Product\n"
-    )
+    batch_csv = b"Age,Salary,Department\n24,45000,Engineering\n32,65000,Sales\n40,85000,Product\n"
 
     files = {"file": ("unseen_batch.csv", batch_csv, "text/csv")}
     res = client.post(

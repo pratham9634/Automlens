@@ -198,6 +198,27 @@ class DatasetService:
             sha256_hash[:8],
         )
 
+        try:
+            from app.services.audit import AuditService
+
+            AuditService(self.dataset_repo.db).record_event(
+                project_id=project_id,
+                action="dataset_uploaded",
+                reason=(
+                    f"Uploaded dataset '{filename}' ({len(df):,} rows × {len(df.columns)} columns)"
+                ),
+                evidence={
+                    "filename": filename,
+                    "rows": len(df),
+                    "columns": len(df.columns),
+                    "file_size_bytes": file_size_bytes,
+                    "sha256": sha256_hash,
+                },
+                result="success",
+            )
+        except Exception as audit_err:
+            logger.warning("Failed to record dataset_uploaded audit event: %s", audit_err)
+
         # Extract first 10 preview rows
         preview_df = df.head(10).replace({np.nan: None})
         preview_rows = preview_df.to_dict(orient="records")
@@ -286,3 +307,15 @@ class DatasetService:
         self.project_repo.update(project)
 
         logger.info("Deleted dataset for project %s", project_id)
+        try:
+            from app.services.audit import AuditService
+
+            AuditService(self.dataset_repo.db).record_event(
+                project_id=project_id,
+                action="dataset_deleted",
+                reason=f"Removed dataset '{dataset.filename}' from project workspace",
+                evidence={"dataset_id": dataset.id, "filename": dataset.filename},
+                result="warning",
+            )
+        except Exception as audit_err:
+            logger.warning("Failed to record dataset_deleted audit event: %s", audit_err)

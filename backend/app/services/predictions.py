@@ -96,9 +96,7 @@ class PredictionService:
                 code="MODEL_NOT_FOUND",
             )
 
-        if not target_model_run.artifact_path or not os.path.exists(
-            target_model_run.artifact_path
-        ):
+        if not target_model_run.artifact_path or not os.path.exists(target_model_run.artifact_path):
             raise AutoMLensError(
                 message=f"Model artifact for '{model_id}' not found on disk.",
                 code="ARTIFACT_NOT_FOUND",
@@ -169,6 +167,24 @@ class PredictionService:
             )
             db.add(log_entry)
             db.commit()
+
+        try:
+            from app.services.audit import AuditService
+
+            with SessionLocal() as audit_db:
+                AuditService(audit_db).record_event(
+                    project_id=project_id,
+                    action="prediction_single",
+                    reason=f"Executed single-row inference on model '{model_run.model_name}'",
+                    evidence={
+                        "model_id": model_id,
+                        "prediction": final_pred,
+                        "confidence": confidence,
+                    },
+                    result="success",
+                )
+        except Exception as audit_err:
+            logger.warning("Failed to record prediction_single audit event: %s", audit_err)
 
         return SinglePredictionResponse(
             model_id=model_id,
@@ -264,6 +280,28 @@ class PredictionService:
             db.add(log_entry)
             db.commit()
 
+        try:
+            from app.services.audit import AuditService
+
+            with SessionLocal() as audit_db:
+                AuditService(audit_db).record_event(
+                    project_id=project_id,
+                    action="prediction_batch",
+                    reason=(
+                        f"Executed batch inference on {len(df):,} rows using "
+                        f"model '{model_run.model_name}'"
+                    ),
+                    evidence={
+                        "model_id": model_id,
+                        "rows": len(df),
+                        "filename": filename,
+                        "output_file": export_filename,
+                    },
+                    result="success",
+                )
+        except Exception as audit_err:
+            logger.warning("Failed to record prediction_batch audit event: %s", audit_err)
+
         download_url = f"/api/v1/projects/{project_id}/exports/{export_filename}"
 
         return (
@@ -355,9 +393,7 @@ class PredictionService:
             project_id, model_id
         )
 
-        exists = bool(
-            model_run.artifact_path and os.path.exists(model_run.artifact_path)
-        )
+        exists = bool(model_run.artifact_path and os.path.exists(model_run.artifact_path))
 
         return ModelDetailResponse(
             model_id=model_run.model_id,

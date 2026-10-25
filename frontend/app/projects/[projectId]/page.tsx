@@ -29,6 +29,8 @@ import { TrainingDashboard } from "@/components/training/training-dashboard";
 import { ModelLeaderboard } from "@/components/leaderboard/model-leaderboard";
 import { PredictionView } from "@/components/predictions/prediction-view";
 import { ExplanationView } from "@/components/explanations/explanation-view";
+import { AuditLedger } from "@/components/audit/audit-ledger";
+import { ExportView } from "@/components/exports/export-view";
 
 const projectTabs = [
   { id: "dataset", label: "Dataset & Quality", icon: Database, ready: true },
@@ -37,8 +39,8 @@ const projectTabs = [
   { id: "leaderboard", label: "Leaderboard", icon: BarChart3, ready: false },
   { id: "predict", label: "Predict", icon: FileSpreadsheet, ready: false },
   { id: "explanations", label: "SHAP Explainability", icon: Sparkles, ready: false },
-  { id: "audit", label: "Audit Ledger", icon: History, ready: false },
-  { id: "exports", label: "Exports", icon: HardDriveDownload, ready: false },
+  { id: "audit", label: "Audit Ledger", icon: History, ready: true },
+  { id: "exports", label: "Exports", icon: HardDriveDownload, ready: true },
 ];
 
 export default function ProjectWorkspacePage() {
@@ -222,6 +224,8 @@ export default function ProjectWorkspacePage() {
           const isActive = activeTab === tab.id;
           const isReady =
             tab.id === "dataset" ||
+            tab.id === "audit" ||
+            tab.id === "exports" ||
             (tab.id === "target" && Boolean(datasetPreview)) ||
             (tab.id === "training" &&
               ["target_confirmed", "trained", "completed"].includes(project.status)) ||
@@ -446,6 +450,16 @@ export default function ProjectWorkspacePage() {
             setActiveTab("training");
           }}
         />
+      )}
+
+      {/* Active Tab: Immutable Audit Ledger (Phase 9) */}
+      {activeTab === "audit" && (
+        <AuditLedger projectId={project.id} />
+      )}
+
+      {/* Active Tab: Artifact Export Hub (Phase 9) */}
+      {activeTab === "exports" && (
+        <ExportView projectId={project.id} projectName={project.name} />
       )}
     </div>
   );

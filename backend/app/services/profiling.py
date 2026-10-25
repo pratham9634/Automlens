@@ -428,6 +428,27 @@ class ProfilingService:
             project.status = "profiled"
             self.project_repo.update(project)
 
+        try:
+            from app.services.audit import AuditService
+
+            AuditService(self.db).record_event(
+                project_id=project_id,
+                action="profile_generated",
+                reason=(
+                    f"Computed statistical profile for {profile_response.row_count:,} rows "
+                    f"and {profile_response.column_count} columns"
+                ),
+                evidence={
+                    "row_count": profile_response.row_count,
+                    "column_count": profile_response.column_count,
+                    "duplicate_rows": profile_response.duplicate_rows_count,
+                    "quality_warnings_count": len(profile_response.quality_warnings),
+                },
+                result="success",
+            )
+        except Exception as audit_err:
+            logger.warning("Failed to record profile_generated audit event: %s", audit_err)
+
         return profile_response
 
     def get_profile(self, project_id: str) -> DatasetProfileResponse:

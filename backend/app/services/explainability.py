@@ -126,9 +126,7 @@ class ExplainabilityService:
                 code="MODEL_NOT_FOUND",
             )
 
-        if not target_model_run.artifact_path or not os.path.exists(
-            target_model_run.artifact_path
-        ):
+        if not target_model_run.artifact_path or not os.path.exists(target_model_run.artifact_path):
             raise AutoMLensError(
                 message=f"Model artifact for '{model_id}' not found on disk.",
                 code="ARTIFACT_NOT_FOUND",
@@ -147,12 +145,10 @@ class ExplainabilityService:
 
         return target_model_run, latest_run, pipeline, target_config, dataset_df
 
-    def get_global_explanation(
-        self, project_id: str, model_id: str
-    ) -> GlobalExplanationResponse:
+    def get_global_explanation(self, project_id: str, model_id: str) -> GlobalExplanationResponse:
         """Compute global feature importances and mean |SHAP| values."""
-        target_model_run, _, pipeline, target_config, dataset_df = (
-            self._load_model_and_context(project_id, model_id)
+        target_model_run, _, pipeline, target_config, dataset_df = self._load_model_and_context(
+            project_id, model_id
         )
 
         preprocessor: ColumnTransformer = pipeline.named_steps["preprocessor"]
@@ -262,9 +258,7 @@ class ExplainabilityService:
             )
 
         # Sort descending by mean_abs_shap (or fallback to importance_score)
-        feature_items.sort(
-            key=lambda x: (x.mean_abs_shap, x.importance_score), reverse=True
-        )
+        feature_items.sort(key=lambda x: (x.mean_abs_shap, x.importance_score), reverse=True)
         for idx, item in enumerate(feature_items, start=1):
             item.rank = idx
 
@@ -286,6 +280,26 @@ class ExplainabilityService:
                 f"(typical for baseline or unweighted models)."
             )
 
+        try:
+            from app.services.audit import AuditService
+
+            AuditService(self.db).record_event(
+                project_id=project_id,
+                action="explanation_global",
+                reason=(
+                    f"Generated global feature importance and SHAP summary for model '{model_id}'"
+                ),
+                evidence={
+                    "model_id": model_id,
+                    "method": method_label,
+                    "sample_size": sample_size,
+                    "top_features": [f.feature_name for f in feature_items[:5]],
+                },
+                result="success",
+            )
+        except Exception as audit_err:
+            logger.warning("Failed to record explanation_global audit event: %s", audit_err)
+
         return GlobalExplanationResponse(
             project_id=project_id,
             model_id=model_id,
@@ -306,8 +320,8 @@ class ExplainabilityService:
         inputs: dict[str, Any],
     ) -> LocalExplanationResponse:
         """Compute single-observation local SHAP attribution (waterfall breakdown)."""
-        target_model_run, _, pipeline, target_config, dataset_df = (
-            self._load_model_and_context(project_id, model_id)
+        target_model_run, _, pipeline, target_config, dataset_df = self._load_model_and_context(
+            project_id, model_id
         )
 
         preprocessor: ColumnTransformer = pipeline.named_steps["preprocessor"]
@@ -445,6 +459,33 @@ class ExplainabilityService:
             f"The strongest factor pushing the prediction higher was {pos_str}, "
             f"while the strongest factor pulling it down was {neg_str}."
         )
+
+        try:
+            from app.services.audit import AuditService
+
+            AuditService(self.db).record_event(
+                project_id=project_id,
+                action="explanation_local",
+                reason=(
+                    f"Generated local waterfall SHAP explanation for prediction "
+                    f"'{prediction_val}' with model '{model_id}'"
+                ),
+                evidence={
+                    "model_id": model_id,
+                    "prediction": str(prediction_val),
+                    "top_attributions": [
+                        {
+                            "feature": a.feature_name,
+                            "value": a.attribution_value,
+                            "dir": a.direction,
+                        }
+                        for a in attributions[:3]
+                    ],
+                },
+                result="success",
+            )
+        except Exception as audit_err:
+            logger.warning("Failed to record explanation_local audit event: %s", audit_err)
 
         return LocalExplanationResponse(
             project_id=project_id,

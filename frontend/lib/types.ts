@@ -368,3 +368,40 @@ export interface LocalExplanationResponse {
   layman_explanation: string;
 }
 
+// Audit Ledger & Export Types (Phase 9)
+
+export interface AuditEvent {
+  id: string;
+  project_id: string;
+  action: string;
+  reason: string;
+  evidence?: Record<string, any> | null;
+  result: "success" | "failure" | "warning";
+  created_at: string;
+}
+
+export interface AuditTimelineResponse {
+  items: AuditEvent[];
+  total: number;
+  skip: number;
+  limit: number;
+}
+
+export interface ExportItemStatus {
+  export_type: string;
+  title: string;
+  description: string;
+  format: "json" | "csv" | "joblib";
+  is_available: boolean;
+  filename?: string | null;
+  file_size_bytes?: number | null;
+  checksum_sha256?: string | null;
+  reason_unavailable?: string | null;
+}
+
+export interface ExportStatusResponse {
+  project_id: string;
+  exports: ExportItemStatus[];
+}
+
+

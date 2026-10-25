@@ -6,6 +6,8 @@ import {
   DatasetPreviewResponse,
   DatasetProfileResponse,
   DecisionEngineResponse,
+  AuditTimelineResponse,
+  ExportStatusResponse,
   GlobalExplanationResponse,
   LocalExplanationResponse,
   ModelDetailResponse,
@@ -243,4 +245,24 @@ export const apiClient = {
         body: JSON.stringify({ inputs }),
       }
     ),
+
+  // Phase 9: Audit Ledger & Export Methods
+  getAuditTimeline: (
+    projectId: string,
+    params?: { skip?: number; limit?: number; action?: string; result?: string }
+  ) => {
+    const searchParams = new URLSearchParams();
+    if (params?.skip !== undefined) searchParams.append("skip", String(params.skip));
+    if (params?.limit !== undefined) searchParams.append("limit", String(params.limit));
+    if (params?.action) searchParams.append("action", params.action);
+    if (params?.result) searchParams.append("result", params.result);
+    const query = searchParams.toString() ? `?${searchParams.toString()}` : "";
+    return request<AuditTimelineResponse>(`/projects/${projectId}/audit${query}`);
+  },
+
+  getExportStatus: (projectId: string) =>
+    request<ExportStatusResponse>(`/projects/${projectId}/exports`),
+
+  getExportDownloadUrl: (projectId: string, exportType: string) =>
+    `${API_BASE_URL}/projects/${projectId}/exports/${exportType}`,
 };

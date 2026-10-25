@@ -139,25 +139,3 @@ def download_model_artifact(
         filename=f"{project_id}_{model_id}.joblib",
     )
 
-
-@router.get(
-    "/projects/{project_id}/exports/{filename}",
-    summary="Download exported predictions or analysis file",
-)
-def download_export_file(
-    project_id: str,
-    filename: str,
-) -> FileResponse:
-    """Download exported prediction CSV from project exports folder."""
-    export_path = os.path.join(settings.AUTOMLENS_ARTIFACT_DIR, project_id, "exports", filename)
-    if not os.path.exists(export_path):
-        raise AutoMLensError(
-            message=f"Exported file '{filename}' was not found.",
-            code="EXPORT_NOT_FOUND",
-        )
-
-    return FileResponse(
-        path=export_path,
-        media_type="text/csv",
-        filename=filename,
-    )

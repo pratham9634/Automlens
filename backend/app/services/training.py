@@ -100,9 +100,7 @@ def _train_single_model_worker(args: dict[str, Any]) -> dict[str, Any]:
                         y_prob = pipe.predict_proba(X_val)
                     except Exception:
                         y_prob = None
-                f_metrics = compute_classification_metrics(
-                    y_val.to_numpy(), y_pred, y_prob
-                )
+                f_metrics = compute_classification_metrics(y_val.to_numpy(), y_pred, y_prob)
             else:
                 f_metrics = compute_regression_metrics(y_val.to_numpy(), y_pred)
 
@@ -174,9 +172,7 @@ class TrainingService:
         self.run_repo = run_repo
         self.storage = storage
 
-    def _load_dataset_and_config(
-        self, project_id: str
-    ) -> tuple[pd.DataFrame, dict[str, Any]]:
+    def _load_dataset_and_config(self, project_id: str) -> tuple[pd.DataFrame, dict[str, Any]]:
         """Load DataFrame and confirmed target configuration artifact."""
         project = self.project_repo.get_by_id(project_id)
         if not project:
@@ -258,6 +254,28 @@ class TrainingService:
             )
             self.run_repo.create_model_run(m_run)
 
+        try:
+            from app.services.audit import AuditService
+
+            AuditService(self.project_repo.db).record_event(
+                project_id=project_id,
+                action="training_started",
+                reason=(
+                    f"Dispatched parallel 5-fold cross-validation for "
+                    f"{len(selected_model_ids)} candidate models"
+                ),
+                evidence={
+                    "run_id": run.id,
+                    "target_column": target_col,
+                    "task_type": task_type_str,
+                    "primary_metric": primary_metric,
+                    "candidate_models": selected_model_ids,
+                },
+                result="success",
+            )
+        except Exception as audit_err:
+            logger.warning("Failed to record training_started audit event: %s", audit_err)
+
         return run
 
     def execute_training_run_background(
@@ -317,8 +335,7 @@ class TrainingService:
         numeric_cols = [
             c
             for c in X.columns
-            if pd.api.types.is_numeric_dtype(X[c])
-            and not pd.api.types.is_bool_dtype(X[c])
+            if pd.api.types.is_numeric_dtype(X[c]) and not pd.api.types.is_bool_dtype(X[c])
         ]
         categorical_cols = [c for c in X.columns if c not in numeric_cols]
 
@@ -505,6 +522,30 @@ class TrainingService:
                 best_score if best_score is not None else 0.0,
             )
 
+            try:
+                from app.services.audit import AuditService
+
+                score_fmt = f"{best_score:.4f}" if best_score is not None else "N/A"
+                AuditService(db).record_event(
+                    project_id=project_id,
+                    action="training_completed",
+                    reason=(
+                        f"Parallel training completed across {run.total_models} models. "
+                        f"Top performer: {best_model_id} (Score: {score_fmt} "
+                        f"{target_config['primary_metric']})"
+                    ),
+                    evidence={
+                        "run_id": run_id,
+                        "best_model_id": best_model_id,
+                        "best_score": best_score,
+                        "completed_models": run.completed_models,
+                        "total_models": run.total_models,
+                    },
+                    result="success",
+                )
+            except Exception as audit_err:
+                logger.warning("Failed to record training_completed audit event: %s", audit_err)
+
     def _fail_training_run(self, run_id: str, error_msg: str) -> None:
         """Mark run as failed and notify SSE listeners."""
         with SessionLocal() as db:
@@ -515,6 +556,19 @@ class TrainingService:
                 run.error_message = error_msg
                 run.completed_at = datetime.now(UTC)
                 run_repo.update(run)
+
+                try:
+                    from app.services.audit import AuditService
+
+                    AuditService(db).record_event(
+                        project_id=run.project_id,
+                        action="training_failed",
+                        reason=f"Training run failed: {error_msg}",
+                        evidence={"run_id": run_id, "error_message": error_msg},
+                        result="failure",
+                    )
+                except Exception as audit_err:
+                    logger.warning("Failed to record training_failed audit event: %s", audit_err)
 
         event_hub.publish(
             run_id=run_id,

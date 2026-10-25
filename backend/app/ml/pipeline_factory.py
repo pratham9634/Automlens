@@ -81,9 +81,7 @@ def get_estimator(
         elif model_id == "logistic_regression":
             return LogisticRegression(max_iter=1000, random_state=random_state)
         elif model_id == "random_forest":
-            return RandomForestClassifier(
-                n_estimators=100, random_state=random_state, n_jobs=1
-            )
+            return RandomForestClassifier(n_estimators=100, random_state=random_state, n_jobs=1)
         elif model_id in ("gradient_boosting", "hist_gradient_boosting"):
             return HistGradientBoostingClassifier(random_state=random_state)
         else:
@@ -95,9 +93,7 @@ def get_estimator(
         elif model_id in ("ridge_regression", "ridge"):
             return Ridge(random_state=random_state)
         elif model_id == "random_forest":
-            return RandomForestRegressor(
-                n_estimators=100, random_state=random_state, n_jobs=1
-            )
+            return RandomForestRegressor(n_estimators=100, random_state=random_state, n_jobs=1)
         elif model_id in ("gradient_boosting", "hist_gradient_boosting"):
             return HistGradientBoostingRegressor(random_state=random_state)
         else:

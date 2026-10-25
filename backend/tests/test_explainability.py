@@ -13,9 +13,7 @@ import uuid
 from fastapi.testclient import TestClient
 
 
-def _create_trained_project_with_models(
-    client: TestClient, models: list[str]
-) -> tuple[str, str]:
+def _create_trained_project_with_models(client: TestClient, models: list[str]) -> tuple[str, str]:
     """Helper creating a trained project workspace with specified candidate models."""
     proj_name = f"Explainability Test {uuid.uuid4().hex[:8]}"
     res = client.post("/api/v1/projects", json={"name": proj_name})
@@ -41,9 +39,7 @@ def _create_trained_project_with_models(
         "selected_models": models,
         "primary_metric": "f1_macro",
     }
-    confirm_res = client.post(
-        f"/api/v1/projects/{project_id}/target/confirm", json=confirm_payload
-    )
+    confirm_res = client.post(f"/api/v1/projects/{project_id}/target/confirm", json=confirm_payload)
     assert confirm_res.status_code == 200
 
     # Start training
@@ -67,9 +63,7 @@ def test_global_explanation_linear_model(client: TestClient) -> None:
         client, ["dummy_classifier", "logistic_regression"]
     )
 
-    res = client.get(
-        f"/api/v1/projects/{project_id}/models/{model_id}/explanations/global"
-    )
+    res = client.get(f"/api/v1/projects/{project_id}/models/{model_id}/explanations/global")
     assert res.status_code == 200
     data = res.json()
 
@@ -117,9 +111,7 @@ def test_global_and_local_explanation_tree_model(client: TestClient) -> None:
     )
 
     # Global
-    global_res = client.get(
-        f"/api/v1/projects/{project_id}/models/{model_id}/explanations/global"
-    )
+    global_res = client.get(f"/api/v1/projects/{project_id}/models/{model_id}/explanations/global")
     assert global_res.status_code == 200
     g_data = global_res.json()
     assert g_data["model_id"] == "random_forest"
@@ -144,9 +136,7 @@ def test_explanation_model_not_found(client: TestClient) -> None:
         client, ["dummy_classifier", "logistic_regression"]
     )
 
-    res = client.get(
-        f"/api/v1/projects/{project_id}/models/nonexistent_model/explanations/global"
-    )
+    res = client.get(f"/api/v1/projects/{project_id}/models/nonexistent_model/explanations/global")
     assert res.status_code == 400
     err = res.json()
     assert err["error"]["code"] == "MODEL_NOT_FOUND"

@@ -567,6 +567,27 @@ class DecisionEngineService:
             len(req.selected_models),
         )
 
+        try:
+            from app.services.audit import AuditService
+
+            AuditService(self.project_repo.db).record_event(
+                project_id=project_id,
+                action="target_confirmed",
+                reason=(
+                    f"Confirmed target '{req.target_column}' ({req.task_type.value}) with "
+                    f"metric '{req.primary_metric}' across {len(req.selected_models)} models"
+                ),
+                evidence={
+                    "target_column": req.target_column,
+                    "task_type": req.task_type.value,
+                    "primary_metric": req.primary_metric,
+                    "selected_models": req.selected_models,
+                },
+                result="success",
+            )
+        except Exception as audit_err:
+            logger.warning("Failed to record target_confirmed audit event: %s", audit_err)
+
         return ConfirmedTargetResponse(
             project_id=project_id,
             target_column=req.target_column,

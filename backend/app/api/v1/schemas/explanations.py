@@ -15,7 +15,6 @@ DEFAULT_DISCLAIMER = (
 )
 
 
-
 class FeatureImportanceItem(BaseModel):
     """Global importance and mean |SHAP| impact for a single feature."""
 

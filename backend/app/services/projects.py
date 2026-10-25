@@ -44,6 +44,19 @@ class ProjectService:
         os.makedirs(os.path.join(project_artifact_dir, "exports"), exist_ok=True)
 
         logger.info("Created project '%s' (ID: %s)", saved.name, saved.id)
+        try:
+            from app.services.audit import AuditService
+
+            AuditService(self.repo.db).record_event(
+                project_id=saved.id,
+                action="project_created",
+                reason=f"Initialized new project workspace '{saved.name}'",
+                evidence={"project_name": saved.name, "description": saved.description},
+                result="success",
+            )
+        except Exception as audit_err:
+            logger.warning("Failed to record project_created audit event: %s", audit_err)
+
         return saved
 
     def get_project(self, project_id: str) -> Project:

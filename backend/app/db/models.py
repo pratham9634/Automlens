@@ -67,6 +67,12 @@ class Project(Base):
         cascade="all, delete-orphan",
         order_by="desc(PredictionLog.created_at)",
     )
+    audit_events: Mapped[list["AuditEvent"]] = relationship(
+        "AuditEvent",
+        back_populates="project",
+        cascade="all, delete-orphan",
+        order_by="desc(AuditEvent.created_at)",
+    )
 
     def __repr__(self) -> str:
         return f"<Project(id='{self.id}', name='{self.name}', status='{self.status}')>"
@@ -183,8 +189,7 @@ class TrainingRun(Base):
 
     def __repr__(self) -> str:
         return (
-            f"<TrainingRun(id='{self.id}', status='{self.status}', "
-            f"target='{self.target_column}')>"
+            f"<TrainingRun(id='{self.id}', status='{self.status}', target='{self.target_column}')>"
         )
 
 
@@ -276,3 +281,38 @@ class PredictionLog(Base):
         return (
             f"<PredictionLog(id='{self.id}', type='{self.prediction_type}', rows={self.row_count})>"
         )
+
+
+class AuditEvent(Base):
+    """Immutable audit log event for all platform actions (Rule 5 & Rule 10)."""
+
+    __tablename__ = "audit_events"
+
+    id: Mapped[str] = mapped_column(
+        String(36),
+        primary_key=True,
+        default=lambda: str(uuid.uuid4()),
+        index=True,
+    )
+    project_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("projects.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    action: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    reason: Mapped[str] = mapped_column(Text, nullable=False)
+    evidence: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    result: Mapped[str] = mapped_column(String(50), default="success", nullable=False, index=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+        index=True,
+    )
+
+    # Relationships
+    project: Mapped["Project"] = relationship("Project", back_populates="audit_events")
+
+    def __repr__(self) -> str:
+        return f"<AuditEvent(id='{self.id}', action='{self.action}', result='{self.result}')>"
