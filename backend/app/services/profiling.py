@@ -435,14 +435,14 @@ class ProfilingService:
                 project_id=project_id,
                 action="profile_generated",
                 reason=(
-                    f"Computed statistical profile for {profile_response.row_count:,} rows "
-                    f"and {profile_response.column_count} columns"
+                    f"Computed statistical profile for {profile_response.total_rows:,} rows "
+                    f"and {profile_response.total_columns} columns"
                 ),
                 evidence={
-                    "row_count": profile_response.row_count,
-                    "column_count": profile_response.column_count,
+                    "row_count": profile_response.total_rows,
+                    "column_count": profile_response.total_columns,
                     "duplicate_rows": profile_response.duplicate_rows_count,
-                    "quality_warnings_count": len(profile_response.quality_warnings),
+                    "quality_warnings_count": len(profile_response.warnings),
                 },
                 result="success",
             )

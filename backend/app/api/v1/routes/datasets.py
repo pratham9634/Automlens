@@ -33,6 +33,26 @@ async def upload_dataset(
     return service.upload_dataset(project_id=project_id, filename=filename, content=content)
 
 
+@router.post(
+    "/demo/{sample_name}",
+    response_model=DatasetPreviewResponse,
+    status_code=status.HTTP_201_CREATED,
+    responses={
+        status.HTTP_400_BAD_REQUEST: {"model": ErrorResponse},
+        status.HTTP_404_NOT_FOUND: {"model": ErrorResponse},
+    },
+)
+def load_demo_dataset(
+    project_id: str,
+    sample_name: str,
+    db: Session = Depends(get_db),
+) -> DatasetPreviewResponse:
+    """Load a built-in benchmark demonstration dataset (titanic or california_housing)."""
+    service = DatasetService(db)
+    return service.load_demo_dataset(project_id=project_id, sample_name=sample_name)
+
+
+
 @router.get(
     "",
     response_model=DatasetPreviewResponse,
