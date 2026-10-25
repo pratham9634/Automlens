@@ -365,6 +365,8 @@ class TrainingService:
             "random_forest": "Random Forest",
             "gradient_boosting": "HistGradientBoosting",
             "hist_gradient_boosting": "HistGradientBoosting",
+            "xgboost": "XGBoost",
+            "xgb": "XGBoost",
         }
 
         # Build worker payload args

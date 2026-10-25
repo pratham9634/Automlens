@@ -8,8 +8,8 @@
 }
 
 body {
-  background-color: #030712;
-  color: #F9FAFB;
+  background-color: #09090b;
+  color: #FAFAFA;
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -24,21 +24,53 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: #030712;
+  background: #09090b;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #1F2937;
+  background: #22222e;
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #374151;
+  background: #2e2e3d;
 }
 
 /* Glassmorphism hairline helper */
 .glass-panel {
-  background: rgba(11, 15, 25, 0.75);
-  backdrop-filter: blur(12px);
+  background: rgba(17, 17, 22, 0.75);
+  backdrop-filter: blur(14px);
   border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Print Styles for Viva Defense Summary */
+@media print {
+  body {
+    background-color: #ffffff !important;
+    color: #09090b !important;
+  }
+
+  aside, header, nav, button, .no-print {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  .print-card {
+    background: #ffffff !important;
+    border: 1px solid #d4d4d8 !important;
+    box-shadow: none !important;
+    color: #09090b !important;
+    page-break-inside: avoid;
+  }
+
+  .print-text-dark {
+    color: #09090b !important;
+  }
+
+  .print-text-muted {
+    color: #52525b !important;
+  }
 }

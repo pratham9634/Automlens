@@ -42,7 +42,7 @@ export function Header() {
         {/* Branch Indicator */}
         <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-hairline bg-surface-2 text-[11px] font-mono text-ink-muted">
           <GitBranch className="w-3 h-3 text-brand-hover" />
-          <span>feature/phase-0</span>
+          <span>phase-11-ui-ux</span>
         </div>
 
         {/* Database Status Pill */}
