@@ -116,6 +116,19 @@ export const apiClient = {
       method: "DELETE",
     }),
 
+  resetProject: (projectId: string) =>
+    request<Project>(`/projects/${projectId}/reset`, {
+      method: "POST",
+    }),
+
+  cloneProject: (projectId: string, newName?: string) =>
+    request<Project>(
+      `/projects/${projectId}/clone${newName ? `?new_name=${encodeURIComponent(newName)}` : ""}`,
+      {
+        method: "POST",
+      }
+    ),
+
   // Datasets
   uploadDataset: (projectId: string, file: File) => {
     const formData = new FormData();

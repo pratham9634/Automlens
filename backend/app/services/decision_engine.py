@@ -436,6 +436,13 @@ class DecisionEngineService:
                     description="Histogram gradient boosted trees offering high tabular accuracy.",
                     default_selected=True,
                 ),
+                ModelCandidate(
+                    id="xgboost",
+                    name="XGBoost Classifier",
+                    is_baseline=False,
+                    description="Extreme gradient boosted decision trees with regularization.",
+                    default_selected=False,
+                ),
             ]
 
         elif task_type == TaskType.MULTICLASS_CLASSIFICATION:
@@ -470,6 +477,13 @@ class DecisionEngineService:
                     description="Fast gradient boosted trees for complex multiclass boundaries.",
                     default_selected=True,
                 ),
+                ModelCandidate(
+                    id="xgboost",
+                    name="XGBoost Classifier",
+                    is_baseline=False,
+                    description="Multiclass softmax gradient boosted trees for tabular accuracy.",
+                    default_selected=False,
+                ),
             ]
 
         else:  # REGRESSION
@@ -503,6 +517,13 @@ class DecisionEngineService:
                     is_baseline=False,
                     description="Sequential gradient boosted trees optimizing squared error loss.",
                     default_selected=True,
+                ),
+                ModelCandidate(
+                    id="xgboost",
+                    name="XGBoost Regressor",
+                    is_baseline=False,
+                    description="Extreme gradient boosted regression trees with regularized loss.",
+                    default_selected=False,
                 ),
             ]
 

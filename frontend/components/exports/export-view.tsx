@@ -15,10 +15,13 @@ import {
   RefreshCw,
   ExternalLink,
   Hash,
+  GraduationCap,
+  Layers,
 } from "lucide-react";
 import { apiClient } from "@/lib/api-client";
 import { ExportItemStatus, ExportStatusResponse } from "@/lib/types";
 import { formatBytes } from "@/lib/utils";
+import { VivaExecutiveSummary } from "./viva-executive-summary";
 
 interface ExportViewProps {
   projectId: string;
@@ -30,6 +33,7 @@ export function ExportView({ projectId, projectName }: ExportViewProps) {
   const [loading, setLoading] = useState(true);
   const [downloadingType, setDownloadingType] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [subView, setSubView] = useState<"artifacts" | "viva-summary">("artifacts");
 
   const fetchStatus = async () => {
     setLoading(true);
@@ -176,7 +180,41 @@ export function ExportView({ projectId, projectName }: ExportViewProps) {
         </div>
       </div>
 
-      {/* Grid of 6 Export Cards */}
+      {/* Sub-view Navigation Toggle */}
+      <div className="flex items-center gap-2 border-b border-hairline pb-3">
+        <button
+          onClick={() => setSubView("artifacts")}
+          className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-mono transition-colors ${
+            subView === "artifacts"
+              ? "bg-surface-2 text-ink font-semibold border border-hairline"
+              : "text-ink-muted hover:text-ink"
+          }`}
+        >
+          <Layers className="w-3.5 h-3.5" />
+          <span>Artifact Bundle Downloads</span>
+        </button>
+
+        <button
+          onClick={() => setSubView("viva-summary")}
+          className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-mono transition-colors ${
+            subView === "viva-summary"
+              ? "bg-surface-2 text-ink font-semibold border border-brand-lavender/40 text-brand-hover"
+              : "text-ink-muted hover:text-ink"
+          }`}
+        >
+          <GraduationCap className="w-3.5 h-3.5 text-brand-hover" />
+          <span>Viva Defense Executive Summary</span>
+          <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-brand-lavender/15 text-brand-hover">
+            Printable
+          </span>
+        </button>
+      </div>
+
+      {subView === "viva-summary" ? (
+        <VivaExecutiveSummary projectId={projectId} projectName={projectName || "Workspace"} />
+      ) : (
+        <>
+          {/* Grid of 6 Export Cards */}
       {loading && !statusData ? (
         <div className="p-12 text-center rounded-xl border border-hairline bg-surface-1">
           <Loader2 className="w-6 h-6 animate-spin text-telemetry-cyan mx-auto mb-3" />
@@ -288,6 +326,8 @@ export function ExportView({ projectId, projectName }: ExportViewProps) {
           <ExternalLink className="w-3 h-3" />
         </div>
       </div>
+        </>
+      )}
     </div>
   );
 }

@@ -84,6 +84,17 @@ def get_estimator(
             return RandomForestClassifier(n_estimators=100, random_state=random_state, n_jobs=1)
         elif model_id in ("gradient_boosting", "hist_gradient_boosting"):
             return HistGradientBoostingClassifier(random_state=random_state)
+        elif model_id in ("xgboost", "xgb"):
+            try:
+                from xgboost import XGBClassifier
+
+                return XGBClassifier(
+                    n_estimators=100,
+                    random_state=random_state,
+                    eval_metric="logloss",
+                )
+            except ImportError:
+                return HistGradientBoostingClassifier(random_state=random_state)
         else:
             raise ValueError(f"Unsupported classification model_id: {model_id}")
     else:  # Regression
@@ -96,6 +107,16 @@ def get_estimator(
             return RandomForestRegressor(n_estimators=100, random_state=random_state, n_jobs=1)
         elif model_id in ("gradient_boosting", "hist_gradient_boosting"):
             return HistGradientBoostingRegressor(random_state=random_state)
+        elif model_id in ("xgboost", "xgb"):
+            try:
+                from xgboost import XGBRegressor
+
+                return XGBRegressor(
+                    n_estimators=100,
+                    random_state=random_state,
+                )
+            except ImportError:
+                return HistGradientBoostingRegressor(random_state=random_state)
         else:
             raise ValueError(f"Unsupported regression model_id: {model_id}")
 

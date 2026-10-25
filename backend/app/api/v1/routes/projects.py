@@ -99,3 +99,37 @@ def delete_project(
     """Delete a project and all associated dataset and model artifacts."""
     service = ProjectService(db)
     service.delete_project(project_id)
+
+
+@router.post(
+    "/{project_id}/reset",
+    response_model=ProjectResponse,
+    status_code=status.HTTP_200_OK,
+    responses={
+        status.HTTP_404_NOT_FOUND: {"model": ErrorResponse},
+    },
+)
+def reset_project(
+    project_id: str,
+    db: Session = Depends(get_db),
+) -> ProjectResponse:
+    """Reset workspace training runs, models, and predictions while preserving uploaded data."""
+    service = ProjectService(db)
+    return service.reset_project(project_id)
+
+
+@router.post(
+    "/{project_id}/clone",
+    response_model=ProjectResponse,
+    status_code=status.HTTP_201_CREATED,
+    responses={
+        status.HTTP_404_NOT_FOUND: {"model": ErrorResponse},
+    },
+)
+def clone_project(
+    project_id: str,
+    db: Session = Depends(get_db),
+) -> ProjectResponse:
+    """Clone an existing project workspace with its active dataset for parallel exploration."""
+    service = ProjectService(db)
+    return service.clone_project(project_id)

@@ -108,3 +108,40 @@ def test_delete_project(client: TestClient) -> None:
 
     get_res = client.get(f"/api/v1/projects/{project_id}")
     assert get_res.status_code == 404
+
+
+def test_reset_project_flow(client: TestClient) -> None:
+    """Verify that resetting a project clears models while preserving uploaded dataset."""
+    name = f"Reset Test {uuid.uuid4().hex[:8]}"
+    create_res = client.post("/api/v1/projects", json={"name": name})
+    assert create_res.status_code == 201
+    pid = create_res.json()["id"]
+
+    # Load demo dataset
+    demo_res = client.post(f"/api/v1/projects/{pid}/dataset/demo/titanic")
+    assert demo_res.status_code == 201
+
+    # Reset workspace
+    reset_res = client.post(f"/api/v1/projects/{pid}/reset")
+    assert reset_res.status_code == 200
+    assert reset_res.json()["status"] == "dataset_uploaded"
+
+
+def test_clone_project_flow(client: TestClient) -> None:
+    """Verify cloning duplicates the project and copies the active dataset."""
+    name = f"Source Project {uuid.uuid4().hex[:8]}"
+    create_res = client.post("/api/v1/projects", json={"name": name})
+    assert create_res.status_code == 201
+    pid = create_res.json()["id"]
+
+    # Load demo dataset
+    demo_res = client.post(f"/api/v1/projects/{pid}/dataset/demo/titanic")
+    assert demo_res.status_code == 201
+
+    # Clone
+    clone_res = client.post(f"/api/v1/projects/{pid}/clone")
+    assert clone_res.status_code == 201
+    cloned_data = clone_res.json()
+    assert cloned_data["id"] != pid
+    assert "(Copy)" in cloned_data["name"]
+    assert cloned_data["status"] == "dataset_uploaded"

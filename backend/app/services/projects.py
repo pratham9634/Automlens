@@ -106,3 +106,113 @@ class ProjectService:
                 logger.error("Failed to clean artifacts directory: %s", exc)
 
         logger.info("Deleted project '%s' (%s)", project.name, project_id)
+
+    def reset_project(self, project_id: str) -> Project:
+        """Reset workspace by clearing runs, models, and predictions while keeping raw data."""
+        project = self.get_project(project_id)
+
+        from app.db.models import ModelRun, PredictionLog, TrainingRun
+        from app.db.repositories.datasets import DatasetRepository
+
+        # Query and delete all training runs and their child model runs
+        runs = (
+            self.repo.db.query(TrainingRun).filter(TrainingRun.project_id == project_id).all()
+        )
+        for r in runs:
+            self.repo.db.query(ModelRun).filter(ModelRun.run_id == r.id).delete(
+                synchronize_session=False
+            )
+            self.repo.db.delete(r)
+
+        # Clear prediction inference logs
+        self.repo.db.query(PredictionLog).filter(
+            PredictionLog.project_id == project_id
+        ).delete(synchronize_session=False)
+        self.repo.db.commit()
+
+        # Clean filesystem models, exports, and profiles folders
+        project_artifact_dir = os.path.join(settings.AUTOMLENS_ARTIFACT_DIR, project_id)
+        for folder in ("models", "exports", "config"):
+            target_path = os.path.join(project_artifact_dir, folder)
+            if os.path.exists(target_path):
+                shutil.rmtree(target_path)
+                os.makedirs(target_path, exist_ok=True)
+
+        # Determine new status based on dataset presence
+        has_dataset = (
+            DatasetRepository(self.repo.db).get_latest_by_project_id(project_id) is not None
+        )
+        project.status = "dataset_uploaded" if has_dataset else "created"
+        updated = self.repo.update(project)
+
+        try:
+            from app.services.audit import AuditService
+
+            AuditService(self.repo.db).record_event(
+                project_id=project_id,
+                action="project_reset",
+                reason="Reset workspace models and predictions for re-evaluation",
+                evidence={"has_dataset": has_dataset, "cleared_runs": len(runs)},
+                result="success",
+            )
+        except Exception as audit_err:
+            logger.warning("Failed to record project_reset audit event: %s", audit_err)
+
+        logger.info("Reset project workspace '%s' (%s)", project.name, project_id)
+        return updated
+
+    def clone_project(self, project_id: str, new_name: str | None = None) -> Project:
+        """Clone an existing project workspace, copying the active dataset if present."""
+        import uuid
+
+        from app.db.models import Dataset
+        from app.db.repositories.datasets import DatasetRepository
+
+        source = self.get_project(project_id)
+        base_name = new_name.strip() if new_name else f"{source.name} (Copy)"
+
+        # Ensure uniqueness
+        candidate_name = base_name
+        counter = 1
+        while self.repo.get_by_name(candidate_name):
+            counter += 1
+            candidate_name = f"{base_name} {counter}"
+
+        # Create new project workspace
+        cloned = self.create_project(
+            ProjectCreate(name=candidate_name, description=source.description)
+        )
+
+        # Copy dataset if source has one
+        source_dataset = DatasetRepository(self.repo.db).get_latest_by_project_id(project_id)
+        if (
+            source_dataset
+            and source_dataset.storage_path
+            and os.path.exists(source_dataset.storage_path)
+        ):
+            new_dataset_id = str(uuid.uuid4())
+            ext = os.path.splitext(source_dataset.filename)[1]
+            new_filename = f"{new_dataset_id}{ext}"
+            new_storage_path = os.path.join(
+                settings.AUTOMLENS_ARTIFACT_DIR, cloned.id, "datasets", new_filename
+            )
+
+            shutil.copy2(source_dataset.storage_path, new_storage_path)
+
+            cloned_dataset = Dataset(
+                id=new_dataset_id,
+                project_id=cloned.id,
+                filename=source_dataset.filename,
+                file_size_bytes=source_dataset.file_size_bytes,
+                row_count=source_dataset.row_count,
+                column_count=source_dataset.column_count,
+                columns_metadata=source_dataset.columns_metadata,
+                sha256_hash=source_dataset.sha256_hash,
+                storage_path=new_storage_path,
+            )
+            DatasetRepository(self.repo.db).create(cloned_dataset)
+            cloned.status = "dataset_uploaded"
+            self.repo.update(cloned)
+
+        logger.info("Cloned project '%s' -> '%s' (ID: %s)", source.name, cloned.name, cloned.id)
+        return cloned

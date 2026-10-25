@@ -11,10 +11,12 @@ import {
 import { apiClient } from "@/lib/api-client";
 import { SinglePredictionForm } from "./single-prediction-form";
 import { BatchPredictionZone } from "./batch-prediction-zone";
+import { WhatIfSimulator } from "./what-if-simulator";
 import {
   FileSpreadsheet,
   Play,
   UploadCloud,
+  SlidersHorizontal,
   ChevronDown,
   Loader2,
   AlertCircle,
@@ -41,7 +43,7 @@ export function PredictionView({
   const [models, setModels] = useState<ModelRun[]>([]);
   const [selectedModelId, setSelectedModelId] = useState<string>("");
 
-  const [subTab, setSubTab] = useState<"single" | "batch">("single");
+  const [subTab, setSubTab] = useState<"single" | "batch" | "what-if">("single");
 
   useEffect(() => {
     let mounted = true;
@@ -198,6 +200,21 @@ export function PredictionView({
           <UploadCloud className="w-3.5 h-3.5" />
           <span>Batch File Prediction</span>
         </button>
+
+        <button
+          onClick={() => setSubTab("what-if")}
+          className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-mono transition-colors ${
+            subTab === "what-if"
+              ? "bg-surface-2 text-ink font-semibold border border-brand-lavender/40 text-brand-hover"
+              : "text-ink-muted hover:text-ink"
+          }`}
+        >
+          <SlidersHorizontal className="w-3.5 h-3.5 text-brand-hover" />
+          <span>What-If Simulator</span>
+          <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-brand-lavender/15 text-brand-hover">
+            New
+          </span>
+        </button>
       </div>
 
       {/* Mode Content */}
@@ -208,10 +225,17 @@ export function PredictionView({
           columns={datasetPreview.dataset.columns}
           targetColumn={confirmedTarget.target_column}
         />
-      ) : (
+      ) : subTab === "batch" ? (
         <BatchPredictionZone
           projectId={projectId}
           modelId={selectedModelId}
+          targetColumn={confirmedTarget.target_column}
+        />
+      ) : (
+        <WhatIfSimulator
+          projectId={projectId}
+          modelId={selectedModelId}
+          columns={datasetPreview.dataset.columns}
           targetColumn={confirmedTarget.target_column}
         />
       )}

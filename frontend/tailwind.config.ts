@@ -11,34 +11,36 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        canvas: "#030712", // deepest obsidian black
+        canvas: "#09090b", // deep carbon obsidian
         surface: {
-          1: "#0B0F19", // level 1 cards & sidebars
-          2: "#111827", // level 2 elevated panels
-          3: "#1F2937", // level 3 hover states
-          4: "#374151", // level 4 floating elements
+          1: "#111116", // level 1 primary container cards
+          2: "#181820", // level 2 elevated surfaces and inputs
+          3: "#22222e", // level 3 hover highlights
+          4: "#2e2e3d", // level 4 floating elements
         },
         hairline: {
-          subtle: "rgba(255, 255, 255, 0.06)",
-          DEFAULT: "rgba(255, 255, 255, 0.10)",
-          strong: "rgba(255, 255, 255, 0.18)",
+          subtle: "rgba(255, 255, 255, 0.05)",
+          DEFAULT: "rgba(255, 255, 255, 0.09)",
+          strong: "rgba(255, 255, 255, 0.16)",
         },
         brand: {
-          lavender: "#6366F1", // signature primary accent
+          lavender: "#6366F1", // signature electric indigo
           hover: "#818CF8",
-          glow: "rgba(99, 102, 241, 0.15)",
+          glow: "rgba(99, 102, 241, 0.18)",
         },
         telemetry: {
           cyan: "#06B6D4",
           emerald: "#10B981",
           amber: "#F59E0B",
           rose: "#F43F5E",
+          indigo: "#6366F1",
+          violet: "#8B5CF6",
         },
         ink: {
-          DEFAULT: "#F9FAFB",
-          muted: "#9CA3AF",
-          subtle: "#6B7280",
-          faint: "#4B5563",
+          DEFAULT: "#FAFAFA",
+          muted: "#A1A1AA",
+          subtle: "#71717A",
+          faint: "#52525B",
         },
       },
       fontFamily: {
