@@ -4,13 +4,16 @@ import { useState, useRef, DragEvent, ChangeEvent } from "react";
 import {
   UploadCloud,
   FileSpreadsheet,
-  AlertCircle,
   Loader2,
   FileCheck,
   Info,
+  ArrowRight,
 } from "lucide-react";
 import { apiClient, ApiClientError } from "@/lib/api-client";
 import { DatasetPreviewResponse } from "@/lib/types";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { AlertRow } from "@/components/ui/alert-row";
 
 interface DatasetUploadZoneProps {
   projectId: string;
@@ -54,7 +57,7 @@ export function DatasetUploadZone({
     }
 
     setUploading(true);
-    setUploadProgressText(`Uploading ${file.name} & computing SHA-256...`);
+    setUploadProgressText(`Uploading ${file.name} & computing SHA-256 fingerprint...`);
 
     try {
       const response = await apiClient.uploadDataset(projectId, file);
@@ -127,17 +130,17 @@ export function DatasetUploadZone({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       {/* Upload Drag & Drop Box */}
       <div
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         onClick={() => !uploading && fileInputRef.current?.click()}
-        className={`relative rounded-xl border-2 border-dashed p-12 text-center transition-all cursor-pointer flex flex-col items-center justify-center space-y-4 ${
+        className={`relative rounded-card border-2 border-dashed p-8 sm:p-10 text-center transition-all cursor-pointer flex flex-col items-center justify-center space-y-3 ${
           isDragging
-            ? "border-brand-lavender bg-brand-glow/40 scale-[1.005]"
-            : "border-hairline-strong bg-surface-1/70 hover:bg-surface-2 hover:border-hairline"
+            ? "border-accent bg-accent/5 scale-[1.005]"
+            : "border-border hover:border-border-strong bg-surface hover:bg-surface-subtle"
         } ${uploading ? "pointer-events-none opacity-80" : ""}`}
       >
         <input
@@ -150,68 +153,65 @@ export function DatasetUploadZone({
         />
 
         {uploading ? (
-          <div className="flex flex-col items-center justify-center space-y-3 py-6">
-            <div className="w-14 h-14 rounded-2xl bg-surface-2 border border-brand-lavender/40 flex items-center justify-center text-brand-hover">
-              <Loader2 className="w-7 h-7 animate-spin" />
+          <div className="flex flex-col items-center justify-center space-y-3 py-4">
+            <div className="w-12 h-12 rounded-button bg-surface-subtle border border-accent/40 flex items-center justify-center text-accent">
+              <Loader2 className="w-6 h-6 animate-spin" />
             </div>
             <div className="space-y-1">
-              <p className="text-sm font-medium text-ink">Processing Dataset</p>
-              <p className="text-xs font-mono text-ink-muted">
-                {uploadProgressText}
-              </p>
+              <p className="text-xs font-semibold text-text-primary">Processing Dataset</p>
+              <p className="text-[11px] font-mono text-text-muted">{uploadProgressText}</p>
             </div>
-            <div className="w-48 h-1 rounded-full bg-surface-3 overflow-hidden">
-              <div className="h-full bg-brand-lavender animate-pulse w-3/4 rounded-full" />
+            <div className="w-48 h-1 rounded-pill bg-surface-hover overflow-hidden">
+              <div className="h-full bg-accent animate-pulse w-3/4 rounded-pill" />
             </div>
           </div>
         ) : (
           <>
-            <div className="w-14 h-14 rounded-2xl bg-surface-2 border border-hairline flex items-center justify-center text-brand-hover group-hover:scale-110 transition-transform">
-              <UploadCloud className="w-7 h-7" />
+            <div className="w-12 h-12 rounded-button bg-surface-subtle border border-border flex items-center justify-center text-accent group-hover:scale-105 transition-transform">
+              <UploadCloud className="w-6 h-6" />
             </div>
 
             <div className="space-y-1 max-w-md">
-              <p className="text-sm font-semibold text-ink">
+              <p className="text-sm font-semibold text-text-primary">
                 Click to browse or drop your dataset here
               </p>
-              <p className="text-xs text-ink-muted leading-relaxed">
-                Supports tabular data files. Preprocessing is strictly validated
-                to prevent test set leakage and preserve audit compliance.
+              <p className="text-xs text-text-muted leading-relaxed">
+                Supports CSV and Excel files up to 50 MB. Preprocessing transformations are fold-isolated inside cross-validation pipelines to guarantee zero test leakage.
               </p>
             </div>
 
             <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-mono bg-surface-3 border border-hairline text-ink-muted">
-                <FileSpreadsheet className="w-3.5 h-3.5 text-telemetry-emerald" />
+              <Badge variant="neutral" className="gap-1.5 font-mono">
+                <FileSpreadsheet className="w-3 h-3 text-success" />
                 .CSV (UTF-8, Latin-1)
-              </span>
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-mono bg-surface-3 border border-hairline text-ink-muted">
-                <FileCheck className="w-3.5 h-3.5 text-telemetry-cyan" />
+              </Badge>
+              <Badge variant="neutral" className="gap-1.5 font-mono">
+                <FileCheck className="w-3 h-3 text-info" />
                 .XLSX / .XLS
-              </span>
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-mono bg-surface-3 border border-hairline text-ink-muted">
+              </Badge>
+              <Badge variant="neutral" className="font-mono">
                 Max 50 MB
-              </span>
+              </Badge>
             </div>
           </>
         )}
       </div>
 
       {/* 1-Click Benchmark Demo Datasets Card */}
-      <div className="p-4 rounded-xl border border-hairline bg-surface-1 shadow-sm">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
+      <Card className="p-4 sm:p-5 space-y-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
-            <h4 className="text-xs font-semibold text-ink flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-telemetry-cyan" />
-              1-Click Benchmark Datasets for Viva Evaluation
+            <h4 className="card-title text-text-primary flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-info" />
+              1-Click Benchmark Datasets for Viva Defense
             </h4>
-            <p className="text-[11px] text-ink-muted">
-              Pre-bundled real datasets to test full AutoML capabilities without searching for files.
+            <p className="text-xs text-text-muted">
+              Pre-bundled real datasets to test end-to-end AutoML workflows without manual file uploads.
             </p>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
           <button
             type="button"
             disabled={uploading}
@@ -219,22 +219,22 @@ export function DatasetUploadZone({
               e.stopPropagation();
               handleDemoLoad("titanic");
             }}
-            className="p-3.5 rounded-lg border border-hairline bg-surface-2 hover:bg-surface-3 hover:border-telemetry-cyan/40 text-left transition-all disabled:opacity-50 group flex flex-col justify-between"
+            className="p-3.5 rounded-card border border-border bg-surface-subtle hover:bg-surface-hover/80 hover:border-accent/40 text-left transition-all disabled:opacity-50 group flex flex-col justify-between cursor-pointer"
           >
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <span className="text-xs font-bold text-ink group-hover:text-telemetry-cyan transition-colors">
+                <span className="text-xs font-semibold text-text-primary group-hover:text-accent transition-colors">
                   Titanic Survival
                 </span>
-                <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-telemetry-cyan/10 text-telemetry-cyan border border-telemetry-cyan/30">
+                <Badge variant="accent" size="sm">
                   Classification
-                </span>
+                </Badge>
               </div>
-              <p className="text-[11px] text-ink-muted leading-relaxed">
-                800 rows with mixed numeric &amp; categorical types, missing ages, and binary target (Survived).
+              <p className="text-[11px] text-text-muted leading-relaxed">
+                800+ rows with mixed numeric and categorical features, missing ages, and binary target (Survived).
               </p>
             </div>
-            <span className="text-[10px] font-mono text-telemetry-cyan mt-2 font-medium flex items-center gap-1">
+            <span className="text-[11px] font-mono text-accent mt-3 font-medium flex items-center gap-1 group-hover:gap-1.5 transition-all">
               Load Titanic &rarr;
             </span>
           </button>
@@ -246,47 +246,40 @@ export function DatasetUploadZone({
               e.stopPropagation();
               handleDemoLoad("california_housing");
             }}
-            className="p-3.5 rounded-lg border border-hairline bg-surface-2 hover:bg-surface-3 hover:border-telemetry-emerald/40 text-left transition-all disabled:opacity-50 group flex flex-col justify-between"
+            className="p-3.5 rounded-card border border-border bg-surface-subtle hover:bg-surface-hover/80 hover:border-success/40 text-left transition-all disabled:opacity-50 group flex flex-col justify-between cursor-pointer"
           >
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <span className="text-xs font-bold text-ink group-hover:text-telemetry-emerald transition-colors">
+                <span className="text-xs font-semibold text-text-primary group-hover:text-success transition-colors">
                   California Housing
                 </span>
-                <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-medium bg-telemetry-emerald/10 text-telemetry-emerald border border-telemetry-emerald/30">
+                <Badge variant="success" size="sm">
                   Regression
-                </span>
+                </Badge>
               </div>
-              <p className="text-[11px] text-ink-muted leading-relaxed">
+              <p className="text-[11px] text-text-muted leading-relaxed">
                 1,000 rows with continuous numerical features and continuous target (MedHouseVal).
               </p>
             </div>
-            <span className="text-[10px] font-mono text-telemetry-emerald mt-2 font-medium flex items-center gap-1">
+            <span className="text-[11px] font-mono text-success mt-3 font-medium flex items-center gap-1 group-hover:gap-1.5 transition-all">
               Load California Housing &rarr;
             </span>
           </button>
         </div>
-      </div>
+      </Card>
 
       {/* Error Alert Display */}
       {error && (
-        <div className="p-4 rounded-xl border border-telemetry-rose/30 bg-telemetry-rose/10 flex items-start gap-3 text-left">
-          <AlertCircle className="w-4 h-4 text-telemetry-rose mt-0.5 shrink-0" />
-          <div className="space-y-0.5">
-            <h4 className="text-xs font-semibold text-telemetry-rose">
-              Dataset Upload Failed
-            </h4>
-            <p className="text-xs text-ink-muted font-mono">{error}</p>
-          </div>
-        </div>
+        <AlertRow variant="danger" title="Dataset Upload Failed">
+          {error}
+        </AlertRow>
       )}
 
-      {/* Guidance Note */}
-      <div className="flex items-start gap-2.5 px-4 py-3 rounded-lg border border-hairline-subtle bg-surface-1/40 text-[11px] text-ink-muted">
-        <Info className="w-3.5 h-3.5 text-brand-hover mt-0.5 shrink-0" />
+      {/* Academic Guidance Note */}
+      <div className="flex items-start gap-2.5 px-4 py-3 rounded-card border border-border bg-surface-subtle text-xs text-text-secondary">
+        <Info className="w-3.5 h-3.5 text-accent mt-0.5 shrink-0" />
         <p>
-          Standard tabular files with headers in the first row. Binary or multiclass targets,
-          continuous variables, and categorical string columns are supported.
+          Tabular files with headers in the first row. Target columns can be binary/multiclass categorical labels or continuous values. All transformations occur strictly inside cross-validation folds.
         </p>
       </div>
     </div>

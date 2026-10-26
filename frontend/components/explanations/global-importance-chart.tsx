@@ -11,7 +11,17 @@ import {
   Cell,
 } from "recharts";
 import { GlobalExplanationResponse } from "@/lib/types";
-import { BarChart3, Sparkles } from "lucide-react";
+import { BarChart3 } from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from "@/components/ui/table";
 
 interface GlobalImportanceChartProps {
   data: GlobalExplanationResponse;
@@ -22,7 +32,6 @@ type MetricMode = "shap" | "native";
 export function GlobalImportanceChart({ data }: GlobalImportanceChartProps) {
   const [metricMode, setMetricMode] = useState<MetricMode>("shap");
 
-  // Take top 10 features for readable chart
   const topFeatures = data.features.slice(0, 10).map((f) => ({
     name: f.feature_name,
     original: f.original_feature,
@@ -30,63 +39,70 @@ export function GlobalImportanceChart({ data }: GlobalImportanceChartProps) {
       metricMode === "shap"
         ? Number(f.mean_abs_shap.toFixed(4))
         : Number((f.importance_score * 100).toFixed(2)),
+    shapValue: Number(f.mean_abs_shap.toFixed(4)),
+    nativeValue: Number((f.importance_score * 100).toFixed(2)),
     rank: f.rank,
   }));
 
-  // Reverse so highest is at the top in vertical layout
   const chartData = [...topFeatures].reverse();
 
   return (
     <div className="space-y-6">
       {/* Header & Metric Switcher */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-xl bg-surface-1 border border-hairline">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <BarChart3 className="w-4 h-4 text-emerald-400" />
-            <h3 className="text-sm font-medium text-ink">Global Feature Importance</h3>
-            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-surface-2 border border-hairline text-ink-muted">
-              {data.sample_size_used} background samples
-            </span>
+      <Card className="p-5 sm:p-6 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="p-1.5 rounded-md bg-surface-muted text-accent border border-border-subtle">
+                <BarChart3 className="w-4 h-4" />
+              </span>
+              <h3 className="text-sm font-semibold text-text-primary">
+                Global Feature Attribution (Rule 9)
+              </h3>
+              <Badge variant="accent" size="sm" className="font-mono tabular-nums">
+                {data.sample_size_used} background samples
+              </Badge>
+            </div>
+            <p className="text-xs text-text-muted font-mono">{data.method_label}</p>
           </div>
-          <p className="text-xs text-ink-muted font-mono">{data.method_label}</p>
-        </div>
 
-        {/* View Toggle */}
-        <div className="flex items-center gap-1 p-1 bg-surface-2 rounded-lg border border-hairline self-start sm:self-auto shadow-sm">
-          <button
-            type="button"
-            onClick={() => setMetricMode("shap")}
-            className={`px-3 py-1.5 text-xs font-mono rounded transition-colors ${
-              metricMode === "shap"
-                ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 font-semibold"
-                : "text-ink-muted hover:text-ink"
-            }`}
-          >
-            Mean |SHAP| Impact
-          </button>
-          <button
-            type="button"
-            onClick={() => setMetricMode("native")}
-            className={`px-3 py-1.5 text-xs font-mono rounded transition-colors ${
-              metricMode === "native"
-                ? "bg-indigo-500/10 text-indigo-400 border border-indigo-500/30 font-semibold"
-                : "text-ink-muted hover:text-ink"
-            }`}
-          >
-            Native Importance (%)
-          </button>
+          {/* Metric Mode Toggle */}
+          <div className="flex items-center gap-1 p-1 bg-surface-subtle rounded-md border border-border self-start sm:self-auto text-xs font-mono">
+            <button
+              type="button"
+              onClick={() => setMetricMode("shap")}
+              className={`px-3 py-1 rounded transition-colors ${
+                metricMode === "shap"
+                  ? "bg-accent/10 text-accent font-semibold border border-accent/30"
+                  : "text-text-muted hover:text-text-primary"
+              }`}
+            >
+              Mean |SHAP| Impact
+            </button>
+            <button
+              type="button"
+              onClick={() => setMetricMode("native")}
+              className={`px-3 py-1 rounded transition-colors ${
+                metricMode === "native"
+                  ? "bg-surface-muted text-text-primary font-semibold border border-border"
+                  : "text-text-muted hover:text-text-primary"
+              }`}
+            >
+              Native Importance (%)
+            </button>
+          </div>
         </div>
-      </div>
+      </Card>
 
       {/* Recharts Horizontal Bar Chart */}
-      <div className="p-6 rounded-xl bg-surface-1 border border-hairline space-y-3">
-        <div className="flex items-center justify-between text-xs font-mono text-ink-muted border-b border-hairline pb-2">
-          <span>Top 10 Most Influential Features</span>
+      <Card className="p-5 sm:p-6 space-y-4">
+        <div className="flex items-center justify-between text-xs font-mono text-text-muted border-b border-border pb-3">
+          <span>Top 10 Influential Features</span>
           <span>
             Metric:{" "}
-            <span className="text-ink">
-              {metricMode === "shap" ? "Average |SHAP| Attribution" : data.feature_importance_method}
-            </span>
+            <strong className="text-text-primary">
+              {metricMode === "shap" ? "Mean |SHAP| Value" : data.feature_importance_method}
+            </strong>
           </span>
         </div>
 
@@ -100,31 +116,34 @@ export function GlobalImportanceChart({ data }: GlobalImportanceChartProps) {
               >
                 <XAxis
                   type="number"
-                  stroke="#4b5563"
-                  tick={{ fill: "#9ca3af", fontSize: 11, fontFamily: "monospace" }}
-                  tickLine={{ stroke: "#374151" }}
+                  stroke="currentColor"
+                  className="text-text-muted"
+                  tick={{ fontSize: 11, fontFamily: "monospace" }}
+                  tickLine={false}
                 />
                 <YAxis
                   type="category"
                   dataKey="name"
-                  stroke="#4b5563"
-                  tick={{ fill: "#e5e7eb", fontSize: 11, fontFamily: "monospace" }}
+                  stroke="currentColor"
+                  className="text-text-secondary"
+                  tick={{ fontSize: 11, fontFamily: "monospace" }}
                   tickLine={false}
                   width={110}
                 />
                 <Tooltip
+                  cursor={{ fill: "rgba(125, 125, 125, 0.08)" }}
                   content={({ active, payload }) => {
                     if (active && payload && payload.length) {
                       const item = payload[0].payload;
                       return (
-                        <div className="bg-surface-2 border border-hairline p-3 rounded-lg shadow-xl text-xs font-mono space-y-1">
-                          <div className="text-ink font-semibold flex items-center gap-1.5">
-                            <span className="text-emerald-400">Rank #{item.rank}</span>: {item.name}
+                        <div className="bg-surface border border-border p-3 rounded-md shadow-xl text-xs font-mono space-y-1.5">
+                          <div className="text-text-primary font-semibold flex items-center gap-1.5">
+                            <span className="text-accent">Rank #{item.rank}</span>: {item.name}
                           </div>
-                          <div className="text-ink-muted text-[11px]">
-                            Source column: <span className="text-ink">{item.original}</span>
+                          <div className="text-text-muted text-[11px]">
+                            Source: <span className="text-text-primary">{item.original}</span>
                           </div>
-                          <div className="text-emerald-400 font-mono text-sm pt-1">
+                          <div className="text-accent font-mono text-sm pt-0.5 tabular-nums">
                             {metricMode === "shap"
                               ? `Mean |SHAP|: ${item.value}`
                               : `Weight: ${item.value}%`}
@@ -139,11 +158,8 @@ export function GlobalImportanceChart({ data }: GlobalImportanceChartProps) {
                   {chartData.map((_, index) => (
                     <Cell
                       key={`cell-${index}`}
-                      fill={
-                        metricMode === "shap"
-                          ? `rgba(16, 185, 129, ${0.45 + (index / chartData.length) * 0.55})`
-                          : `rgba(99, 102, 241, ${0.45 + (index / chartData.length) * 0.55})`
-                      }
+                      fill={metricMode === "shap" ? "hsl(var(--accent))" : "hsl(var(--text-secondary))"}
+                      opacity={0.85 + (index / chartData.length) * 0.15}
                     />
                   ))}
                 </Bar>
@@ -151,67 +167,55 @@ export function GlobalImportanceChart({ data }: GlobalImportanceChartProps) {
             </ResponsiveContainer>
           </div>
         ) : (
-          <div className="py-12 text-center text-xs font-mono text-ink-muted">
-            No feature importance data available.
+          <div className="py-12 text-center text-xs font-mono text-text-muted">
+            No features available for attribution.
           </div>
         )}
-      </div>
+      </Card>
 
-      {/* All Features Table */}
-      <div className="rounded-xl bg-surface-1 border border-hairline overflow-hidden">
-        <div className="p-4 border-b border-hairline flex items-center justify-between bg-surface-1/50">
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-emerald-400" />
-            <h4 className="text-xs font-medium text-ink">Complete Feature Ranking</h4>
-          </div>
-          <span className="text-[10px] font-mono text-ink-muted">
-            {data.features.length} features evaluated
-          </span>
+      {/* Feature Attribution Table */}
+      <Card className="p-5 sm:p-6 space-y-3">
+        <div className="border-b border-border pb-3">
+          <h4 className="text-xs font-mono uppercase tracking-wider text-text-primary font-semibold">
+            Feature Attribution Rankings
+          </h4>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs font-mono">
-            <thead>
-              <tr className="border-b border-hairline bg-surface-2 text-ink-muted text-[10px] uppercase">
-                <th className="py-2.5 px-4 w-16">Rank</th>
-                <th className="py-2.5 px-4">Feature Name</th>
-                <th className="py-2.5 px-4">Original Column</th>
-                <th className="py-2.5 px-4 text-right">Mean |SHAP|</th>
-                <th className="py-2.5 px-4 text-right">Native Weight</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-hairline">
-              {data.features.map((item) => (
-                <tr key={item.feature_name} className="hover:bg-surface-2/20 transition-colors">
-                  <td className="py-2.5 px-4 font-mono font-semibold">
-                    <span
-                      className={`inline-block w-5 h-5 text-center leading-5 rounded text-[10px] ${
-                        item.rank === 1
-                          ? "bg-amber-500/20 text-amber-400 border border-amber-500/30 font-bold"
-                          : item.rank <= 3
-                          ? "bg-surface-2 text-ink border border-hairline"
-                          : "text-ink-muted"
-                      }`}
-                    >
-                      {item.rank}
-                    </span>
-                  </td>
-                  <td className="py-2.5 px-4 text-ink font-mono font-medium">
-                    {item.feature_name}
-                  </td>
-                  <td className="py-2.5 px-4 text-ink-muted">{item.original_feature}</td>
-                  <td className="py-2.5 px-4 text-right font-mono text-emerald-400">
-                    {item.mean_abs_shap.toFixed(4)}
-                  </td>
-                  <td className="py-2.5 px-4 text-right font-mono text-ink-muted">
-                    {(item.importance_score * 100).toFixed(2)}%
-                  </td>
-                </tr>
+        <div className="rounded-md border border-border overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-16 text-center font-mono">Rank</TableHead>
+                <TableHead className="font-mono">Engine Feature</TableHead>
+                <TableHead className="font-mono">Source Column</TableHead>
+                <TableHead className="text-right font-mono">Mean |SHAP|</TableHead>
+                <TableHead className="text-right font-mono">Native Importance</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {topFeatures.map((f) => (
+                <TableRow key={f.name}>
+                  <TableCell className="text-center font-mono text-xs tabular-nums text-text-muted">
+                    #{f.rank}
+                  </TableCell>
+                  <TableCell className="font-mono text-xs font-medium text-text-primary">
+                    {f.name}
+                  </TableCell>
+                  <TableCell className="font-mono text-xs text-text-secondary">
+                    {f.original}
+                  </TableCell>
+                  <TableCell className="text-right font-mono text-xs font-semibold text-accent tabular-nums">
+                    {f.shapValue.toFixed(4)}
+                  </TableCell>
+                  <TableCell className="text-right font-mono text-xs text-text-muted tabular-nums">
+                    {f.nativeValue.toFixed(2)}%
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }

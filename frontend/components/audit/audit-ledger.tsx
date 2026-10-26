@@ -21,10 +21,16 @@ import {
   FileSpreadsheet,
   Sparkles,
   HardDriveDownload,
+  Loader2,
 } from "lucide-react";
 import { apiClient } from "@/lib/api-client";
 import { AuditEvent, AuditTimelineResponse } from "@/lib/types";
 import { formatDate } from "@/lib/utils";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { EmptyState } from "@/components/ui/empty-state";
+import { AlertRow } from "@/components/ui/alert-row";
 
 interface AuditLedgerProps {
   projectId: string;
@@ -91,12 +97,10 @@ export function AuditLedger({ projectId }: AuditLedgerProps) {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  // Filter events client-side by category & search query
   const filteredEvents = useMemo(() => {
     if (!timeline?.items) return [];
 
     return timeline.items.filter((item) => {
-      // Category filter
       if (category === "data") {
         if (!["project_created", "dataset_uploaded", "dataset_deleted", "profile_generated"].includes(item.action)) {
           return false;
@@ -113,7 +117,6 @@ export function AuditLedger({ projectId }: AuditLedgerProps) {
         if (!["export_downloaded"].includes(item.action)) return false;
       }
 
-      // Search query filter
       if (searchQuery.trim()) {
         const query = searchQuery.toLowerCase();
         const matchesAction = item.action.toLowerCase().includes(query);
@@ -142,27 +145,30 @@ export function AuditLedger({ projectId }: AuditLedgerProps) {
     switch (result) {
       case "success":
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono uppercase font-semibold bg-telemetry-emerald/10 text-telemetry-emerald border border-telemetry-emerald/30">
-            <CheckCircle2 className="w-3 h-3" /> Success
-          </span>
+          <Badge variant="success" size="sm" className="font-mono">
+            <CheckCircle2 className="w-3 h-3 mr-1" />
+            Success
+          </Badge>
         );
       case "warning":
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono uppercase font-semibold bg-telemetry-amber/10 text-telemetry-amber border border-telemetry-amber/30">
-            <AlertTriangle className="w-3 h-3" /> Warning
-          </span>
+          <Badge variant="warning" size="sm" className="font-mono">
+            <AlertTriangle className="w-3 h-3 mr-1" />
+            Warning
+          </Badge>
         );
       case "failure":
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono uppercase font-semibold bg-telemetry-rose/10 text-telemetry-rose border border-telemetry-rose/30">
-            <AlertCircle className="w-3 h-3" /> Failed
-          </span>
+          <Badge variant="danger" size="sm" className="font-mono">
+            <AlertCircle className="w-3 h-3 mr-1" />
+            Failed
+          </Badge>
         );
       default:
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono uppercase font-semibold bg-surface-3 text-ink-muted border border-hairline">
+          <Badge variant="neutral" size="sm" className="font-mono">
             {result}
-          </span>
+          </Badge>
         );
     }
   };
@@ -175,76 +181,78 @@ export function AuditLedger({ projectId }: AuditLedgerProps) {
   return (
     <div className="space-y-6">
       {/* Header Banner */}
-      <div className="p-6 rounded-xl border border-hairline bg-surface-1 shadow-sm">
+      <Card className="p-5 sm:p-6 space-y-5">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2 mb-1.5">
-              <span className="p-1.5 rounded-lg bg-surface-2 border border-hairline text-ink">
-                <History className="w-4 h-4 text-telemetry-cyan" />
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <span className="p-1.5 rounded-md bg-surface-muted text-accent border border-border-subtle">
+                <History className="w-4 h-4" />
               </span>
-              <h2 className="text-lg font-bold text-ink">
-                Audit Timeline &amp; Decision Ledger
+              <h2 className="text-base font-semibold text-text-primary tracking-tight">
+                Deterministic Audit Ledger &amp; Reproducibility Timeline
               </h2>
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-medium bg-telemetry-cyan/10 text-telemetry-cyan border border-telemetry-cyan/25">
+              <Badge variant="accent" size="sm" className="font-mono">
                 Rule 5 &amp; 10 Verified
-              </span>
+              </Badge>
             </div>
-            <p className="text-xs text-ink-muted max-w-2xl">
-              Immutable chronological record of every data engineering transformation, algorithmic decision, training fold, and inference. Designed for academic reproducibility and viva defense.
+            <p className="text-xs text-text-muted max-w-2xl leading-relaxed">
+              Chronological ledger of every dataset ingestion, quality profiling check, fold-safe transformation, training run, and model inference with evidence payloads for academic defense.
             </p>
           </div>
 
-          <button
+          <Button
+            variant="secondary"
+            size="sm"
             onClick={() => fetchTimeline(true)}
             disabled={refreshing || loading}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-hairline bg-surface-2 hover:bg-surface-3 text-xs font-medium text-ink transition-colors self-start md:self-auto disabled:opacity-50"
+            className="gap-2 font-mono text-xs self-start md:self-auto"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? "animate-spin" : ""}`} />
-            Refresh Ledger
-          </button>
+            <span>Refresh Ledger</span>
+          </Button>
         </div>
 
         {/* Telemetry Counter Cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-5 pt-5 border-t border-hairline">
-          <div className="p-3 rounded-lg border border-hairline bg-surface-2">
-            <span className="text-[11px] font-mono text-ink-muted block uppercase">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3 border-t border-border">
+          <div className="p-3 rounded-lg border border-border bg-surface-subtle/50">
+            <span className="text-[10px] font-mono text-text-muted block uppercase tracking-wider">
               Total Logged Events
             </span>
-            <span className="text-xl font-bold font-mono text-ink mt-0.5 block">
+            <span className="text-lg font-bold font-mono text-text-primary mt-0.5 block tabular-nums">
               {totalCount}
             </span>
           </div>
-          <div className="p-3 rounded-lg border border-hairline bg-surface-2">
-            <span className="text-[11px] font-mono text-telemetry-emerald block uppercase">
+          <div className="p-3 rounded-lg border border-border bg-surface-subtle/50">
+            <span className="text-[10px] font-mono text-success block uppercase tracking-wider">
               Verified Successful
             </span>
-            <span className="text-xl font-bold font-mono text-telemetry-emerald mt-0.5 block">
+            <span className="text-lg font-bold font-mono text-success mt-0.5 block tabular-nums">
               {successCount}
             </span>
           </div>
-          <div className="p-3 rounded-lg border border-hairline bg-surface-2">
-            <span className="text-[11px] font-mono text-telemetry-amber block uppercase">
+          <div className="p-3 rounded-lg border border-border bg-surface-subtle/50">
+            <span className="text-[10px] font-mono text-warning block uppercase tracking-wider">
               Advisories / Warnings
             </span>
-            <span className="text-xl font-bold font-mono text-telemetry-amber mt-0.5 block">
+            <span className="text-lg font-bold font-mono text-warning mt-0.5 block tabular-nums">
               {warningCount}
             </span>
           </div>
-          <div className="p-3 rounded-lg border border-hairline bg-surface-2">
-            <span className="text-[11px] font-mono text-telemetry-rose block uppercase">
+          <div className="p-3 rounded-lg border border-border bg-surface-subtle/50">
+            <span className="text-[10px] font-mono text-danger block uppercase tracking-wider">
               Logged Failures
             </span>
-            <span className="text-xl font-bold font-mono text-telemetry-rose mt-0.5 block">
+            <span className="text-lg font-bold font-mono text-danger mt-0.5 block tabular-nums">
               {failureCount}
             </span>
           </div>
         </div>
-      </div>
+      </Card>
 
       {/* Filter and Search Bar */}
-      <div className="p-4 rounded-xl border border-hairline bg-surface-1 flex flex-col md:flex-row gap-3 items-center justify-between">
+      <Card className="p-4 flex flex-col md:flex-row gap-3 items-center justify-between">
         {/* Category Pills */}
-        <div className="flex items-center gap-1.5 flex-wrap w-full md:w-auto">
+        <div className="flex items-center gap-1.5 flex-wrap w-full md:w-auto font-mono text-xs">
           {(
             [
               { id: "all", label: "All Events" },
@@ -259,10 +267,10 @@ export function AuditLedger({ projectId }: AuditLedgerProps) {
             <button
               key={cat.id}
               onClick={() => setCategory(cat.id)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+              className={`px-3 py-1.5 rounded-md transition-colors ${
                 category === cat.id
-                  ? "bg-surface-3 text-ink font-semibold border border-hairline shadow-sm"
-                  : "text-ink-muted hover:text-ink hover:bg-surface-2"
+                  ? "bg-surface-muted text-text-primary font-semibold border border-border shadow-xs"
+                  : "text-text-muted hover:text-text-primary hover:bg-surface-subtle/60"
               }`}
             >
               {cat.label}
@@ -273,82 +281,79 @@ export function AuditLedger({ projectId }: AuditLedgerProps) {
         {/* Search & Status Filter */}
         <div className="flex items-center gap-2.5 w-full md:w-auto">
           <div className="relative flex-1 md:w-64">
-            <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted" />
+            <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
             <input
               type="text"
               placeholder="Search reasons or actions..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg border border-hairline bg-surface-2 text-ink placeholder:text-ink-muted focus:outline-none focus:border-telemetry-cyan"
+              className="w-full pl-9 pr-3 py-1.5 text-xs font-mono rounded-md border border-border bg-surface-subtle text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-accent"
             />
           </div>
 
-          <div className="flex items-center gap-1 bg-surface-2 border border-hairline rounded-lg px-2 py-1 text-xs text-ink-muted">
-            <Filter className="w-3 h-3 text-ink-muted" />
+          <div className="flex items-center gap-1.5 bg-surface-subtle border border-border rounded-md px-2.5 py-1.5 text-xs font-mono text-text-muted">
+            <Filter className="w-3 h-3 text-text-muted" />
             <select
               value={resultFilter}
               onChange={(e) => setResultFilter(e.target.value)}
               aria-label="Filter events by outcome result status"
-              className="bg-transparent text-xs text-ink focus:outline-none cursor-pointer"
+              className="bg-transparent text-xs font-mono text-text-primary focus:outline-none cursor-pointer"
             >
-              <option value="all">All Outcomes</option>
-              <option value="success">Success</option>
-              <option value="warning">Warning</option>
-              <option value="failure">Failure</option>
+              <option value="all" className="bg-surface text-text-primary">All Outcomes</option>
+              <option value="success" className="bg-surface text-text-primary">Success</option>
+              <option value="warning" className="bg-surface text-text-primary">Warning</option>
+              <option value="failure" className="bg-surface text-text-primary">Failure</option>
             </select>
           </div>
         </div>
-      </div>
+      </Card>
 
       {/* Timeline Section */}
       {loading && !refreshing ? (
-        <div className="p-12 text-center rounded-xl border border-hairline bg-surface-1">
-          <div className="animate-spin w-6 h-6 border-2 border-telemetry-cyan border-t-transparent rounded-full mx-auto mb-3" />
-          <p className="text-xs font-mono text-ink-muted">Reading immutable audit ledger...</p>
+        <div className="py-20 flex flex-col items-center justify-center space-y-3 text-xs font-mono text-text-muted">
+          <Loader2 className="w-5 h-5 animate-spin text-accent" />
+          <span>Reading audit timeline ledger...</span>
         </div>
       ) : error ? (
-        <div className="p-8 text-center rounded-xl border border-telemetry-rose/30 bg-telemetry-rose/5">
-          <AlertCircle className="w-6 h-6 text-telemetry-rose mx-auto mb-2" />
-          <p className="text-xs font-semibold text-telemetry-rose">{error}</p>
-        </div>
+        <AlertRow variant="danger" title="Audit Log Error">
+          {error}
+        </AlertRow>
       ) : filteredEvents.length === 0 ? (
-        <div className="p-12 text-center rounded-xl border border-hairline bg-surface-1">
-          <History className="w-8 h-8 text-ink-muted mx-auto mb-3 opacity-40" />
-          <h4 className="text-sm font-semibold text-ink">No matching audit events</h4>
-          <p className="text-xs text-ink-muted mt-1 max-w-sm mx-auto">
-            Try adjusting your category pills or search filter above to display other lifecycle events.
-          </p>
-        </div>
+        <EmptyState
+          icon={History}
+          title="No matching audit events"
+          description="Try adjusting your category pills or search filter above to display other lifecycle events."
+        />
       ) : (
-        <div className="relative pl-6 space-y-4 before:absolute before:left-3 before:top-2 before:bottom-2 before:w-0.5 before:bg-surface-3">
+        <div className="relative pl-6 space-y-4 before:absolute before:left-3 before:top-2 before:bottom-2 before:w-px before:bg-border">
           {filteredEvents.map((event: AuditEvent) => {
             const Icon = getActionIcon(event.action);
             const isExpanded = !!expandedEvents[event.id];
             const hasEvidence = event.evidence && Object.keys(event.evidence).length > 0;
 
-            const dotColor =
+            const dotBg =
               event.result === "success"
-                ? "bg-telemetry-emerald border-telemetry-emerald"
+                ? "bg-success"
                 : event.result === "warning"
-                ? "bg-telemetry-amber border-telemetry-amber"
-                : "bg-telemetry-rose border-telemetry-rose";
+                ? "bg-warning"
+                : "bg-danger";
 
             return (
               <div key={event.id} className="relative group">
                 {/* Timeline Dot */}
                 <div
-                  className={`absolute -left-[1.85rem] top-4 w-3.5 h-3.5 rounded-full border-2 bg-surface-1 ${dotColor} shadow-sm group-hover:scale-125 transition-transform`}
+                  className={`absolute -left-[1.85rem] top-4 w-3.5 h-3.5 rounded-full border-2 border-surface ${dotBg} shadow-xs group-hover:scale-125 transition-transform`}
                 />
 
                 {/* Event Card */}
-                <div className="p-4 rounded-xl border border-hairline bg-surface-1 hover:border-surface-3 transition-colors shadow-sm">
+                <Card className="p-4 hover:border-border-strong transition-colors space-y-3">
                   {/* Card Header */}
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2.5 border-b border-hairline/60">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2.5 border-b border-border-subtle">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="p-1 rounded bg-surface-2 border border-hairline text-ink">
-                        <Icon className="w-3.5 h-3.5 text-telemetry-cyan" />
+                      <span className="p-1 rounded bg-surface-muted border border-border-subtle text-accent">
+                        <Icon className="w-3.5 h-3.5" />
                       </span>
-                      <span className="text-xs font-mono font-semibold text-ink uppercase tracking-wide">
+                      <span className="text-xs font-mono font-semibold text-text-primary uppercase tracking-wide">
                         {event.action.replace(/_/g, " ")}
                       </span>
                       {getResultBadge(event.result)}
@@ -356,26 +361,26 @@ export function AuditLedger({ projectId }: AuditLedgerProps) {
 
                     <span
                       title={event.created_at}
-                      className="text-[11px] font-mono text-ink-muted whitespace-nowrap self-start sm:self-auto"
+                      className="text-xs font-mono text-text-muted whitespace-nowrap self-start sm:self-auto tabular-nums"
                     >
                       {formatDate(event.created_at)}
                     </span>
                   </div>
 
                   {/* Card Reason Body */}
-                  <div className="pt-3">
-                    <p className="text-xs text-ink leading-relaxed">
+                  <div>
+                    <p className="text-xs text-text-secondary leading-relaxed">
                       {event.reason}
                     </p>
                   </div>
 
                   {/* Expandable Evidence Payload */}
                   {hasEvidence && (
-                    <div className="mt-3 pt-3 border-t border-hairline/60">
+                    <div className="pt-2 border-t border-border-subtle">
                       <div className="flex items-center justify-between">
                         <button
                           onClick={() => toggleExpand(event.id)}
-                          className="flex items-center gap-1.5 text-[11px] font-mono text-telemetry-cyan hover:underline"
+                          className="flex items-center gap-1.5 text-xs font-mono text-accent hover:underline cursor-pointer"
                         >
                           {isExpanded ? (
                             <ChevronDown className="w-3.5 h-3.5" />
@@ -383,36 +388,42 @@ export function AuditLedger({ projectId }: AuditLedgerProps) {
                             <ChevronRight className="w-3.5 h-3.5" />
                           )}
                           <FileCode className="w-3 h-3" />
-                          {isExpanded ? "Hide Evidence Payload" : "Inspect Evidence Payload"} (
-                          {Object.keys(event.evidence ?? {}).length} params)
+                          <span>{isExpanded ? "Hide Evidence Payload" : "Inspect Evidence Payload"}</span>
+                          <span className="text-text-muted text-[11px] tabular-nums">
+                            ({Object.keys(event.evidence ?? {}).length} params)
+                          </span>
                         </button>
 
                         {isExpanded && (
-                          <button
+                          <Button
+                            variant="secondary"
+                            size="sm"
                             onClick={() => copyEvidence(event.id, event.evidence)}
-                            className="flex items-center gap-1 text-[10px] font-mono text-ink-muted hover:text-ink px-2 py-0.5 rounded bg-surface-2 border border-hairline"
+                            className="h-6 px-2 text-[10px] font-mono gap-1"
                           >
                             {copiedId === event.id ? (
                               <>
-                                <Check className="w-3 h-3 text-telemetry-emerald" /> Copied!
+                                <Check className="w-3 h-3 text-success" />
+                                <span>Copied!</span>
                               </>
                             ) : (
                               <>
-                                <Copy className="w-3 h-3" /> Copy JSON
+                                <Copy className="w-3 h-3" />
+                                <span>Copy JSON</span>
                               </>
                             )}
-                          </button>
+                          </Button>
                         )}
                       </div>
 
                       {isExpanded && (
-                        <pre className="mt-2.5 p-3 rounded-lg bg-surface-2 border border-hairline text-[11px] font-mono text-ink-muted overflow-x-auto leading-normal">
+                        <pre className="mt-2.5 p-3 rounded-md bg-surface-subtle border border-border text-[11px] font-mono text-text-secondary overflow-x-auto leading-normal">
                           {JSON.stringify(event.evidence, null, 2)}
                         </pre>
                       )}
                     </div>
                   )}
-                </div>
+                </Card>
               </div>
             );
           })}
@@ -421,28 +432,32 @@ export function AuditLedger({ projectId }: AuditLedgerProps) {
 
       {/* Pagination Footer */}
       {timeline && timeline.total > pageSize && (
-        <div className="flex items-center justify-between p-4 rounded-xl border border-hairline bg-surface-1 text-xs">
-          <span className="font-mono text-ink-muted text-[11px]">
+        <Card className="flex items-center justify-between p-3.5 text-xs">
+          <span className="font-mono text-text-muted tabular-nums text-xs">
             Showing {page * pageSize + 1}–{Math.min((page + 1) * pageSize, timeline.total)} of{" "}
             {timeline.total} events
           </span>
-          <div className="flex items-center gap-2">
-            <button
+          <div className="flex items-center gap-2 font-mono">
+            <Button
+              variant="secondary"
+              size="sm"
               onClick={() => setPage((p) => Math.max(0, p - 1))}
               disabled={page === 0}
-              className="px-3 py-1 rounded-lg border border-hairline bg-surface-2 hover:bg-surface-3 disabled:opacity-50 text-ink font-mono text-xs"
+              className="text-xs"
             >
               Previous
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
               onClick={() => setPage((p) => p + 1)}
               disabled={(page + 1) * pageSize >= timeline.total}
-              className="px-3 py-1 rounded-lg border border-hairline bg-surface-2 hover:bg-surface-3 disabled:opacity-50 text-ink font-mono text-xs"
+              className="text-xs"
             >
               Next
-            </button>
+            </Button>
           </div>
-        </div>
+        </Card>
       )}
     </div>
   );

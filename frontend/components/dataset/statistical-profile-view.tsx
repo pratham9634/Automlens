@@ -1,10 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { RefreshCw, Sparkles, Loader2, Calendar } from "lucide-react";
+import { RefreshCw, Sparkles, Calendar } from "lucide-react";
 import { DatasetProfileResponse } from "@/lib/types";
 import { apiClient } from "@/lib/api-client";
 import { formatDate } from "@/lib/utils";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { AlertRow } from "@/components/ui/alert-row";
 import { QualityScoreGauge } from "./quality-score-gauge";
 import { QualityWarningsList } from "./quality-warnings-list";
 import { FeatureDistributionViewer } from "./feature-distribution-viewer";
@@ -34,7 +38,7 @@ export function StatisticalProfileView({
       onProfileUpdated(fresh);
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Failed to re-calculate profile."
+        err instanceof Error ? err.message : "Failed to re-calculate statistical profile."
       );
     } finally {
       setRefreshing(false);
@@ -44,41 +48,37 @@ export function StatisticalProfileView({
   return (
     <div className="space-y-6">
       {/* Profiling Controls Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl border border-hairline bg-surface-1">
-        <div className="space-y-0.5">
+      <Card className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 sm:p-5">
+        <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <h3 className="text-sm font-semibold text-ink flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-brand-hover" />
+            <h3 className="card-title text-text-primary flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-accent" />
               Automated Statistical Profile
             </h3>
-            <span className="px-2 py-0.2 rounded text-[10px] font-mono bg-telemetry-emerald/10 text-telemetry-emerald border border-telemetry-emerald/30">
-              Deterministic & Reproducible
-            </span>
+            <Badge variant="success" size="sm">
+              Deterministic &amp; Reproducible
+            </Badge>
           </div>
-          <p className="text-xs text-ink-muted flex items-center gap-2">
-            <Calendar className="w-3 h-3 text-ink-subtle" />
+          <p className="text-xs text-text-muted flex items-center gap-1.5 font-mono tabular-nums">
+            <Calendar className="w-3 h-3 text-text-subtle" />
             Computed {formatDate(profile.created_at)}
           </p>
         </div>
 
-        <button
+        <Button
+          variant="secondary"
+          size="sm"
           onClick={handleRefresh}
-          disabled={refreshing}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-hairline bg-surface-2 hover:bg-surface-3 text-xs font-mono text-ink transition-colors disabled:opacity-50 self-start sm:self-auto"
+          isLoading={refreshing}
+          className="self-start sm:self-auto gap-1.5"
         >
-          {refreshing ? (
-            <Loader2 className="w-3.5 h-3.5 animate-spin text-brand-hover" />
-          ) : (
-            <RefreshCw className="w-3.5 h-3.5" />
-          )}
-          <span>{refreshing ? "Re-computing..." : "Re-run Profiling"}</span>
-        </button>
-      </div>
+          <RefreshCw className="w-3.5 h-3.5" />
+          <span>Re-run Profiling</span>
+        </Button>
+      </Card>
 
       {error && (
-        <div className="p-3.5 rounded-lg border border-telemetry-rose/30 bg-telemetry-rose/10 text-xs font-mono text-telemetry-rose">
-          {error}
-        </div>
+        <AlertRow variant="danger">{error}</AlertRow>
       )}
 
       {/* 1. Health Score and Metrics */}

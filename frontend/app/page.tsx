@@ -15,6 +15,11 @@ import { apiClient } from "@/lib/api-client";
 import { Project, SystemHealth } from "@/lib/types";
 import { CreateProjectModal } from "@/components/projects/create-project-modal";
 import { ProjectCard } from "@/components/projects/project-card";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
 
 export default function DashboardPage() {
   const [health, setHealth] = useState<SystemHealth | null>(null);
@@ -61,63 +66,61 @@ export default function DashboardPage() {
   const isDbConnected = health?.database.status === "connected";
 
   return (
-    <div className="max-w-6xl mx-auto space-y-10">
-      {/* Hero Welcome Banner */}
-      <div className="relative overflow-hidden rounded-xl border border-hairline bg-gradient-to-b from-surface-2 to-surface-1 p-8 shadow-2xl">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-brand-lavender/10 rounded-full blur-3xl -z-10 pointer-events-none" />
+    <div className="max-w-6xl mx-auto space-y-8">
+      {/* Page Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-border">
+        <div className="space-y-1">
+          <h1 className="page-title text-text-primary">Workspace Overview</h1>
+          <p className="text-xs text-text-muted">
+            Human-assisted tabular AutoML with fold-safe preprocessing, parallel CV, and SHAP explainability.
+          </p>
+        </div>
 
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="space-y-2">
-            <h1 className="text-2xl md:text-3xl font-semibold tracking-tight text-ink">
-              AutoMLens Control Center
-            </h1>
-            <p className="text-sm text-ink-muted max-w-xl">
-              Human-assisted tabular AutoML with parallel cross-validation, leak-free preprocessing,
-              and game-theoretic SHAP explainability.
-            </p>
-          </div>
+        <div className="flex items-center gap-2.5">
+          <Button
+            variant="secondary"
+            size="md"
+            onClick={fetchData}
+            disabled={loading}
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
+            <span>Refresh</span>
+          </Button>
 
-          <div className="flex items-center gap-3">
-            <button
-              onClick={fetchData}
-              disabled={loading}
-              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg border border-hairline bg-surface-2 hover:bg-surface-3 text-xs font-medium text-ink transition-colors"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
-              <span>Refresh</span>
-            </button>
-            <button
-              onClick={() => setIsModalOpen(true)}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-brand-lavender hover:bg-brand-hover text-xs font-medium text-white transition-all shadow-[0_0_14px_rgba(99,102,241,0.3)]"
-            >
-              <Plus className="w-4 h-4" />
-              <span>New Project</span>
-            </button>
-          </div>
+          <Button
+            variant="primary"
+            size="md"
+            onClick={() => setIsModalOpen(true)}
+          >
+            <Plus className="w-4 h-4" />
+            <span>New Project</span>
+          </Button>
         </div>
       </div>
 
       {/* Projects Section */}
       <section className="space-y-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <FolderOpen className="w-4 h-4 text-brand-hover" />
-            <h2 className="text-base font-semibold text-ink tracking-tight">
-              Active Workspaces
+          <div className="flex items-center gap-2">
+            <FolderOpen className="w-4 h-4 text-accent" />
+            <h2 className="section-title text-text-primary">
+              Active Projects
             </h2>
-            <span className="text-xs font-mono px-2 py-0.5 rounded-full bg-surface-2 border border-hairline text-ink-muted">
+            <Badge variant="neutral" size="sm" className="tabular-nums">
               {projects.length}
-            </span>
+            </Badge>
           </div>
 
           {projects.length > 0 && (
-            <button
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => setIsModalOpen(true)}
-              className="inline-flex items-center gap-1.5 text-xs text-brand-hover hover:text-ink font-medium transition-colors"
+              className="text-accent hover:text-accent font-medium gap-1"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>Create Another Project</span>
-            </button>
+              <span>Create Project</span>
+            </Button>
           )}
         </div>
 
@@ -125,34 +128,28 @@ export default function DashboardPage() {
         {loading && projects.length === 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {[1, 2, 3].map((i) => (
-              <div
-                key={i}
-                className="h-40 rounded-xl border border-hairline bg-surface-1/40 animate-pulse"
-              />
+              <Skeleton key={i} className="h-44 rounded-card" />
             ))}
           </div>
         ) : projects.length === 0 ? (
           /* Empty State */
-          <div className="rounded-xl border border-dashed border-hairline-strong bg-surface-1/40 p-12 text-center flex flex-col items-center justify-center space-y-4">
-            <div className="w-12 h-12 rounded-xl bg-surface-2 border border-hairline flex items-center justify-center text-ink-subtle">
-              <FolderPlus className="w-6 h-6" />
-            </div>
-            <div className="space-y-1">
-              <h3 className="text-sm font-semibold text-ink">No projects yet</h3>
-              <p className="text-xs text-ink-muted max-w-sm">
-                Get started by creating your first AutoML project to upload and profile datasets.
-              </p>
-            </div>
-            <button
-              onClick={() => setIsModalOpen(true)}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-brand-lavender hover:bg-brand-hover text-xs font-medium text-white transition-all shadow-[0_0_12px_rgba(99,102,241,0.25)]"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Create First Project</span>
-            </button>
-          </div>
+          <EmptyState
+            icon={FolderPlus}
+            title="No projects created yet"
+            description="Initialize your first AutoML project to upload datasets, review statistical profiles, and train candidate models."
+            action={
+              <Button
+                variant="primary"
+                onClick={() => setIsModalOpen(true)}
+                className="gap-2"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Create First Project</span>
+              </Button>
+            }
+          />
         ) : (
-          /* Project Grid */
+          /* Project Cards Grid */
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {projects.map((project) => (
               <ProjectCard
@@ -165,79 +162,89 @@ export default function DashboardPage() {
         )}
       </section>
 
-      {/* Live Architecture Grid */}
-      <section className="space-y-3 pt-6 border-t border-hairline">
-        <h3 className="text-xs font-mono uppercase tracking-wider text-ink-subtle">
-          Telemetry & Infrastructure
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* API Gateway Card */}
-          <div className="p-4 rounded-xl border border-hairline bg-surface-1 space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-mono text-ink-subtle">01 // GATEWAY</span>
-              <Server className="w-3.5 h-3.5 text-brand-hover" />
-            </div>
-            <div>
-              <h4 className="text-xs font-medium text-ink">FastAPI Backend</h4>
-              <p className="text-[11px] text-ink-muted">Python 3.11+ / Pydantic v2</p>
-            </div>
-            <div className="pt-2 border-t border-hairline/60 flex items-center justify-between text-[11px] font-mono">
-              <span className="text-ink-subtle">Port:</span>
-              <span className="text-ink">8000</span>
-            </div>
-          </div>
+      {/* Infrastructure Telemetry Grid */}
+      <section className="space-y-3 pt-6 border-t border-border">
+        <div className="flex items-center justify-between">
+          <h3 className="text-xs font-mono uppercase tracking-wider text-text-muted">
+            Infrastructure & Engine Telemetry
+          </h3>
+          <span className="text-[11px] font-mono text-text-subtle">
+            Single-Node Parallel Architecture
+          </span>
+        </div>
 
-          {/* PostgreSQL Database Card */}
-          <div className="p-4 rounded-xl border border-hairline bg-surface-1 space-y-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+          {/* API Gateway Card */}
+          <Card className="p-4 space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-mono text-ink-subtle">02 // STORAGE</span>
-              <Database className="w-3.5 h-3.5 text-telemetry-emerald" />
+              <span className="text-xs font-medium text-text-primary">API Gateway</span>
+              <Server className="w-3.5 h-3.5 text-accent" />
             </div>
             <div>
-              <h4 className="text-xs font-medium text-ink">PostgreSQL 16</h4>
-              <p className="text-[11px] text-ink-muted">Docker Compose / SQLAlchemy</p>
+              <p className="text-[11px] text-text-muted">FastAPI / Pydantic v2</p>
             </div>
-            <div className="pt-2 border-t border-hairline/60 flex items-center justify-between text-[11px] font-mono">
-              <span className="text-ink-subtle">Status:</span>
+            <div className="pt-2 border-t border-border flex items-center justify-between text-[11px] font-mono">
+              <span className="text-text-subtle">Port:</span>
+              <span className="text-text-primary tabular-nums">8000</span>
+            </div>
+          </Card>
+
+          {/* Database Card */}
+          <Card className="p-4 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-text-primary">Metadata Storage</span>
+              <Database className="w-3.5 h-3.5 text-success" />
+            </div>
+            <div>
+              <p className="text-[11px] text-text-muted">PostgreSQL 16 / SQLAlchemy</p>
+            </div>
+            <div className="pt-2 border-t border-border flex items-center justify-between text-[11px] font-mono">
+              <span className="text-text-subtle">Status:</span>
               {isDbConnected ? (
-                <span className="text-telemetry-emerald">Active (Port 5433)</span>
+                <span className="text-success flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-success inline-block" />
+                  Connected
+                </span>
               ) : (
-                <span className="text-telemetry-rose">Disconnected</span>
+                <span className="text-danger flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-danger inline-block" />
+                  Disconnected
+                </span>
               )}
             </div>
-          </div>
+          </Card>
 
           {/* Concurrency Card */}
-          <div className="p-4 rounded-xl border border-hairline bg-surface-1 space-y-2">
+          <Card className="p-4 space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-mono text-ink-subtle">03 // COMPUTE</span>
-              <Cpu className="w-3.5 h-3.5 text-telemetry-cyan" />
+              <span className="text-xs font-medium text-text-primary">Parallel Workers</span>
+              <Cpu className="w-3.5 h-3.5 text-info" />
             </div>
             <div>
-              <h4 className="text-xs font-medium text-ink">Parallel Workers</h4>
-              <p className="text-[11px] text-ink-muted">ProcessPoolExecutor</p>
+              <p className="text-[11px] text-text-muted">ProcessPoolExecutor</p>
             </div>
-            <div className="pt-2 border-t border-hairline/60 flex items-center justify-between text-[11px] font-mono">
-              <span className="text-ink-subtle">Cores:</span>
-              <span className="text-telemetry-cyan">{health?.workers ?? 4} Workers</span>
+            <div className="pt-2 border-t border-border flex items-center justify-between text-[11px] font-mono">
+              <span className="text-text-subtle">Concurrency:</span>
+              <span className="text-text-primary tabular-nums">
+                {health?.workers ?? 4} CPU Cores
+              </span>
             </div>
-          </div>
+          </Card>
 
-          {/* Hybrid AI Decision Engine */}
-          <div className="p-4 rounded-xl border border-hairline bg-surface-1 space-y-2">
+          {/* Hybrid Decision Engine Card */}
+          <Card className="p-4 space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-mono text-ink-subtle">04 // REASONER</span>
-              <BrainCircuit className="w-3.5 h-3.5 text-brand-lavender" />
+              <span className="text-xs font-medium text-text-primary">AI Decision Engine</span>
+              <BrainCircuit className="w-3.5 h-3.5 text-accent" />
             </div>
             <div>
-              <h4 className="text-xs font-medium text-ink">Hybrid AI Reasoner</h4>
-              <p className="text-[11px] text-ink-muted">Heuristic + OpenRouter</p>
+              <p className="text-[11px] text-text-muted">Deterministic + LLM Rationale</p>
             </div>
-            <div className="pt-2 border-t border-hairline/60 flex items-center justify-between text-[11px] font-mono">
-              <span className="text-ink-subtle">Mode:</span>
-              <span className="text-brand-hover">Offline & Viva Safe</span>
+            <div className="pt-2 border-t border-border flex items-center justify-between text-[11px] font-mono">
+              <span className="text-text-subtle">Mode:</span>
+              <span className="text-accent">Hybrid AI</span>
             </div>
-          </div>
+          </Card>
         </div>
       </section>
 

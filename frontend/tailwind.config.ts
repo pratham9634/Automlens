@@ -11,45 +11,87 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        canvas: "#09090b", // deep carbon obsidian
+        // Canonical Design Tokens
+        canvas: "var(--canvas)",
         surface: {
-          1: "#111116", // level 1 primary container cards
-          2: "#181820", // level 2 elevated surfaces and inputs
-          3: "#22222e", // level 3 hover highlights
-          4: "#2e2e3d", // level 4 floating elements
+          DEFAULT: "var(--surface)",
+          subtle: "var(--surface-subtle)",
+          hover: "var(--surface-hover)",
+          // Backwards compatibility aliases for existing unrefactored components
+          1: "var(--surface)",
+          2: "var(--surface-subtle)",
+          3: "var(--surface-hover)",
+          4: "var(--surface-hover)",
         },
+        border: {
+          DEFAULT: "var(--border)",
+          subtle: "var(--border-subtle)",
+          strong: "var(--border-strong)",
+        },
+        "text-primary": "var(--text-primary)",
+        "text-secondary": "var(--text-secondary)",
+        "text-muted": "var(--text-muted)",
+        "text-subtle": "var(--text-subtle)",
+        accent: {
+          DEFAULT: "var(--accent)",
+          hover: "var(--accent-hover)",
+        },
+        success: "var(--success)",
+        warning: "var(--warning)",
+        danger: "var(--danger)",
+        info: "var(--info)",
+
+        // Backwards compatibility mappings for existing components
         hairline: {
-          subtle: "rgba(255, 255, 255, 0.05)",
-          DEFAULT: "rgba(255, 255, 255, 0.09)",
-          strong: "rgba(255, 255, 255, 0.16)",
+          subtle: "var(--border-subtle)",
+          DEFAULT: "var(--border)",
+          strong: "var(--border-strong)",
         },
         brand: {
-          lavender: "#6366F1", // signature electric indigo
-          hover: "#818CF8",
-          glow: "rgba(99, 102, 241, 0.18)",
+          lavender: "var(--accent)",
+          hover: "var(--accent-hover)",
+          glow: "transparent",
         },
         telemetry: {
-          cyan: "#06B6D4",
-          emerald: "#10B981",
-          amber: "#F59E0B",
-          rose: "#F43F5E",
-          indigo: "#6366F1",
+          cyan: "var(--info)",
+          emerald: "var(--success)",
+          amber: "var(--warning)",
+          rose: "var(--danger)",
+          indigo: "var(--accent)",
           violet: "#8B5CF6",
         },
         ink: {
-          DEFAULT: "#FAFAFA",
-          muted: "#A1A1AA",
-          subtle: "#71717A",
-          faint: "#52525B",
+          DEFAULT: "var(--text-primary)",
+          muted: "var(--text-secondary)",
+          subtle: "var(--text-muted)",
+          faint: "var(--text-subtle)",
         },
+      },
+      borderRadius: {
+        input: "var(--radius-input)",
+        button: "var(--radius-button)",
+        card: "var(--radius-card)",
+        dialog: "var(--radius-dialog)",
+        popover: "var(--radius-popover)",
+        pill: "var(--radius-pill)",
       },
       fontFamily: {
         sans: ["var(--font-sans)", "system-ui", "sans-serif"],
         mono: ["var(--font-mono)", "monospace"],
       },
+      transitionDuration: {
+        fast: "var(--motion-fast)",
+        standard: "var(--motion-standard)",
+        slow: "var(--motion-slow)",
+      },
+      transitionTimingFunction: {
+        "ease-enter": "var(--ease-enter)",
+        "ease-exit": "var(--ease-exit)",
+      },
       letterSpacing: {
-        tighter: "-0.03em",
-        tight: "-0.015em",
+        tighter: "-0.045em",
+        tight: "-0.02em",
+        normal: "-0.005em",
       },
     },
   },
