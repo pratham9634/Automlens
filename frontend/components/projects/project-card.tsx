@@ -7,11 +7,22 @@ import {
   Calendar,
   ArrowRight,
   Trash2,
-  Loader2,
+  AlertTriangle,
 } from "lucide-react";
 import { Project } from "@/lib/types";
 import { formatDate } from "@/lib/utils";
 import { apiClient } from "@/lib/api-client";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 interface ProjectCardProps {
   project: Project;
@@ -19,121 +30,126 @@ interface ProjectCardProps {
 }
 
 export function ProjectCard({ project, onDeleted }: ProjectCardProps) {
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState(false);
 
-  const handleDelete = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    if (!confirmDelete) {
-      setConfirmDelete(true);
-      return;
-    }
-
+  const handleDelete = async () => {
     setDeleting(true);
     try {
       await apiClient.deleteProject(project.id);
+      setShowDeleteDialog(false);
       onDeleted(project.id);
     } catch {
       setDeleting(false);
-      setConfirmDelete(false);
     }
   };
 
-  const getStatusBadge = (status: string) => {
+  const renderStatusBadge = (status: string) => {
     switch (status) {
       case "created":
-        return (
-          <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-surface-3 text-ink-muted border border-hairline">
-            Ready for Data
-          </span>
-        );
+        return <Badge variant="neutral">Ready for Data</Badge>;
       case "dataset_uploaded":
-        return (
-          <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-telemetry-cyan/10 text-telemetry-cyan border border-telemetry-cyan/30">
-            Dataset Uploaded
-          </span>
-        );
+        return <Badge variant="info">Dataset Uploaded</Badge>;
       case "profiled":
-        return (
-          <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-telemetry-amber/10 text-telemetry-amber border border-telemetry-amber/30">
-            Profiled
-          </span>
-        );
+        return <Badge variant="warning">Profiled</Badge>;
       case "trained":
-        return (
-          <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-telemetry-emerald/10 text-telemetry-emerald border border-telemetry-emerald/30">
-            Trained & Evaluated
-          </span>
-        );
+        return <Badge variant="success">Trained & Evaluated</Badge>;
       default:
-        return (
-          <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-surface-3 text-ink-muted border border-hairline">
-            {status}
-          </span>
-        );
+        return <Badge variant="neutral">{status}</Badge>;
     }
   };
 
   return (
-    <div className="group relative rounded-xl border border-hairline bg-surface-1 hover:bg-surface-2/80 hover:border-hairline-strong transition-all duration-200 p-5 flex flex-col justify-between space-y-4">
-      {/* Top Header */}
-      <div className="space-y-2">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-surface-2 border border-hairline flex items-center justify-center text-brand-hover group-hover:border-brand-lavender/40 transition-colors">
-              <FolderKanban className="w-4 h-4" />
+    <>
+      <Card className="hover:border-border-strong hover:bg-surface-hover/20 transition-all duration-150 p-4 sm:p-5 flex flex-col justify-between space-y-4">
+        {/* Top Header */}
+        <div className="space-y-2.5">
+          <div className="flex items-start justify-between gap-2.5">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-8 h-8 rounded-button bg-surface-subtle border border-border flex items-center justify-center text-text-muted shrink-0">
+                <FolderKanban className="w-4 h-4 text-accent" />
+              </div>
+              <h3 className="card-title text-text-primary line-clamp-1">
+                {project.name}
+              </h3>
             </div>
-            <h3 className="text-sm font-semibold text-ink tracking-tight line-clamp-1 group-hover:text-brand-hover transition-colors">
-              {project.name}
-            </h3>
+            {renderStatusBadge(project.status)}
           </div>
-          {getStatusBadge(project.status)}
+
+          <p className="text-xs text-text-secondary line-clamp-2 min-h-[2rem] leading-relaxed">
+            {project.description || "No project description provided."}
+          </p>
         </div>
 
-        <p className="text-xs text-ink-muted line-clamp-2 min-h-[2rem]">
-          {project.description || "No description provided."}
-        </p>
-      </div>
+        {/* Card Footer */}
+        <div className="pt-3 border-t border-border flex items-center justify-between text-xs">
+          <div className="flex items-center gap-1.5 text-text-muted text-[11px] font-mono tabular-nums">
+            <Calendar className="w-3 h-3 text-text-subtle" />
+            <span>{formatDate(project.created_at)}</span>
+          </div>
 
-      {/* Card Footer */}
-      <div className="pt-3 border-t border-hairline/60 flex items-center justify-between text-xs">
-        <div className="flex items-center gap-1.5 text-ink-subtle text-[11px] font-mono">
-          <Calendar className="w-3 h-3" />
-          <span>{formatDate(project.created_at)}</span>
-        </div>
-
-        <div className="flex items-center gap-2">
-          {/* Delete Action */}
-          <button
-            onClick={handleDelete}
-            onMouseLeave={() => setConfirmDelete(false)}
-            disabled={deleting}
-            className={`p-1.5 rounded-md transition-colors ${
-              confirmDelete
-                ? "bg-telemetry-rose text-white hover:bg-telemetry-rose/90"
-                : "text-ink-subtle hover:text-telemetry-rose hover:bg-surface-3"
-            }`}
-            title={confirmDelete ? "Click again to confirm delete" : "Delete Project"}
-          >
-            {deleting ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            ) : (
+          <div className="flex items-center gap-2">
+            {/* Delete Trigger Button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setShowDeleteDialog(true)}
+              title={`Delete ${project.name}`}
+              className="text-text-muted hover:text-danger hover:bg-danger/10"
+            >
               <Trash2 className="w-3.5 h-3.5" />
-            )}
-          </button>
+            </Button>
 
-          {/* Open Workspace Action */}
-          <Link
-            href={`/projects/${project.id}`}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-surface-2 hover:bg-brand-lavender text-[11px] font-medium text-ink-muted hover:text-white border border-hairline transition-all"
-          >
-            <span>Open</span>
-            <ArrowRight className="w-3 h-3" />
-          </Link>
+            {/* Open Project Workspace */}
+            <Link href={`/projects/${project.id}`}>
+              <Button variant="secondary" size="sm" className="gap-1.5">
+                <span>Open</span>
+                <ArrowRight className="w-3 h-3 text-text-muted" />
+              </Button>
+            </Link>
+          </div>
         </div>
-      </div>
-    </div>
+      </Card>
+
+      {/* Explicit Delete Confirmation Dialog */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <div className="flex items-center gap-2 text-danger mb-1">
+              <div className="w-7 h-7 rounded-button bg-danger/10 border border-danger/25 flex items-center justify-center">
+                <AlertTriangle className="w-4 h-4" />
+              </div>
+              <DialogTitle>Delete Project</DialogTitle>
+            </div>
+            <DialogDescription>
+              Are you sure you want to delete <span className="font-semibold text-text-primary">&quot;{project.name}&quot;</span>?
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="text-xs text-text-secondary bg-surface-subtle border border-border p-3 rounded-card leading-relaxed my-2">
+            This action will permanently delete all associated dataset files, statistical profiles, model pipelines, training runs, and audit ledger logs. This action cannot be reversed.
+          </div>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setShowDeleteDialog(false)}
+              disabled={deleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="danger"
+              onClick={handleDelete}
+              isLoading={deleting}
+            >
+              Delete Project
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
