@@ -3,12 +3,11 @@
 import { useState } from "react";
 import {
   BarChart2,
-  SlidersHorizontal,
-  Layers,
   AlertCircle,
-  HelpCircle,
 } from "lucide-react";
 import { NumericColumnProfile, CategoricalColumnProfile } from "@/lib/types";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 interface FeatureDistributionViewerProps {
   numericColumns: NumericColumnProfile[];
@@ -30,34 +29,33 @@ export function FeatureDistributionViewer({
   const currentNumeric = numericColumns[selectedNumIndex];
   const currentCategorical = categoricalColumns[selectedCatIndex];
 
-  // Compute maximum bin count for SVG scaling
   const maxBinCount = currentNumeric?.histogram
     ? Math.max(...currentNumeric.histogram.map((b) => b.count), 1)
     : 1;
 
   return (
-    <div className="p-5 rounded-xl border border-hairline bg-surface-1 space-y-5">
+    <Card className="p-4 sm:p-5 space-y-5">
       {/* Header and Type Toggle */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h3 className="text-sm font-semibold text-ink flex items-center gap-2">
-            <BarChart2 className="w-4 h-4 text-brand-hover" />
-            Feature Distribution & Statistics
+          <h3 className="card-title text-text-primary flex items-center gap-2">
+            <BarChart2 className="w-4 h-4 text-accent" />
+            Feature Distribution &amp; Statistics
           </h3>
-          <p className="text-xs text-ink-muted">
-            Univariate distributions, percentiles, and IQR outlier boundaries.
+          <p className="text-xs text-text-muted">
+            Univariate distributions, statistical percentiles, and IQR outlier boundaries.
           </p>
         </div>
 
         {/* Feature Type Switcher */}
-        <div className="flex items-center gap-1 rounded-lg border border-hairline bg-surface-2 p-1 text-xs font-mono self-start sm:self-auto">
+        <div className="flex items-center gap-1 rounded-card border border-border bg-surface-subtle p-0.5 text-xs font-mono self-start sm:self-auto">
           <button
             onClick={() => setActiveType("numeric")}
             disabled={numericColumns.length === 0}
-            className={`px-3 py-1 rounded text-[11px] transition-colors ${
+            className={`px-3 py-1 rounded-[6px] text-[11px] transition-colors cursor-pointer ${
               activeType === "numeric"
-                ? "bg-surface-3 text-ink font-semibold"
-                : "text-ink-muted hover:text-ink disabled:opacity-40"
+                ? "bg-surface text-text-primary font-semibold shadow-xs border border-border/80"
+                : "text-text-muted hover:text-text-primary disabled:opacity-40"
             }`}
           >
             Numeric ({numericColumns.length})
@@ -65,10 +63,10 @@ export function FeatureDistributionViewer({
           <button
             onClick={() => setActiveType("categorical")}
             disabled={categoricalColumns.length === 0}
-            className={`px-3 py-1 rounded text-[11px] transition-colors ${
+            className={`px-3 py-1 rounded-[6px] text-[11px] transition-colors cursor-pointer ${
               activeType === "categorical"
-                ? "bg-surface-3 text-ink font-semibold"
-                : "text-ink-muted hover:text-ink disabled:opacity-40"
+                ? "bg-surface text-text-primary font-semibold shadow-xs border border-border/80"
+                : "text-text-muted hover:text-text-primary disabled:opacity-40"
             }`}
           >
             Categorical ({categoricalColumns.length})
@@ -86,10 +84,10 @@ export function FeatureDistributionViewer({
                   setSelectedNumIndex(idx);
                   setHoveredBinIndex(null);
                 }}
-                className={`px-3 py-1.5 rounded-lg text-xs font-mono whitespace-nowrap border transition-all ${
+                className={`px-2.5 py-1 rounded-button text-xs font-mono whitespace-nowrap border transition-all cursor-pointer ${
                   selectedNumIndex === idx
-                    ? "bg-brand-lavender/10 border-brand-lavender text-brand-hover font-semibold"
-                    : "bg-surface-2 border-hairline text-ink-muted hover:text-ink"
+                    ? "bg-accent/10 border-accent/30 text-accent font-semibold"
+                    : "bg-surface-subtle border-border text-text-muted hover:text-text-primary hover:bg-surface-hover"
                 }`}
               >
                 {col.name}
@@ -99,10 +97,10 @@ export function FeatureDistributionViewer({
               <button
                 key={col.name}
                 onClick={() => setSelectedCatIndex(idx)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-mono whitespace-nowrap border transition-all ${
+                className={`px-2.5 py-1 rounded-button text-xs font-mono whitespace-nowrap border transition-all cursor-pointer ${
                   selectedCatIndex === idx
-                    ? "bg-brand-lavender/10 border-brand-lavender text-brand-hover font-semibold"
-                    : "bg-surface-2 border-hairline text-ink-muted hover:text-ink"
+                    ? "bg-accent/10 border-accent/30 text-accent font-semibold"
+                    : "bg-surface-subtle border-border text-text-muted hover:text-text-primary hover:bg-surface-hover"
                 }`}
               >
                 {col.name}
@@ -128,13 +126,17 @@ export function FeatureDistributionViewer({
             ].map((stat, i) => (
               <div
                 key={i}
-                className="p-2.5 rounded-lg border border-hairline bg-surface-2/60 text-center"
+                className="p-2.5 rounded-card border border-border bg-surface-subtle text-center"
               >
-                <div className="text-[10px] font-mono uppercase text-ink-subtle">
+                <div className="text-[10px] font-mono uppercase text-text-muted truncate">
                   {stat.label}
                 </div>
-                <div className="text-xs font-mono font-semibold text-ink pt-1 truncate">
-                  {stat.val !== null && stat.val !== undefined ? stat.val.toLocaleString() : "—"}
+                <div className="text-xs font-mono font-semibold text-text-primary pt-1 truncate tabular-nums">
+                  {stat.val !== null && stat.val !== undefined
+                    ? typeof stat.val === "number"
+                      ? stat.val.toLocaleString(undefined, { maximumFractionDigits: 3 })
+                      : stat.val
+                    : "—"}
                 </div>
               </div>
             ))}
@@ -143,126 +145,94 @@ export function FeatureDistributionViewer({
           {/* Outlier & Constant Flag Banner */}
           <div className="flex flex-wrap items-center gap-3 text-xs font-mono">
             {currentNumeric.outlier_count > 0 ? (
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-telemetry-amber/10 border border-telemetry-amber/30 text-telemetry-amber">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-pill bg-warning/10 border border-warning/30 text-warning">
                 <AlertCircle className="w-3.5 h-3.5" />
-                <span>
+                <span className="tabular-nums">
                   {currentNumeric.outlier_count.toLocaleString()} IQR outliers (
                   {currentNumeric.outlier_percentage.toFixed(1)}%)
                 </span>
-                <span className="text-[10px] text-ink-subtle">
-                  [Rule 6: Flagged only, not removed]
-                </span>
               </div>
             ) : (
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-telemetry-emerald/10 border border-telemetry-emerald/30 text-telemetry-emerald text-[11px]">
-                <span>No IQR Outliers Detected</span>
-              </div>
+              <span className="text-[11px] text-text-muted">
+                Zero IQR outliers detected in numeric span.
+              </span>
             )}
-
-            <div className="text-ink-subtle text-[11px]">
-              {currentNumeric.count.toLocaleString()} valid samples • {currentNumeric.unique_count.toLocaleString()} unique values
-            </div>
           </div>
 
-          {/* SVG 10-Bin Histogram */}
-          <div className="p-4 rounded-xl border border-hairline bg-surface-2/40 space-y-3">
-            <div className="flex items-center justify-between text-xs">
-              <span className="font-mono text-ink-muted flex items-center gap-1.5">
-                <SlidersHorizontal className="w-3.5 h-3.5 text-brand-hover" />
-                10-Bin Frequency Histogram
-              </span>
-              {hoveredBinIndex !== null && currentNumeric.histogram[hoveredBinIndex] && (
-                <span className="font-mono text-xs text-brand-hover bg-brand-lavender/10 px-2 py-0.5 rounded border border-brand-lavender/30">
-                  Range: [{currentNumeric.histogram[hoveredBinIndex].bin_start} →{" "}
-                  {currentNumeric.histogram[hoveredBinIndex].bin_end}] :{" "}
-                  <strong className="text-ink">
-                    {currentNumeric.histogram[hoveredBinIndex].count.toLocaleString()}
-                  </strong>{" "}
-                  samples
+          {/* SVG Histogram */}
+          {currentNumeric.histogram && currentNumeric.histogram.length > 0 && (
+            <div className="space-y-2 pt-2">
+              <div className="flex items-center justify-between text-xs font-mono">
+                <span className="text-text-muted">
+                  Binned Frequency Histogram (10 Bins)
                 </span>
-              )}
-            </div>
-
-            {currentNumeric.histogram.length === 0 ? (
-              <div className="py-12 text-center text-xs font-mono text-ink-muted">
-                Insufficient data to compute histogram.
+                {hoveredBinIndex !== null && (
+                  <span className="text-accent font-semibold tabular-nums">
+                    [{currentNumeric.histogram[hoveredBinIndex].bin_start.toFixed(2)} -{" "}
+                    {currentNumeric.histogram[hoveredBinIndex].bin_end.toFixed(2)}]:{" "}
+                    {currentNumeric.histogram[hoveredBinIndex].count.toLocaleString()} rows
+                  </span>
+                )}
               </div>
-            ) : (
-              <div className="h-44 w-full flex items-end gap-1.5 pt-4 pb-2 px-2">
-                {currentNumeric.histogram.map((bin, idx) => {
-                  const heightPercent = Math.max(
-                    (bin.count / maxBinCount) * 100,
-                    4
-                  );
-                  const isHovered = hoveredBinIndex === idx;
+
+              <div className="h-44 w-full rounded-card border border-border bg-surface-subtle/50 p-4 flex items-end gap-1.5">
+                {currentNumeric.histogram.map((bin, i) => {
+                  const heightPct = (bin.count / maxBinCount) * 100;
+                  const isHovered = hoveredBinIndex === i;
 
                   return (
                     <div
-                      key={idx}
-                      onMouseEnter={() => setHoveredBinIndex(idx)}
+                      key={i}
+                      onMouseEnter={() => setHoveredBinIndex(i)}
                       onMouseLeave={() => setHoveredBinIndex(null)}
-                      className="flex-1 h-full flex flex-col justify-end items-center group cursor-pointer relative"
+                      className="flex-1 flex flex-col items-center justify-end h-full group relative cursor-pointer"
                     >
-                      {/* Bar Fill */}
                       <div
-                        style={{ height: `${heightPercent}%` }}
-                        className={`w-full rounded-t-sm transition-all ${
+                        style={{ height: `${Math.max(heightPct, 4)}%` }}
+                        className={`w-full rounded-t-[3px] transition-all duration-150 ${
                           isHovered
-                            ? "bg-brand-hover shadow-lg shadow-brand-glow"
-                            : "bg-brand-lavender/70 hover:bg-brand-lavender"
+                            ? "bg-accent shadow-xs"
+                            : "bg-accent/70 group-hover:bg-accent/90"
                         }`}
                       />
-                      {/* Tick Label */}
-                      <span className="text-[9px] font-mono text-ink-faint truncate max-w-full pt-1.5">
-                        {bin.bin_start}
+                      <span className="text-[9px] font-mono text-text-muted pt-1 truncate w-full text-center tabular-nums">
+                        {bin.bin_start.toFixed(1)}
                       </span>
                     </div>
                   );
                 })}
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       )}
 
       {/* Content for Categorical Feature */}
       {activeType === "categorical" && currentCategorical && (
         <div className="space-y-4">
-          <div className="flex flex-wrap items-center gap-3 text-xs font-mono">
-            <span className="text-ink-muted">
-              Cardinality: <strong className="text-ink">{currentCategorical.unique_count}</strong> distinct categories
-            </span>
-            <span>•</span>
-            <span className="text-ink-muted">
-              Valid entries: <strong className="text-ink">{currentCategorical.count.toLocaleString()}</strong>
-            </span>
-
-            {currentCategorical.is_high_cardinality && (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] bg-telemetry-amber/10 text-telemetry-amber border border-telemetry-amber/30">
-                <AlertCircle className="w-3 h-3" /> High Cardinality
-              </span>
-            )}
+          <div className="flex items-center gap-2 text-xs font-mono text-text-muted">
+            <span>Cardinality:</span>
+            <Badge variant="neutral" size="sm" className="tabular-nums">
+              {currentCategorical.unique_count} distinct categories
+            </Badge>
           </div>
 
-          {/* Top Category Distribution Bars */}
-          <div className="space-y-2.5 max-h-80 overflow-y-auto pr-1">
+          {/* Top Values Progress Bars */}
+          <div className="space-y-2.5">
             {currentCategorical.top_categories.map((cat, i) => (
-              <div
-                key={i}
-                className="p-3 rounded-lg border border-hairline bg-surface-2/60 space-y-1.5"
-              >
+              <div key={i} className="space-y-1">
                 <div className="flex items-center justify-between text-xs font-mono">
-                  <span className="font-semibold text-ink truncate max-w-xs" title={cat.value}>
-                    {cat.value === "" ? "(empty string)" : cat.value}
+                  <span className="text-text-primary font-medium truncate max-w-xs">
+                    {cat.value ?? "null"}
                   </span>
-                  <span className="text-ink-muted">
+                  <span className="text-text-muted tabular-nums">
                     {cat.count.toLocaleString()} ({cat.percentage.toFixed(1)}%)
                   </span>
                 </div>
-                <div className="w-full h-1.5 rounded-full bg-surface-3 overflow-hidden">
+                <div className="w-full h-2 rounded-pill bg-surface-subtle border border-border overflow-hidden">
                   <div
-                    style={{ width: `${Math.max(cat.percentage, 2)}%` }}
-                    className="h-full bg-telemetry-cyan rounded-full transition-all"
+                    style={{ width: `${cat.percentage}%` }}
+                    className="h-full bg-accent/80 rounded-pill transition-all"
                   />
                 </div>
               </div>
@@ -270,6 +240,6 @@ export function FeatureDistributionViewer({
           </div>
         </div>
       )}
-    </div>
+    </Card>
   );
 }
