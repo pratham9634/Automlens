@@ -9,9 +9,19 @@ import {
   Download,
   Loader2,
   CheckCircle2,
-  AlertCircle,
-  Table,
 } from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { AlertRow } from "@/components/ui/alert-row";
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from "@/components/ui/table";
 
 interface BatchPredictionZoneProps {
   projectId: string;
@@ -65,34 +75,34 @@ export function BatchPredictionZone({
   return (
     <div className="space-y-6">
       {/* Upload Zone */}
-      <div
+      <Card
         onDragOver={(e) => {
           e.preventDefault();
           setIsDragOver(true);
         }}
         onDragLeave={() => setIsDragOver(false)}
         onDrop={handleFileDrop}
-        className={`p-8 rounded-xl border-2 border-dashed transition-all text-center flex flex-col items-center justify-center space-y-4 ${
+        className={`p-8 border-2 border-dashed transition-all text-center flex flex-col items-center justify-center space-y-4 ${
           isDragOver
-            ? "border-brand-lavender bg-brand-lavender/10"
+            ? "border-accent bg-accent/5"
             : file
-            ? "border-emerald-500/50 bg-emerald-500/5"
-            : "border-hairline hover:border-hairline-strong bg-surface-1"
+            ? "border-success/50 bg-success/5"
+            : "border-border hover:border-border-strong bg-surface"
         }`}
       >
-        <div className="w-12 h-12 rounded-xl bg-surface-2 border border-hairline flex items-center justify-center text-ink-muted">
+        <div className="w-12 h-12 rounded-xl bg-surface-subtle border border-border flex items-center justify-center text-text-muted">
           {file ? (
-            <FileSpreadsheet className="w-6 h-6 text-emerald-400" />
+            <FileSpreadsheet className="w-6 h-6 text-success" />
           ) : (
-            <UploadCloud className="w-6 h-6 text-brand-hover" />
+            <UploadCloud className="w-6 h-6 text-accent" />
           )}
         </div>
 
         <div className="space-y-1">
-          <div className="text-xs font-semibold text-ink">
+          <div className="text-sm font-semibold text-text-primary">
             {file ? file.name : "Drag and drop batch CSV or Excel file"}
           </div>
-          <p className="text-[11px] text-ink-muted">
+          <p className="text-xs text-text-muted">
             {file
               ? `${(file.size / (1024 * 1024)).toFixed(2)} MB • Ready for batch inference`
               : "Upload an unseen dataset matching training columns to generate predictions"}
@@ -100,21 +110,30 @@ export function BatchPredictionZone({
         </div>
 
         <div className="flex items-center gap-3">
-          <label className="cursor-pointer inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg border border-hairline hover:bg-surface-2 text-xs font-mono text-ink transition-colors">
-            <span>Browse File</span>
-            <input
-              type="file"
-              accept=".csv,.xlsx,.xls"
-              onChange={handleFileSelect}
-              className="hidden"
-            />
-          </label>
+          <Button
+            variant="secondary"
+            size="sm"
+            type="button"
+            onClick={() => document.getElementById("batch-file-input")?.click()}
+            className="font-mono text-xs"
+          >
+            Browse File
+          </Button>
+          <input
+            id="batch-file-input"
+            type="file"
+            accept=".csv,.xlsx,.xls"
+            onChange={handleFileSelect}
+            className="hidden"
+          />
 
           {file && (
-            <button
+            <Button
+              variant="primary"
+              size="sm"
               onClick={handleRunBatch}
               disabled={uploading}
-              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-lg bg-brand-lavender hover:bg-brand-hover text-ink text-xs font-mono font-medium transition-colors shadow-sm disabled:opacity-50"
+              className="gap-2 font-mono text-xs"
             >
               {uploading ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -122,99 +141,100 @@ export function BatchPredictionZone({
                 <CheckCircle2 className="w-3.5 h-3.5" />
               )}
               <span>{uploading ? "Running Batch..." : "Run Batch Predictions"}</span>
-            </button>
+            </Button>
           )}
         </div>
-      </div>
+      </Card>
 
       {error && (
-        <div className="p-3.5 rounded-lg bg-rose-500/10 border border-rose-500/20 text-xs text-rose-300 font-mono flex items-start gap-2">
-          <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-          <span>{error}</span>
-        </div>
+        <AlertRow variant="danger" title="Batch Inference Error">
+          {error}
+        </AlertRow>
       )}
 
       {/* Batch Results Preview Table */}
       {result && (
-        <div className="rounded-xl border border-hairline bg-surface-1 space-y-4 p-5">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-hairline pb-4">
-            <div className="space-y-0.5">
-              <div className="text-sm font-semibold text-ink flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+        <Card className="space-y-4 p-5 sm:p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border pb-4">
+            <div className="space-y-1">
+              <div className="text-sm font-semibold text-text-primary flex items-center gap-2 flex-wrap">
+                <CheckCircle2 className="w-4 h-4 text-success" />
                 <span>Batch Inference Completed</span>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                <Badge variant="success" size="sm" className="font-mono tabular-nums">
                   {result.total_rows} Rows Annotated
-                </span>
+                </Badge>
               </div>
-              <p className="text-xs text-ink-muted">
-                Showing preview of first 10 rows. Download full CSV below.
+              <p className="text-xs text-text-muted">
+                Showing preview of first 10 rows. Download the full annotated dataset below.
               </p>
             </div>
 
             <a
               href={result.download_url}
               download
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-mono font-semibold transition-colors shadow-sm self-start sm:self-auto"
+              className="self-start sm:self-auto"
             >
-              <Download className="w-4 h-4" />
-              <span>Download Annotated CSV</span>
+              <Button variant="primary" size="sm" className="gap-2 font-mono text-xs">
+                <Download className="w-4 h-4" />
+                <span>Download Annotated CSV</span>
+              </Button>
             </a>
           </div>
 
           {/* Preview Table */}
           {result.preview_rows.length > 0 && (
-            <div className="overflow-x-auto rounded-lg border border-hairline">
-              <table className="w-full text-left text-xs font-mono">
-                <thead className="bg-surface-2 text-ink-muted border-b border-hairline">
-                  <tr>
+            <div className="rounded-md border border-border overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow>
                     {Object.keys(result.preview_rows[0]).map((col) => {
                       const isPredicted = col === predictedColName;
                       const isConfidence = col === "prediction_confidence";
                       return (
-                        <th
+                        <TableHead
                           key={col}
-                          className={`py-2.5 px-3 whitespace-nowrap ${
+                          className={`whitespace-nowrap font-mono text-xs ${
                             isPredicted
-                              ? "bg-brand-lavender/20 text-brand-hover font-bold"
+                              ? "bg-accent/15 text-accent font-semibold"
                               : isConfidence
-                              ? "bg-emerald-500/15 text-emerald-300 font-bold"
+                              ? "bg-success/15 text-success font-semibold"
                               : ""
                           }`}
                         >
                           {col}
-                        </th>
+                        </TableHead>
                       );
                     })}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-hairline">
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {result.preview_rows.map((row, rIdx) => (
-                    <tr key={rIdx} className="hover:bg-surface-2/20">
+                    <TableRow key={rIdx}>
                       {Object.entries(row).map(([col, val], cIdx) => {
                         const isPredicted = col === predictedColName;
                         const isConfidence = col === "prediction_confidence";
                         return (
-                          <td
+                          <TableCell
                             key={cIdx}
-                            className={`py-2 px-3 whitespace-nowrap ${
+                            className={`whitespace-nowrap font-mono text-xs tabular-nums ${
                               isPredicted
-                                ? "bg-brand-lavender/10 font-bold text-brand-hover"
+                                ? "bg-accent/5 font-semibold text-accent"
                                 : isConfidence
-                                ? "bg-emerald-500/10 font-medium text-emerald-300"
-                                : "text-ink"
+                                ? "bg-success/5 font-medium text-success"
+                                : "text-text-primary"
                             }`}
                           >
                             {val !== null && val !== undefined ? String(val) : "—"}
-                          </td>
+                          </TableCell>
                         );
                       })}
-                    </tr>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
           )}
-        </div>
+        </Card>
       )}
     </div>
   );
