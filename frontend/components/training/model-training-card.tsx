@@ -10,6 +10,9 @@ import {
   Award,
   Zap,
 } from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { AlertRow } from "@/components/ui/alert-row";
 
 interface ModelTrainingCardProps {
   model: ModelRun;
@@ -21,93 +24,93 @@ export function ModelTrainingCard({ model, isWinner }: ModelTrainingCardProps) {
     switch (model.status) {
       case "completed":
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+          <Badge variant="success" size="sm" className="gap-1">
             <CheckCircle2 className="w-3 h-3" />
             Completed
-          </span>
+          </Badge>
         );
       case "training":
         return (
-          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-mono bg-brand-lavender/15 text-brand-hover border border-brand-lavender/30">
+          <Badge variant="accent" size="sm" className="gap-1.5">
             <Loader2 className="w-3 h-3 animate-spin" />
             Training 5 Folds...
-          </span>
+          </Badge>
         );
       case "failed":
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono bg-rose-500/10 text-rose-400 border border-rose-500/20">
+          <Badge variant="danger" size="sm" className="gap-1">
             <AlertCircle className="w-3 h-3" />
             Failed
-          </span>
+          </Badge>
         );
       default:
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono bg-surface-3 text-ink-muted border border-hairline">
+          <Badge variant="neutral" size="sm" className="gap-1">
             <Clock className="w-3 h-3" />
             Queued
-          </span>
+          </Badge>
         );
     }
   };
 
   return (
-    <div
-      className={`p-4 rounded-xl border transition-all ${
+    <Card
+      className={`p-4 transition-all duration-150 flex flex-col justify-between space-y-3.5 ${
         isWinner
-          ? "bg-surface-2 border-brand-lavender/60 shadow-md ring-1 ring-brand-lavender/30"
+          ? "border-accent bg-surface-subtle shadow-xs ring-1 ring-accent/30"
           : model.status === "completed"
-          ? "bg-surface-1 border-hairline"
+          ? "border-border bg-surface"
           : model.status === "training"
-          ? "bg-surface-2/70 border-brand-lavender/40 animate-pulse"
-          : "bg-surface-1/50 border-hairline opacity-75"
+          ? "border-accent/40 bg-surface-subtle"
+          : "border-border bg-surface opacity-75"
       }`}
     >
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-hairline pb-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border pb-3">
         <div className="flex items-center gap-2 flex-wrap">
-          <Cpu className="w-4 h-4 text-brand-hover shrink-0" />
-          <span className="text-xs font-mono font-semibold text-ink">
+          <Cpu className="w-4 h-4 text-accent shrink-0" />
+          <span className="text-xs font-mono font-semibold text-text-primary">
             {model.model_name}
           </span>
 
           {model.is_baseline && (
-            <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-brand-lavender/10 text-brand-hover border border-brand-lavender/30 flex items-center gap-1">
+            <Badge variant="warning" size="sm" className="gap-1 font-mono">
               <Award className="w-3 h-3" />
               Rule 4 Baseline
-            </span>
+            </Badge>
           )}
 
           {isWinner && (
-            <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30 flex items-center gap-1">
-              <Zap className="w-3 h-3 fill-amber-400" />
-              Highest Scoring
-            </span>
+            <Badge variant="accent" size="sm" className="gap-1 font-mono">
+              <Zap className="w-3 h-3 text-accent" />
+              Top by {model.primary_metric_name}
+            </Badge>
           )}
         </div>
 
         <div>{getStatusBadge()}</div>
       </div>
 
-      <div className="pt-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="pt-1 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         {/* Score & Std Display */}
         <div>
-          <div className="text-[10px] font-mono uppercase text-ink-subtle">
+          <div className="text-[10px] font-mono uppercase text-text-muted">
             Primary Metric ({model.primary_metric_name})
           </div>
           <div className="flex items-baseline gap-2 mt-0.5">
             {model.primary_metric_score !== null && model.primary_metric_score !== undefined ? (
               <>
-                <span className="text-base font-mono font-semibold text-ink">
+                <span className="text-base font-mono font-semibold text-text-primary tabular-nums">
                   {model.primary_metric_score.toFixed(4)}
                 </span>
                 {model.primary_metric_std !== null && model.primary_metric_std !== undefined && (
-                  <span className="text-xs font-mono text-ink-muted">
+                  <span className="text-xs font-mono text-text-muted tabular-nums">
                     ± {model.primary_metric_std.toFixed(4)} std
                   </span>
                 )}
               </>
             ) : (
-              <span className="text-xs font-mono text-ink-faint">
-                {model.status === "training" ? "Computing fold scores..." : "Awaiting execution"}
+              <span className="text-xs font-mono text-text-subtle">
+                {model.status === "training" ? "Computing fold metrics..." : "Awaiting execution"}
               </span>
             )}
           </div>
@@ -115,9 +118,9 @@ export function ModelTrainingCard({ model, isWinner }: ModelTrainingCardProps) {
 
         {/* Training Duration Clock */}
         <div className="text-right">
-          <div className="text-[10px] font-mono uppercase text-ink-subtle">Train Time</div>
-          <div className="text-xs font-mono text-ink mt-0.5 flex items-center gap-1 sm:justify-end">
-            <Clock className="w-3 h-3 text-ink-muted" />
+          <div className="text-[10px] font-mono uppercase text-text-muted">Train Time</div>
+          <div className="text-xs font-mono text-text-primary mt-0.5 flex items-center gap-1 sm:justify-end tabular-nums">
+            <Clock className="w-3 h-3 text-text-muted" />
             <span>
               {model.train_time_seconds !== null && model.train_time_seconds !== undefined
                 ? `${model.train_time_seconds.toFixed(2)}s`
@@ -129,10 +132,10 @@ export function ModelTrainingCard({ model, isWinner }: ModelTrainingCardProps) {
 
       {/* Error Banner if Model Failed */}
       {model.error_message && (
-        <div className="mt-3 p-2.5 rounded bg-rose-500/10 border border-rose-500/20 text-xs text-rose-300 font-mono">
-          {model.error_message}
-        </div>
+        <AlertRow variant="danger" title="Training Failed">
+          <span className="font-mono text-xs">{model.error_message}</span>
+        </AlertRow>
       )}
-    </div>
+    </Card>
   );
 }

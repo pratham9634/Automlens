@@ -9,16 +9,28 @@ import {
 } from "@/lib/types";
 import { apiClient } from "@/lib/api-client";
 import {
-  X,
   Download,
   Loader2,
-  Table,
-  CheckCircle2,
-  Layers,
-  Clock,
   ShieldCheck,
-  Grid,
 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from "@/components/ui/table";
 
 interface ModelInspectorDialogProps {
   projectId: string;
@@ -77,60 +89,50 @@ export function ModelInspectorDialog({
     };
   }, [projectId, model.model_id, isOpen, isClassification]);
 
-  if (!isOpen) return null;
-
   const downloadUrl = apiClient.getModelDownloadUrl(projectId, model.model_id);
 
-  // Compute maximum cell value in confusion matrix for background intensity
   const maxMatrixVal = confusionMatrix
     ? Math.max(...confusionMatrix.matrix.flatMap((row) => row), 1)
     : 1;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-150">
-      <div className="relative w-full max-w-3xl rounded-xl border border-hairline bg-surface-1 shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0 overflow-hidden">
         {/* Modal Header */}
-        <div className="flex items-center justify-between p-6 border-b border-hairline bg-surface-1">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2.5">
-              <h2 className="text-base font-semibold text-ink font-mono">{model.model_name}</h2>
+        <DialogHeader className="p-5 sm:p-6 border-b border-border bg-surface m-0 space-y-1.5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pr-8">
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <DialogTitle className="font-mono text-base font-semibold text-text-primary">
+                {model.model_name}
+              </DialogTitle>
               {model.is_baseline && (
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-brand-lavender/10 text-brand-hover border border-brand-lavender/30">
+                <Badge variant="warning" size="sm" className="font-mono">
                   Rule 4 Baseline
-                </span>
+                </Badge>
               )}
             </div>
-            <p className="text-xs text-ink-muted">
-              Model ID: <span className="font-mono text-ink">{model.model_id}</span> • Evaluation: 5-Fold Cross-Validation
-            </p>
+
+            <a href={downloadUrl} download>
+              <Button variant="secondary" size="sm" className="gap-1.5 font-mono">
+                <Download className="w-3.5 h-3.5 text-accent" />
+                <span>Download .joblib</span>
+              </Button>
+            </a>
           </div>
 
-          <div className="flex items-center gap-2">
-            <a
-              href={downloadUrl}
-              download
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-2 hover:bg-surface-3 border border-hairline text-xs font-mono text-ink transition-colors"
-            >
-              <Download className="w-3.5 h-3.5 text-brand-hover" />
-              <span>Download .joblib</span>
-            </a>
-            <button
-              onClick={onClose}
-              className="p-1.5 rounded-lg text-ink-muted hover:text-ink hover:bg-surface-2 transition-colors"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
+          <DialogDescription className="text-xs text-text-muted">
+            Model ID: <span className="font-mono text-text-primary">{model.model_id}</span> • Evaluation: 5-Fold Cross-Validation
+          </DialogDescription>
+        </DialogHeader>
 
         {/* Tab Navigation */}
-        <div className="flex items-center gap-2 px-6 pt-3 border-b border-hairline bg-surface-1/50 text-xs font-mono">
+        <div className="flex items-center gap-2 px-5 sm:px-6 pt-2 border-b border-border bg-surface-subtle text-xs font-mono">
           <button
             onClick={() => setActiveTab("folds")}
-            className={`pb-2.5 px-1 border-b-2 font-medium transition-colors ${
+            className={`pb-2 px-2 border-b-2 font-medium transition-colors cursor-pointer ${
               activeTab === "folds"
-                ? "border-brand-lavender text-brand-hover"
-                : "border-transparent text-ink-muted hover:text-ink"
+                ? "border-accent text-accent"
+                : "border-transparent text-text-muted hover:text-text-primary"
             }`}
           >
             5-Fold Cross-Validation Metrics
@@ -138,80 +140,80 @@ export function ModelInspectorDialog({
           {isClassification && (
             <button
               onClick={() => setActiveTab("confusion")}
-              className={`pb-2.5 px-1 border-b-2 font-medium transition-colors ${
+              className={`pb-2 px-2 border-b-2 font-medium transition-colors cursor-pointer ${
                 activeTab === "confusion"
-                  ? "border-brand-lavender text-brand-hover"
-                  : "border-transparent text-ink-muted hover:text-ink"
+                  ? "border-accent text-accent"
+                  : "border-transparent text-text-muted hover:text-text-primary"
               }`}
             >
-              Confusion Matrix & Per-Class Metrics
+              Confusion Matrix &amp; Per-Class Metrics
             </button>
           )}
         </div>
 
         {/* Modal Body */}
-        <div className="p-6 overflow-y-auto space-y-6">
+        <div className="p-5 sm:p-6 overflow-y-auto space-y-5 flex-1">
           {loading ? (
             <div className="py-12 flex flex-col items-center justify-center space-y-2">
-              <Loader2 className="w-5 h-5 animate-spin text-brand-hover" />
-              <span className="text-xs font-mono text-ink-muted">Loading model inspection report...</span>
+              <Loader2 className="w-5 h-5 animate-spin text-accent" />
+              <span className="text-xs font-mono text-text-muted">Loading model inspection report...</span>
             </div>
           ) : (
             <>
               {/* Tab 1: 5-Fold CV Breakdown Table */}
               {activeTab === "folds" && (
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between text-xs font-mono text-ink-muted">
+                  <div className="flex items-center justify-between text-xs font-mono text-text-muted">
                     <span>Performance evaluated across 5 stratified folds (Rule 3)</span>
-                    <span>Train Time: {model.train_time_seconds?.toFixed(2)}s</span>
+                    <span className="tabular-nums">Train Time: {model.train_time_seconds?.toFixed(2)}s</span>
                   </div>
 
                   {model.all_metrics ? (
-                    <div className="rounded-lg border border-hairline overflow-x-auto">
-                      <table className="w-full text-left text-xs font-mono">
-                        <thead className="bg-surface-2 text-ink-muted border-b border-hairline">
-                          <tr>
-                            <th className="py-2.5 px-3.5">Metric</th>
-                            <th className="py-2.5 px-3">Fold 1</th>
-                            <th className="py-2.5 px-3">Fold 2</th>
-                            <th className="py-2.5 px-3">Fold 3</th>
-                            <th className="py-2.5 px-3">Fold 4</th>
-                            <th className="py-2.5 px-3">Fold 5</th>
-                            <th className="py-2.5 px-3.5 font-semibold text-ink">Mean ± Std</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-hairline">
-                          {Object.entries(model.all_metrics).map(([metricName, agg]) => {
-                            const isPrimary = metricName === model.primary_metric_name;
-                            return (
-                              <tr
-                                key={metricName}
-                                className={isPrimary ? "bg-surface-2/40 font-medium" : "hover:bg-surface-2/20"}
-                              >
-                                <td className="py-2.5 px-3.5 text-ink flex items-center gap-1.5">
-                                  <span>{metricName}</span>
-                                  {isPrimary && (
-                                    <span className="text-[9px] px-1 rounded bg-brand-lavender/15 text-brand-hover border border-brand-lavender/30">
-                                      Primary
-                                    </span>
-                                  )}
-                                </td>
-                                {agg.folds.map((val, idx) => (
-                                  <td key={idx} className="py-2.5 px-3 text-ink-muted">
-                                    {val.toFixed(4)}
-                                  </td>
-                                ))}
-                                <td className="py-2.5 px-3.5 text-ink font-semibold">
-                                  {agg.mean.toFixed(4)} ± {agg.std.toFixed(4)}
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Metric</TableHead>
+                          <TableHead className="text-right">Fold 1</TableHead>
+                          <TableHead className="text-right">Fold 2</TableHead>
+                          <TableHead className="text-right">Fold 3</TableHead>
+                          <TableHead className="text-right">Fold 4</TableHead>
+                          <TableHead className="text-right">Fold 5</TableHead>
+                          <TableHead className="text-right font-semibold text-text-primary">
+                            Mean ± Std
+                          </TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {Object.entries(model.all_metrics).map(([metricName, agg]) => {
+                          const isPrimary = metricName === model.primary_metric_name;
+                          return (
+                            <TableRow
+                              key={metricName}
+                              className={isPrimary ? "bg-accent/5 font-medium" : undefined}
+                            >
+                              <TableCell className="text-text-primary font-mono flex items-center gap-1.5">
+                                <span>{metricName}</span>
+                                {isPrimary && (
+                                  <Badge variant="accent" size="sm">
+                                    Primary
+                                  </Badge>
+                                )}
+                              </TableCell>
+                              {agg.folds.map((val, idx) => (
+                                <TableCell key={idx} className="text-right font-mono text-text-muted tabular-nums">
+                                  {val.toFixed(4)}
+                                </TableCell>
+                              ))}
+                              <TableCell className="text-right font-mono text-text-primary font-semibold tabular-nums">
+                                {agg.mean.toFixed(4)} ± {agg.std.toFixed(4)}
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
                   ) : (
-                    <div className="text-xs font-mono text-ink-muted p-4 text-center">
+                    <div className="text-xs font-mono text-text-muted p-4 text-center">
                       Detailed fold metrics unavailable.
                     </div>
                   )}
@@ -220,15 +222,15 @@ export function ModelInspectorDialog({
 
               {/* Tab 2: Confusion Matrix & Per-Class Metrics */}
               {activeTab === "confusion" && confusionMatrix && (
-                <div className="space-y-6">
-                  <div className="flex items-center justify-between text-xs font-mono text-ink-muted">
+                <div className="space-y-5">
+                  <div className="flex items-center justify-between text-xs font-mono text-text-muted">
                     <span>Evaluated on full dataset (Overall Accuracy: {(confusionMatrix.overall_accuracy * 100).toFixed(1)}%)</span>
-                    <span>{confusionMatrix.classes.length} Classes</span>
+                    <span className="tabular-nums">{confusionMatrix.classes.length} Classes</span>
                   </div>
 
                   {/* Confusion Matrix Heatmap Table */}
-                  <div className="p-4 rounded-xl border border-hairline bg-surface-2/30 space-y-3">
-                    <div className="text-xs font-mono font-semibold text-ink text-center">
+                  <div className="p-4 rounded-card border border-border bg-surface-subtle space-y-3">
+                    <div className="text-xs font-mono font-semibold text-text-primary text-center">
                       Predicted Class (Columns) vs Actual Class (Rows)
                     </div>
 
@@ -236,9 +238,9 @@ export function ModelInspectorDialog({
                       <table className="border-collapse text-xs font-mono">
                         <thead>
                           <tr>
-                            <th className="p-2 text-ink-subtle text-right">Actual \ Pred</th>
+                            <th className="p-2 text-text-muted text-right">Actual \ Pred</th>
                             {confusionMatrix.classes.map((c) => (
-                              <th key={c} className="p-2 text-center font-semibold text-ink max-w-[100px] truncate">
+                              <th key={c} className="p-2 text-center font-semibold text-text-primary max-w-[100px] truncate">
                                 {c}
                               </th>
                             ))}
@@ -249,7 +251,7 @@ export function ModelInspectorDialog({
                             const actualClass = confusionMatrix.classes[rIdx];
                             return (
                               <tr key={actualClass}>
-                                <td className="p-2 text-right font-semibold text-ink max-w-[100px] truncate">
+                                <td className="p-2 text-right font-semibold text-text-primary max-w-[100px] truncate">
                                   {actualClass}
                                 </td>
                                 {row.map((count, cIdx) => {
@@ -258,12 +260,12 @@ export function ModelInspectorDialog({
                                   return (
                                     <td
                                       key={cIdx}
-                                      className={`p-3 text-center border border-hairline min-w-[60px] ${
+                                      className={`p-3 text-center border border-border min-w-[60px] tabular-nums ${
                                         isDiagonal
-                                          ? "bg-emerald-500/20 text-emerald-300 font-semibold"
+                                          ? "bg-success/20 text-success font-semibold"
                                           : ratio > 0
-                                          ? "bg-rose-500/15 text-rose-300"
-                                          : "bg-surface-1 text-ink-faint"
+                                          ? "bg-danger/15 text-danger"
+                                          : "bg-surface text-text-muted"
                                       }`}
                                     >
                                       {count}
@@ -279,28 +281,32 @@ export function ModelInspectorDialog({
                   </div>
 
                   {/* Per-Class Precision & Recall Table */}
-                  <div className="rounded-lg border border-hairline overflow-x-auto">
-                    <table className="w-full text-left text-xs font-mono">
-                      <thead className="bg-surface-2 text-ink-muted border-b border-hairline">
-                        <tr>
-                          <th className="py-2.5 px-3.5">Class Label</th>
-                          <th className="py-2.5 px-3">Precision</th>
-                          <th className="py-2.5 px-3">Recall</th>
-                          <th className="py-2.5 px-3">F1-Score</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-hairline">
-                        {Object.entries(confusionMatrix.per_class_metrics).map(([cls, met]) => (
-                          <tr key={cls} className="hover:bg-surface-2/20">
-                            <td className="py-2 px-3.5 text-ink font-medium">{cls}</td>
-                            <td className="py-2 px-3 text-ink-muted">{met.precision.toFixed(4)}</td>
-                            <td className="py-2 px-3 text-ink-muted">{met.recall.toFixed(4)}</td>
-                            <td className="py-2 px-3 text-ink font-semibold">{met.f1.toFixed(4)}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Class Label</TableHead>
+                        <TableHead className="text-right">Precision</TableHead>
+                        <TableHead className="text-right">Recall</TableHead>
+                        <TableHead className="text-right">F1-Score</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {Object.entries(confusionMatrix.per_class_metrics).map(([cls, met]) => (
+                        <TableRow key={cls}>
+                          <TableCell className="font-mono text-text-primary font-medium">{cls}</TableCell>
+                          <TableCell className="text-right font-mono text-text-muted tabular-nums">
+                            {met.precision.toFixed(4)}
+                          </TableCell>
+                          <TableCell className="text-right font-mono text-text-muted tabular-nums">
+                            {met.recall.toFixed(4)}
+                          </TableCell>
+                          <TableCell className="text-right font-mono text-text-primary font-semibold tabular-nums">
+                            {met.f1.toFixed(4)}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
                 </div>
               )}
             </>
@@ -308,33 +314,37 @@ export function ModelInspectorDialog({
         </div>
 
         {/* Modal Footer */}
-        <div className="p-4 border-t border-hairline bg-surface-1/80 flex items-center justify-between">
-          <div className="text-[11px] font-mono text-ink-muted flex items-center gap-1.5">
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+        <DialogFooter className="p-4 border-t border-border bg-surface flex flex-col sm:flex-row items-center justify-between gap-3 m-0">
+          <div className="text-[11px] font-mono text-text-muted flex items-center gap-1.5 self-start sm:self-auto">
+            <ShieldCheck className="w-3.5 h-3.5 text-success" />
             <span>Fitted pipeline verified and ready for inference</span>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 self-end sm:self-auto">
             {onSelectForPredict && (
-              <button
+              <Button
+                variant="primary"
+                size="sm"
                 onClick={() => {
                   onSelectForPredict(model.model_id);
                   onClose();
                 }}
-                className="px-3.5 py-1.5 rounded-lg bg-brand-lavender hover:bg-brand-hover text-ink text-xs font-mono font-medium transition-colors shadow-sm"
+                className="font-mono text-xs"
               >
                 Use in Prediction Form
-              </button>
+              </Button>
             )}
-            <button
+            <Button
+              variant="secondary"
+              size="sm"
               onClick={onClose}
-              className="px-3 py-1.5 rounded-lg border border-hairline hover:bg-surface-2 text-xs font-mono text-ink transition-colors"
+              className="font-mono text-xs"
             >
               Close
-            </button>
+            </Button>
           </div>
-        </div>
-      </div>
-    </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
