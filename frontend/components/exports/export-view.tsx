@@ -13,7 +13,6 @@ import {
   Loader2,
   ShieldCheck,
   RefreshCw,
-  ExternalLink,
   Hash,
   GraduationCap,
   Layers,
@@ -22,6 +21,10 @@ import { apiClient } from "@/lib/api-client";
 import { ExportItemStatus, ExportStatusResponse } from "@/lib/types";
 import { formatBytes } from "@/lib/utils";
 import { VivaExecutiveSummary } from "./viva-executive-summary";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { AlertRow } from "@/components/ui/alert-row";
 
 interface ExportViewProps {
   projectId: string;
@@ -65,7 +68,6 @@ export function ExportView({ projectId, projectName }: ExportViewProps) {
         throw new Error(`Download failed with status ${res.status}`);
       }
 
-      // Read Content-Disposition filename if provided
       const disposition = res.headers.get("Content-Disposition");
       let filename = `${item.export_type}_${projectId}.${item.format}`;
       if (disposition && disposition.includes("filename=")) {
@@ -96,27 +98,27 @@ export function ExportView({ projectId, projectName }: ExportViewProps) {
     switch (format) {
       case "json":
         return (
-          <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-telemetry-cyan/10 text-telemetry-cyan border border-telemetry-cyan/30">
+          <Badge variant="accent" size="sm" className="font-mono uppercase font-bold">
             JSON
-          </span>
+          </Badge>
         );
       case "csv":
         return (
-          <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-telemetry-amber/10 text-telemetry-amber border border-telemetry-amber/30">
+          <Badge variant="warning" size="sm" className="font-mono uppercase font-bold">
             CSV
-          </span>
+          </Badge>
         );
       case "joblib":
         return (
-          <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-telemetry-indigo/10 text-telemetry-indigo border border-telemetry-indigo/30">
+          <Badge variant="neutral" size="sm" className="font-mono uppercase font-bold">
             JOBLIB
-          </span>
+          </Badge>
         );
       default:
         return (
-          <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-surface-3 text-ink-muted border border-hairline">
+          <Badge variant="neutral" size="sm" className="font-mono uppercase font-bold">
             {format.toUpperCase()}
-          </span>
+          </Badge>
         );
     }
   };
@@ -144,50 +146,53 @@ export function ExportView({ projectId, projectName }: ExportViewProps) {
   return (
     <div className="space-y-6">
       {/* Header Banner */}
-      <div className="p-6 rounded-xl border border-hairline bg-surface-1 shadow-sm">
+      <Card className="p-5 sm:p-6 space-y-4">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2 mb-1.5">
-              <span className="p-1.5 rounded-lg bg-surface-2 border border-hairline text-ink">
-                <HardDriveDownload className="w-4 h-4 text-telemetry-cyan" />
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <span className="p-1.5 rounded-md bg-surface-muted text-accent border border-border-subtle">
+                <HardDriveDownload className="w-4 h-4" />
               </span>
-              <h2 className="text-lg font-bold text-ink">
+              <h2 className="text-base font-semibold text-text-primary tracking-tight">
                 Reproducibility &amp; Artifact Export Hub
               </h2>
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-medium bg-telemetry-emerald/10 text-telemetry-emerald border border-telemetry-emerald/25">
-                <ShieldCheck className="w-3 h-3" /> Integrity Verified
-              </span>
+              <Badge variant="success" size="sm" className="font-mono">
+                <ShieldCheck className="w-3 h-3 mr-1" />
+                Integrity Verified
+              </Badge>
             </div>
-            <p className="text-xs text-ink-muted max-w-2xl">
-              Export complete scientific benchmarks, serialized production pipelines, and full execution manifests for{" "}
-              <strong className="text-ink font-semibold">{projectName || "this workspace"}</strong>. Formatted for Excel, Jupyter notebooks, or production deployment.
+            <p className="text-xs text-text-muted max-w-2xl leading-relaxed">
+              Export scientific benchmarks, serialized production pipelines, and full execution manifests for{" "}
+              <strong className="text-text-primary font-semibold">{projectName || "this workspace"}</strong>. Formatted for Excel, Jupyter notebooks, or production deployment.
             </p>
           </div>
 
-          <div className="flex items-center gap-2 self-start md:self-auto">
-            <span className="text-xs font-mono text-ink-muted bg-surface-2 px-3 py-1.5 rounded-lg border border-hairline">
+          <div className="flex items-center gap-2.5 self-start md:self-auto font-mono text-xs">
+            <Badge variant="neutral" size="sm" className="tabular-nums">
               {availableCount} of {totalCount} Ready
-            </span>
-            <button
+            </Badge>
+            <Button
+              variant="secondary"
+              size="sm"
               onClick={fetchStatus}
               disabled={loading}
-              className="p-1.5 rounded-lg border border-hairline bg-surface-2 hover:bg-surface-3 text-ink transition-colors disabled:opacity-50"
               title="Refresh artifact availability"
+              className="h-7 w-7 p-0"
             >
-              <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-            </button>
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
+            </Button>
           </div>
         </div>
-      </div>
+      </Card>
 
       {/* Sub-view Navigation Toggle */}
-      <div className="flex items-center gap-2 border-b border-hairline pb-3">
+      <div className="flex items-center gap-1.5 border-b border-border pb-2 overflow-x-auto text-xs font-mono">
         <button
           onClick={() => setSubView("artifacts")}
-          className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-mono transition-colors ${
+          className={`flex items-center gap-2 px-3.5 py-1.5 rounded-md transition-colors ${
             subView === "artifacts"
-              ? "bg-surface-2 text-ink font-semibold border border-hairline"
-              : "text-ink-muted hover:text-ink"
+              ? "bg-surface-muted text-text-primary font-semibold border border-border"
+              : "text-text-muted hover:text-text-primary hover:bg-surface-subtle/50"
           }`}
         >
           <Layers className="w-3.5 h-3.5" />
@@ -196,17 +201,17 @@ export function ExportView({ projectId, projectName }: ExportViewProps) {
 
         <button
           onClick={() => setSubView("viva-summary")}
-          className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-mono transition-colors ${
+          className={`flex items-center gap-2 px-3.5 py-1.5 rounded-md transition-colors ${
             subView === "viva-summary"
-              ? "bg-surface-2 text-ink font-semibold border border-brand-lavender/40 text-brand-hover"
-              : "text-ink-muted hover:text-ink"
+              ? "bg-surface-muted text-text-primary font-semibold border border-border"
+              : "text-text-muted hover:text-text-primary hover:bg-surface-subtle/50"
           }`}
         >
-          <GraduationCap className="w-3.5 h-3.5 text-brand-hover" />
+          <GraduationCap className="w-3.5 h-3.5 text-accent" />
           <span>Viva Defense Executive Summary</span>
-          <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-brand-lavender/15 text-brand-hover">
+          <Badge variant="accent" size="sm" className="text-[10px] py-0 px-1.5">
             Printable
-          </span>
+          </Badge>
         </button>
       </div>
 
@@ -214,118 +219,112 @@ export function ExportView({ projectId, projectName }: ExportViewProps) {
         <VivaExecutiveSummary projectId={projectId} projectName={projectName || "Workspace"} />
       ) : (
         <>
-          {/* Grid of 6 Export Cards */}
-      {loading && !statusData ? (
-        <div className="p-12 text-center rounded-xl border border-hairline bg-surface-1">
-          <Loader2 className="w-6 h-6 animate-spin text-telemetry-cyan mx-auto mb-3" />
-          <p className="text-xs font-mono text-ink-muted">Inspecting project storage artifacts...</p>
-        </div>
-      ) : error ? (
-        <div className="p-8 text-center rounded-xl border border-telemetry-rose/30 bg-telemetry-rose/5">
-          <p className="text-xs font-semibold text-telemetry-rose">{error}</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {statusData?.exports.map((item) => {
-            const Icon = getItemIcon(item.export_type);
-            const isDownloading = downloadingType === item.export_type;
+          {loading && !statusData ? (
+            <div className="py-20 flex flex-col items-center justify-center space-y-3 text-xs font-mono text-text-muted">
+              <Loader2 className="w-5 h-5 animate-spin text-accent" />
+              <span>Inspecting project storage artifacts...</span>
+            </div>
+          ) : error ? (
+            <AlertRow variant="danger" title="Export Storage Error">
+              {error}
+            </AlertRow>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {statusData?.exports.map((item) => {
+                const Icon = getItemIcon(item.export_type);
+                const isDownloading = downloadingType === item.export_type;
 
-            return (
-              <div
-                key={item.export_type}
-                className={`p-5 rounded-xl border transition-all flex flex-col justify-between shadow-sm ${
-                  item.is_available
-                    ? "bg-surface-1 border-hairline hover:border-surface-3"
-                    : "bg-surface-1/50 border-hairline/60 opacity-80"
-                }`}
-              >
-                <div>
-                  {/* Top Bar: Icon & Format Badge */}
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="p-2 rounded-lg bg-surface-2 border border-hairline text-ink">
-                      <Icon className="w-4 h-4 text-telemetry-cyan" />
-                    </span>
-                    {getFormatBadge(item.format)}
-                  </div>
-
-                  {/* Title & Description */}
-                  <h3 className="text-sm font-bold text-ink mb-1.5">{item.title}</h3>
-                  <p className="text-xs text-ink-muted leading-relaxed mb-4">
-                    {item.description}
-                  </p>
-                </div>
-
-                <div className="pt-4 border-t border-hairline/60 space-y-3">
-                  {/* Status Indicator */}
-                  {item.is_available ? (
-                    <div className="space-y-1">
-                      <div className="flex items-center justify-between text-[11px] font-mono">
-                        <span className="flex items-center gap-1 text-telemetry-emerald font-semibold">
-                          <CheckCircle2 className="w-3.5 h-3.5" /> Ready for Export
-                        </span>
-                        {item.file_size_bytes !== null && item.file_size_bytes !== undefined && (
-                          <span className="text-ink-muted">
-                            {formatBytes(item.file_size_bytes)}
-                          </span>
-                        )}
-                      </div>
-
-                      {item.checksum_sha256 && (
-                        <div className="flex items-center gap-1 text-[10px] font-mono text-ink-muted truncate" title={item.checksum_sha256}>
-                          <Hash className="w-3 h-3 text-telemetry-cyan shrink-0" />
-                          <span className="truncate">SHA256: {item.checksum_sha256.slice(0, 16)}...</span>
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="flex items-start gap-1.5 text-[11px] font-mono text-telemetry-amber">
-                      <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-                      <span>{item.reason_unavailable || "Prerequisite step pending"}</span>
-                    </div>
-                  )}
-
-                  {/* Action Button */}
-                  <button
-                    onClick={() => handleDownload(item)}
-                    disabled={!item.is_available || isDownloading}
-                    className={`w-full py-2 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-all ${
+                return (
+                  <Card
+                    key={item.export_type}
+                    className={`p-5 flex flex-col justify-between space-y-4 ${
                       item.is_available
-                        ? "bg-surface-2 hover:bg-surface-3 text-ink border border-hairline hover:border-telemetry-cyan/40 shadow-sm"
-                        : "bg-surface-2/40 text-ink-muted border border-hairline/40 cursor-not-allowed opacity-60"
+                        ? "border-border hover:border-border-strong"
+                        : "opacity-75"
                     }`}
                   >
-                    {isDownloading ? (
-                      <>
-                        <Loader2 className="w-3.5 h-3.5 animate-spin text-telemetry-cyan" />
-                        Packaging Download...
-                      </>
-                    ) : (
-                      <>
-                        <Download className="w-3.5 h-3.5" />
-                        {item.is_available ? `Download .${item.format}` : "Locked"}
-                      </>
-                    )}
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
+                    <div>
+                      {/* Top Bar: Icon & Format Badge */}
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="p-2 rounded-md bg-surface-muted border border-border-subtle text-accent">
+                          <Icon className="w-4 h-4" />
+                        </span>
+                        {getFormatBadge(item.format)}
+                      </div>
 
-      {/* Academic Compliance Footer Callout */}
-      <div className="p-4 rounded-xl border border-hairline bg-surface-2/60 text-xs text-ink-muted flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <ShieldCheck className="w-4 h-4 text-telemetry-emerald shrink-0" />
-          <span>
-            <strong>Academic Integrity Notice:</strong> All exported artifacts are compiled strictly without data leakage, include 5-fold cross-validation fold scores, and conform with Rule 5 &amp; 10 reproducibility standards.
-          </span>
-        </div>
-        <div className="flex items-center gap-1 font-mono text-[11px] text-telemetry-cyan whitespace-nowrap self-start sm:self-auto">
-          <span>Verification Protocol v1.0</span>
-          <ExternalLink className="w-3 h-3" />
-        </div>
-      </div>
+                      {/* Title & Description */}
+                      <h3 className="text-sm font-semibold text-text-primary mb-1">
+                        {item.title}
+                      </h3>
+                      <p className="text-xs text-text-muted leading-relaxed">
+                        {item.description}
+                      </p>
+                    </div>
+
+                    <div className="pt-3 border-t border-border space-y-3">
+                      {/* Status Indicator */}
+                      {item.is_available ? (
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between text-xs font-mono">
+                            <span className="flex items-center gap-1.5 text-success font-medium">
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              <span>Ready for Export</span>
+                            </span>
+                            {item.file_size_bytes !== null && item.file_size_bytes !== undefined && (
+                              <span className="text-text-muted tabular-nums">
+                                {formatBytes(item.file_size_bytes)}
+                              </span>
+                            )}
+                          </div>
+
+                          {item.checksum_sha256 && (
+                            <div
+                              className="flex items-center gap-1 text-[10px] font-mono text-text-muted truncate"
+                              title={item.checksum_sha256}
+                            >
+                              <Hash className="w-3 h-3 text-text-muted shrink-0" />
+                              <span className="truncate">SHA256: {item.checksum_sha256.slice(0, 16)}...</span>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="flex items-start gap-1.5 text-xs font-mono text-warning">
+                          <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                          <span>{item.reason_unavailable || "Prerequisite step pending"}</span>
+                        </div>
+                      )}
+
+                      {/* Action Button */}
+                      <Button
+                        variant={item.is_available ? "secondary" : "ghost"}
+                        size="sm"
+                        onClick={() => handleDownload(item)}
+                        disabled={!item.is_available || isDownloading}
+                        className="w-full gap-2 font-mono text-xs"
+                      >
+                        {isDownloading ? (
+                          <>
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            <span>Packaging Download...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Download className="w-3.5 h-3.5" />
+                            <span>{item.is_available ? `Download .${item.format}` : "Locked"}</span>
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Academic Compliance Callout */}
+          <AlertRow variant="info" title="Academic Integrity Notice">
+            All exported artifacts are compiled strictly without data leakage, include 5-fold cross-validation fold scores, and conform with Rule 5 &amp; 10 reproducibility standards.
+          </AlertRow>
         </>
       )}
     </div>
