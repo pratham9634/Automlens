@@ -2,6 +2,8 @@
 
 import { ModelCandidate } from "@/lib/types";
 import { Cpu, CheckSquare, Square, Award, ChevronDown, Info } from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 interface ModelCandidatesCardProps {
   candidates: ModelCandidate[];
@@ -40,36 +42,36 @@ export function ModelCandidatesCard({
   };
 
   return (
-    <div className="p-6 rounded-xl border border-hairline bg-surface-1 space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-hairline pb-4">
+    <Card className="p-4 sm:p-5 space-y-5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-4">
         <div>
-          <h3 className="text-sm font-semibold text-ink flex items-center gap-2">
-            <Cpu className="w-4 h-4 text-brand-hover" />
-            <span>Algorithm Candidates & Primary Metric</span>
+          <h3 className="card-title text-text-primary flex items-center gap-2">
+            <Cpu className="w-4 h-4 text-accent" />
+            <span>Candidate Algorithms &amp; Primary Metric</span>
           </h3>
-          <p className="text-xs text-ink-muted mt-0.5">
+          <p className="text-xs text-text-muted mt-0.5">
             Select candidate models to be evaluated in parallel across 5-fold cross-validation.
           </p>
         </div>
 
         {/* Primary Metric Selector */}
         <div className="flex items-center gap-2">
-          <label className="text-xs font-mono text-ink-muted whitespace-nowrap">
+          <label className="text-xs font-mono text-text-muted whitespace-nowrap">
             Primary Metric:
           </label>
           <div className="relative">
             <select
               value={primaryMetric}
               onChange={(e) => onChangePrimaryMetric(e.target.value)}
-              className="appearance-none pl-3 pr-8 py-1.5 rounded-lg bg-surface-2 border border-hairline text-xs font-mono text-ink focus:outline-none focus:border-brand-lavender cursor-pointer"
+              className="appearance-none pl-3 pr-8 py-1.5 rounded-input bg-surface border border-border text-xs font-mono text-text-primary focus:outline-none focus:border-accent cursor-pointer"
             >
               {availableMetrics.map((m) => (
-                <option key={m} value={m} className="bg-surface-1 text-ink">
+                <option key={m} value={m} className="bg-surface text-text-primary">
                   {formatMetricName(m)}
                 </option>
               ))}
             </select>
-            <ChevronDown className="w-3.5 h-3.5 text-ink-muted absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <ChevronDown className="w-3.5 h-3.5 text-text-muted absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
           </div>
         </div>
       </div>
@@ -89,41 +91,41 @@ export function ModelCandidatesCard({
                 }
                 onToggleModel(model.id);
               }}
-              className={`p-4 rounded-lg border transition-all cursor-pointer flex flex-col justify-between gap-3 ${
+              className={`p-4 rounded-card border transition-all cursor-pointer flex flex-col justify-between gap-3 ${
                 isSelected
-                  ? "bg-surface-2/80 border-brand-lavender/50 shadow-sm"
-                  : "bg-surface-1/50 border-hairline opacity-60 hover:opacity-100"
+                  ? "bg-surface-subtle border-accent/40 shadow-xs"
+                  : "bg-surface border-border opacity-70 hover:opacity-100"
               }`}
             >
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
                     {isSelected ? (
-                      <CheckSquare className="w-4 h-4 text-brand-hover shrink-0" />
+                      <CheckSquare className="w-4 h-4 text-accent shrink-0" />
                     ) : (
-                      <Square className="w-4 h-4 text-ink-muted shrink-0" />
+                      <Square className="w-4 h-4 text-text-muted shrink-0" />
                     )}
-                    <span className="text-xs font-mono font-semibold text-ink">
+                    <span className="text-xs font-mono font-semibold text-text-primary">
                       {model.name}
                     </span>
                   </div>
 
                   {model.is_baseline && (
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-brand-lavender/15 text-brand-hover border border-brand-lavender/30 flex items-center gap-1 shrink-0">
+                    <Badge variant="warning" size="sm" className="gap-1 shrink-0 font-mono">
                       <Award className="w-3 h-3" />
                       Rule 4 Baseline
-                    </span>
+                    </Badge>
                   )}
                 </div>
 
-                <p className="text-xs text-ink-muted leading-relaxed pl-6">
+                <p className="text-xs text-text-muted leading-relaxed pl-6">
                   {model.description}
                 </p>
               </div>
 
               {model.is_baseline && (
-                <div className="text-[10px] font-mono text-ink-faint pl-6 flex items-center gap-1">
-                  <Info className="w-3 h-3" />
+                <div className="text-[10px] font-mono text-text-subtle pl-6 flex items-center gap-1">
+                  <Info className="w-3 h-3 text-text-muted" />
                   Mandatory baseline for scientific validity (cannot be deselected)
                 </div>
               )}
@@ -131,6 +133,6 @@ export function ModelCandidatesCard({
           );
         })}
       </div>
-    </div>
+    </Card>
   );
 }

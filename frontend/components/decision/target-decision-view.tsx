@@ -19,9 +19,11 @@ import {
   CheckCircle2,
   ArrowRight,
   AlertCircle,
-  RefreshCw,
-  Sliders,
 } from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { AlertRow } from "@/components/ui/alert-row";
 
 interface TargetDecisionViewProps {
   projectId: string;
@@ -171,7 +173,7 @@ export function TargetDecisionView({
     if (!selectedColumn || !decision) return;
 
     if (selectedModels.length === 0) {
-      alert("Please select at least one algorithm candidate to train.");
+      alert("Please select at least one candidate algorithm to train.");
       return;
     }
 
@@ -202,9 +204,9 @@ export function TargetDecisionView({
   if (loading) {
     return (
       <div className="py-16 flex flex-col items-center justify-center space-y-3">
-        <Loader2 className="w-6 h-6 animate-spin text-brand-hover" />
-        <span className="text-xs font-mono text-ink-muted">
-          Analyzing dataset columns & formulating AI decisions...
+        <Loader2 className="w-6 h-6 animate-spin text-accent" />
+        <span className="text-xs font-mono text-text-muted">
+          Analyzing dataset features and formulating fold-safe pipeline...
         </span>
       </div>
     );
@@ -212,11 +214,11 @@ export function TargetDecisionView({
 
   if (error && !suggestions.length) {
     return (
-      <div className="p-6 rounded-xl border border-hairline bg-surface-1 text-center space-y-3">
-        <AlertCircle className="w-6 h-6 text-telemetry-rose mx-auto" />
-        <div className="text-xs font-semibold text-ink">Target Inference Failed</div>
-        <div className="text-xs text-ink-muted">{error}</div>
-      </div>
+      <Card className="p-6 text-center space-y-3">
+        <AlertCircle className="w-6 h-6 text-danger mx-auto" />
+        <div className="text-xs font-semibold text-text-primary">Target Inference Failed</div>
+        <div className="text-xs text-text-muted">{error}</div>
+      </Card>
     );
   }
 
@@ -224,39 +226,40 @@ export function TargetDecisionView({
     <div className="space-y-6">
       {/* Target Confirmed Locked Banner */}
       {confirmedTarget && (
-        <div className="p-5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <Card className="p-4 sm:p-5 border-success/30 bg-success/5 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-start gap-3">
-            <div className="w-9 h-9 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
+            <div className="w-9 h-9 rounded-button bg-success/15 text-success flex items-center justify-center shrink-0 mt-0.5">
               <Lock className="w-4 h-4" />
             </div>
             <div>
-              <div className="text-sm font-semibold text-ink flex items-center gap-2">
-                <span>Target Locked & Verified</span>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+              <div className="text-sm font-semibold text-text-primary flex items-center gap-2">
+                <span>Target Locked &amp; Verified</span>
+                <Badge variant="success" size="sm">
                   Ready for Training
-                </span>
+                </Badge>
               </div>
-              <p className="text-xs text-ink-muted mt-1">
-                Target: <span className="font-mono text-ink font-semibold">{confirmedTarget.target_column}</span> • Task:{" "}
-                <span className="font-mono text-ink capitalize">{confirmedTarget.task_type.replace("_", " ")}</span> • Models:{" "}
-                <span className="font-mono text-ink">{confirmedTarget.selected_models.length} candidates</span> • Metric:{" "}
-                <span className="font-mono text-ink uppercase">{confirmedTarget.primary_metric}</span>
+              <p className="text-xs text-text-muted mt-1 leading-relaxed">
+                Target: <span className="font-mono text-text-primary font-semibold">{confirmedTarget.target_column}</span> • Task:{" "}
+                <span className="font-mono text-text-primary capitalize">{confirmedTarget.task_type.replace("_", " ")}</span> • Models:{" "}
+                <span className="font-mono text-text-primary">{confirmedTarget.selected_models.length} candidates</span> • Metric:{" "}
+                <span className="font-mono text-text-primary uppercase">{confirmedTarget.primary_metric}</span>
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-2 self-end md:self-auto">
             {onNavigateToTraining && (
-              <button
+              <Button
+                variant="primary"
                 onClick={onNavigateToTraining}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-mono font-medium transition-colors shadow-sm"
+                className="gap-2 font-mono text-xs"
               >
                 <span>Proceed to Parallel Training</span>
                 <ArrowRight className="w-3.5 h-3.5" />
-              </button>
+              </Button>
             )}
           </div>
-        </div>
+        </Card>
       )}
 
       {/* Target Column Selection & Distribution */}
@@ -272,9 +275,9 @@ export function TargetDecisionView({
 
       {computing ? (
         <div className="py-12 flex flex-col items-center justify-center space-y-2">
-          <Loader2 className="w-5 h-5 animate-spin text-brand-hover" />
-          <span className="text-xs font-mono text-ink-muted">
-            Formulating candidate algorithms and leakage-free pipeline...
+          <Loader2 className="w-5 h-5 animate-spin text-accent" />
+          <span className="text-xs font-mono text-text-muted">
+            Formulating candidate algorithms and fold-safe pipeline...
           </span>
         </div>
       ) : decision ? (
@@ -299,36 +302,34 @@ export function TargetDecisionView({
           />
 
           {/* Confirmation & Lock Action Bar */}
-          <div className="p-6 rounded-xl border border-hairline bg-surface-1 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <Card className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="space-y-1">
-              <div className="text-xs font-semibold text-ink flex items-center gap-1.5">
-                <CheckCircle2 className="w-4 h-4 text-brand-hover" />
-                <span>Confirm Configuration & Commit to Audit Ledger</span>
+              <div className="text-xs font-semibold text-text-primary flex items-center gap-1.5">
+                <CheckCircle2 className="w-4 h-4 text-accent" />
+                <span>Confirm Configuration &amp; Commit to Audit Ledger</span>
               </div>
-              <p className="text-xs text-ink-muted">
+              <p className="text-xs text-text-muted">
                 Locks the target column and preprocessing transformations into the experiment audit trail.
               </p>
             </div>
 
-            <button
+            <Button
+              variant="primary"
               onClick={handleConfirmTarget}
               disabled={confirming || selectedModels.length === 0}
-              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-brand-lavender hover:bg-brand-hover text-ink text-xs font-mono font-semibold transition-all shadow-md disabled:opacity-50"
+              isLoading={confirming}
+              className="gap-2 font-mono"
             >
-              {confirming ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Lock className="w-4 h-4" />
-              )}
+              <Lock className="w-4 h-4" />
               <span>
                 {confirming
                   ? "Locking Configuration..."
                   : confirmedTarget
-                  ? "Update & Re-Lock Target Configuration"
+                  ? "Update & Re-Lock Configuration"
                   : "Lock Target & Proceed to Training"}
               </span>
-            </button>
-          </div>
+            </Button>
+          </Card>
         </>
       ) : null}
     </div>
