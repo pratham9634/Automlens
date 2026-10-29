@@ -1,6 +1,7 @@
 """FastAPI Route Handlers for Target Selection and Hybrid AI Decision Engine."""
 
 from fastapi import APIRouter, Depends, status
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from app.api.v1.schemas.common import ErrorResponse
@@ -9,6 +10,7 @@ from app.api.v1.schemas.decision_engine import (
     ConfirmedTargetResponse,
     ConfirmTargetRequest,
     DecisionEngineResponse,
+    FormulateDecisionsRequest,
     TargetAnalysisDetailResponse,
     TargetSuggestResponse,
 )
@@ -69,15 +71,44 @@ def analyze_target(
 )
 def formulate_decisions(
     project_id: str,
-    payload: AnalyzeTargetRequest,
+    payload: FormulateDecisionsRequest,
     db: Session = Depends(get_db),
 ) -> DecisionEngineResponse:
-    """Execute Hybrid Decision Engine (deterministic heuristics + OpenRouter LLM enrichment)."""
+    """Execute Hybrid Decision Engine (deterministic heuristics + Ollama/OpenRouter AI)."""
     service = DecisionEngineService(db)
     return service.formulate_decisions(
-        project_id,
-        payload.target_column,
-        payload.override_task_type,
+        project_id=project_id,
+        target_column=payload.target_column,
+        override_task_type=payload.override_task_type,
+        user_objective=payload.user_objective,
+    )
+
+
+@router.post(
+    "/decision/stream",
+    status_code=status.HTTP_200_OK,
+    summary="Stream real-time AI reasoning and pipeline formulation via SSE",
+)
+async def stream_decisions(
+    project_id: str,
+    payload: FormulateDecisionsRequest,
+    db: Session = Depends(get_db),
+) -> StreamingResponse:
+    """Stream live token-by-token AI thought process via Server-Sent Events."""
+    service = DecisionEngineService(db)
+    return StreamingResponse(
+        service.stream_decisions(
+            project_id=project_id,
+            target_column=payload.target_column,
+            override_task_type=payload.override_task_type,
+            user_objective=payload.user_objective,
+        ),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
     )
 
 

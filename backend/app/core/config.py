@@ -41,7 +41,12 @@ class Settings(BaseSettings):
     # Logging
     AUTOMLENS_LOG_LEVEL: str = "INFO"
 
-    # OpenRouter AI
+    # AI Decision Engine (Ollama / OpenRouter / Offline)
+    AI_PROVIDER: str = "ollama"  # "ollama", "openrouter", or "offline"
+    OLLAMA_BASE_URL: str = "http://localhost:11434/v1"
+    OLLAMA_MODEL: str = "qwen2.5:3b"
+
+    # OpenRouter AI (Fallback or Alternative)
     OPENROUTER_API_KEY: str | None = None
     OPENROUTER_MODEL: str = "meta-llama/llama-3.3-70b-instruct:free"
 

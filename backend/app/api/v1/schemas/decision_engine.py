@@ -67,6 +67,34 @@ class PreprocessingStep(BaseModel):
     reason: str = Field(..., description="Engineering rationale justifying the decision")
 
 
+class EngineeredFeature(BaseModel):
+    """An automated or user-objective guided feature extraction decision."""
+
+    name: str = Field(..., description="Name of the engineered feature")
+    source_columns: list[str] = Field(
+        default_factory=list, description="Columns used to create this feature"
+    )
+    transformation_type: str = Field(
+        ...,
+        description="e.g. 'datetime_decomposition', 'interaction_ratio', 'outlier_capping'",
+    )
+    formula_or_desc: str = Field(..., description="Operation description or mathematical formula")
+    rationale: str = Field(..., description="Justification based on data or user objective")
+
+
+class FormulateDecisionsRequest(BaseModel):
+    """Request payload to formulate decisions with optional user objective."""
+
+    target_column: str = Field(..., description="Selected target column")
+    override_task_type: TaskType | None = Field(
+        default=None, description="Optional task type override"
+    )
+    user_objective: str | None = Field(
+        default=None,
+        description="Optional natural language goal/objective to guide decisions",
+    )
+
+
 class DecisionEngineResponse(BaseModel):
     """Formulated ML pipeline configuration, candidate models, and engineering rationale."""
 
@@ -75,10 +103,15 @@ class DecisionEngineResponse(BaseModel):
     primary_metric: str
     available_metrics: list[str]
     preprocessing_steps: list[PreprocessingStep]
+    engineered_features: list[EngineeredFeature] = Field(default_factory=list)
     candidate_models: list[ModelCandidate]
     engineering_rationale: str
+    user_objective: str | None = None
     is_llm_enriched: bool = Field(
-        ..., description="True if OpenRouter LLM was used, False if deterministic template"
+        ..., description="True if AI/LLM was used, False if deterministic template"
+    )
+    ai_provider: str = Field(
+        default="offline", description="Provider used: 'ollama', 'openrouter', or 'offline'"
     )
 
 
@@ -89,6 +122,8 @@ class ConfirmTargetRequest(BaseModel):
     task_type: TaskType
     selected_models: list[str] = Field(..., min_length=1)
     primary_metric: str
+    user_objective: str | None = None
+    engineered_features: list[EngineeredFeature] = Field(default_factory=list)
 
 
 class ConfirmedTargetResponse(BaseModel):
@@ -101,3 +136,5 @@ class ConfirmedTargetResponse(BaseModel):
     primary_metric: str
     status: str
     confirmed_at: str
+    user_objective: str | None = None
+    engineered_features: list[EngineeredFeature] = Field(default_factory=list)
