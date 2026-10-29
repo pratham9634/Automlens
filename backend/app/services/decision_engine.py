@@ -38,6 +38,7 @@ from app.core.errors import (
 from app.core.logging import get_logger
 from app.db.repositories.datasets import DatasetRepository
 from app.db.repositories.projects import ProjectRepository
+from app.ml.model_registry import get_candidate_models
 from app.ml.task_detection import (
     TaskType,
     analyze_target_column,
@@ -353,7 +354,11 @@ class DecisionEngineService:
         return system_prompt, user_prompt
 
     def _select_candidate_models(
-        self, task_type: TaskType
+        self,
+        task_type: TaskType,
+        n_rows: int = 1000,
+        n_cols: int = 10,
+        user_objective: str | None = None,
     ) -> tuple[str, list[str], list[ModelCandidate]]:
         """Return primary metric, available metrics, and candidate models for task type."""
         if task_type == TaskType.BINARY_CLASSIFICATION:
@@ -365,123 +370,19 @@ class DecisionEngineService:
                 "precision_macro",
                 "recall_macro",
             ]
-            models = [
-                ModelCandidate(
-                    id="dummy_classifier",
-                    name="Dummy Classifier (Baseline)",
-                    is_baseline=True,
-                    description="Most-frequent baseline (Rule 4). Models must beat this.",
-                    default_selected=True,
-                ),
-                ModelCandidate(
-                    id="logistic_regression",
-                    name="Logistic Regression",
-                    is_baseline=False,
-                    description="Linear boundary with L2 regularization for fast baselines.",
-                    default_selected=True,
-                ),
-                ModelCandidate(
-                    id="random_forest",
-                    name="Random Forest Classifier",
-                    is_baseline=False,
-                    description="100 decision trees robust to non-linear interactions & outliers.",
-                    default_selected=True,
-                ),
-                ModelCandidate(
-                    id="gradient_boosting",
-                    name="HistGradientBoosting Classifier",
-                    is_baseline=False,
-                    description="Histogram gradient boosted trees offering high tabular accuracy.",
-                    default_selected=True,
-                ),
-                ModelCandidate(
-                    id="xgboost",
-                    name="XGBoost Classifier",
-                    is_baseline=False,
-                    description="Extreme gradient boosted decision trees with regularization.",
-                    default_selected=False,
-                ),
-            ]
         elif task_type == TaskType.MULTICLASS_CLASSIFICATION:
             primary_metric = "f1_macro"
             available_metrics = ["f1_macro", "accuracy", "precision_macro", "recall_macro"]
-            models = [
-                ModelCandidate(
-                    id="dummy_classifier",
-                    name="Dummy Classifier (Baseline)",
-                    is_baseline=True,
-                    description="Stratified class baseline (Rule 4). Models must beat chance.",
-                    default_selected=True,
-                ),
-                ModelCandidate(
-                    id="logistic_regression",
-                    name="Multinomial Logistic Regression",
-                    is_baseline=False,
-                    description="Cross-entropy calibrated linear model for multiclass estimation.",
-                    default_selected=True,
-                ),
-                ModelCandidate(
-                    id="random_forest",
-                    name="Random Forest Classifier",
-                    is_baseline=False,
-                    description="Bootstrap aggregated trees for high-dimensional class separation.",
-                    default_selected=True,
-                ),
-                ModelCandidate(
-                    id="gradient_boosting",
-                    name="HistGradientBoosting Classifier",
-                    is_baseline=False,
-                    description="Fast gradient boosted trees for complex multiclass boundaries.",
-                    default_selected=True,
-                ),
-                ModelCandidate(
-                    id="xgboost",
-                    name="XGBoost Classifier",
-                    is_baseline=False,
-                    description="Multiclass softmax gradient boosted trees for tabular accuracy.",
-                    default_selected=False,
-                ),
-            ]
         else:  # REGRESSION
             primary_metric = "r2"
             available_metrics = ["r2", "neg_root_mean_squared_error", "neg_mean_absolute_error"]
-            models = [
-                ModelCandidate(
-                    id="dummy_regressor",
-                    name="Dummy Regressor (Mean Baseline)",
-                    is_baseline=True,
-                    description="Predicts the mean training target (Rule 4). R2 baseline = 0.0.",
-                    default_selected=True,
-                ),
-                ModelCandidate(
-                    id="ridge_regression",
-                    name="Ridge Regression",
-                    is_baseline=False,
-                    description="L2-penalized linear regression preventing coefficient explosion.",
-                    default_selected=True,
-                ),
-                ModelCandidate(
-                    id="random_forest",
-                    name="Random Forest Regressor",
-                    is_baseline=False,
-                    description="Non-linear tree ensemble reducing variance through averaging.",
-                    default_selected=True,
-                ),
-                ModelCandidate(
-                    id="gradient_boosting",
-                    name="HistGradientBoosting Regressor",
-                    is_baseline=False,
-                    description="Sequential gradient boosted trees optimizing squared error loss.",
-                    default_selected=True,
-                ),
-                ModelCandidate(
-                    id="xgboost",
-                    name="XGBoost Regressor",
-                    is_baseline=False,
-                    description="Extreme gradient boosted regression trees with regularized loss.",
-                    default_selected=False,
-                ),
-            ]
+
+        models = get_candidate_models(
+            task_type=task_type,
+            n_rows=n_rows,
+            n_cols=n_cols,
+            user_objective=user_objective,
+        )
         return primary_metric, available_metrics, models
 
     def _formulate_steps(
@@ -605,7 +506,9 @@ class DecisionEngineService:
 
             steps, features_summary = self._formulate_steps(df, input_cols)
             eng_features = self._detect_automated_features(df, input_cols, user_objective)
-            primary_metric, available_metrics, models = self._select_candidate_models(task_type)
+            primary_metric, available_metrics, models = self._select_candidate_models(
+                task_type, len(df), len(input_cols), user_objective
+            )
 
             deterministic_rationale = self._generate_deterministic_rationale(
                 task_type=task_type,
@@ -765,7 +668,9 @@ class DecisionEngineService:
 
         steps, features_summary = self._formulate_steps(df, input_cols)
         eng_features = self._detect_automated_features(df, input_cols, user_objective)
-        primary_metric, available_metrics, models = self._select_candidate_models(task_type)
+        primary_metric, available_metrics, models = self._select_candidate_models(
+            task_type, len(df), len(input_cols), user_objective
+        )
 
         llm_rationale: str | None = None
         is_llm_enriched = False
