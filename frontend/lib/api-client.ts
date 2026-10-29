@@ -176,12 +176,94 @@ export const apiClient = {
 
   formulateDecisions: (
     projectId: string,
-    data: { target_column: string; override_task_type?: TaskType | null }
+    data: { target_column: string; override_task_type?: TaskType | null; user_objective?: string | null }
   ) =>
     request<DecisionEngineResponse>(`/projects/${projectId}/decision`, {
       method: "POST",
       body: JSON.stringify(data),
     }),
+
+  streamDecisions: async (
+    projectId: string,
+    data: { target_column: string; override_task_type?: TaskType | null; user_objective?: string | null },
+    callbacks: {
+      onStatus?: (statusData: { status: string; provider?: string }) => void;
+      onToken: (token: string) => void;
+      onNotice?: (notice: string) => void;
+      onReasoningCompleted?: (text: string) => void;
+      onPipelineReady: (response: DecisionEngineResponse) => void;
+      onError: (err: string) => void;
+    }
+  ): Promise<void> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/projects/${projectId}/decision/stream`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Stream request failed with status ${response.status}`);
+      }
+
+      if (!response.body) {
+        throw new Error("No response body available for streaming");
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const events = buffer.split("\n\n");
+        buffer = events.pop() || "";
+
+        for (const eventBlock of events) {
+          if (!eventBlock.trim()) continue;
+
+          let eventName = "message";
+          let dataStr = "";
+
+          for (const line of eventBlock.split("\n")) {
+            if (line.startsWith("event: ")) {
+              eventName = line.slice(7).trim();
+            } else if (line.startsWith("data: ")) {
+              dataStr = line.slice(6).trim();
+            }
+          }
+
+          if (!dataStr) continue;
+
+          try {
+            const parsed = JSON.parse(dataStr);
+            if (eventName === "status" && callbacks.onStatus) {
+              callbacks.onStatus(parsed);
+            } else if (eventName === "token") {
+              callbacks.onToken(parsed.token || "");
+            } else if (eventName === "notice" && callbacks.onNotice) {
+              callbacks.onNotice(parsed.message || "");
+            } else if (eventName === "reasoning_completed" && callbacks.onReasoningCompleted) {
+              callbacks.onReasoningCompleted(parsed.text || "");
+            } else if (eventName === "pipeline_ready") {
+              callbacks.onPipelineReady(parsed as DecisionEngineResponse);
+            } else if (eventName === "error") {
+              callbacks.onError(parsed.error || "Unknown stream error");
+            }
+          } catch (e) {
+            console.warn("Failed to parse SSE line:", dataStr, e);
+          }
+        }
+      }
+    } catch (err) {
+      callbacks.onError(err instanceof Error ? err.message : String(err));
+    }
+  },
 
   confirmTarget: (projectId: string, data: ConfirmTargetRequest) =>
     request<ConfirmedTargetResponse>(`/projects/${projectId}/target/confirm`, {

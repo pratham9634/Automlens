@@ -187,15 +187,32 @@ export interface PreprocessingStep {
   reason: string;
 }
 
+export interface EngineeredFeature {
+  name: string;
+  source_columns: string[];
+  transformation_type: string;
+  formula_or_desc: string;
+  rationale: string;
+}
+
+export interface FormulateDecisionsRequest {
+  target_column: string;
+  override_task_type?: TaskType | null;
+  user_objective?: string | null;
+}
+
 export interface DecisionEngineResponse {
   target_column: string;
   task_type: TaskType;
   primary_metric: string;
   available_metrics: string[];
   preprocessing_steps: PreprocessingStep[];
+  engineered_features: EngineeredFeature[];
   candidate_models: ModelCandidate[];
   engineering_rationale: string;
+  user_objective?: string | null;
   is_llm_enriched: boolean;
+  ai_provider?: "ollama" | "openrouter" | "offline" | string;
 }
 
 export interface ConfirmTargetRequest {
@@ -203,6 +220,8 @@ export interface ConfirmTargetRequest {
   task_type: TaskType;
   selected_models: string[];
   primary_metric: string;
+  user_objective?: string | null;
+  engineered_features?: EngineeredFeature[];
 }
 
 export interface ConfirmedTargetResponse {
@@ -213,6 +232,8 @@ export interface ConfirmedTargetResponse {
   primary_metric: string;
   status: string;
   confirmed_at: string;
+  user_objective?: string | null;
+  engineered_features?: EngineeredFeature[];
 }
 
 // Training & Parallel Execution Types
