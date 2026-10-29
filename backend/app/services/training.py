@@ -27,6 +27,7 @@ from app.ml.metrics import (
     compute_classification_metrics,
     compute_regression_metrics,
 )
+from app.ml.model_registry import CLASSIFICATION_REGISTRY, REGRESSION_REGISTRY
 from app.ml.pipeline_factory import create_pipeline
 from app.ml.task_detection import TaskType
 from app.storage.base import StorageBackend
@@ -58,6 +59,7 @@ def _train_single_model_worker(args: dict[str, Any]) -> dict[str, Any]:
     numeric_cols: list[str] = args["numeric_cols"]
     categorical_cols: list[str] = args["categorical_cols"]
     preprocessing_plan: list[dict[str, Any]] = args.get("preprocessing_plan", [])
+    engineered_features: list[dict[str, Any]] = args.get("engineered_features", [])
     cv_splits: list[tuple[np.ndarray, np.ndarray]] = args["cv_splits"]
     random_state: int = args.get("random_state", 42)
     save_artifact_path: str = args["save_artifact_path"]
@@ -84,6 +86,7 @@ def _train_single_model_worker(args: dict[str, Any]) -> dict[str, Any]:
                 numeric_cols=numeric_cols,
                 categorical_cols=categorical_cols,
                 preprocessing_plan=preprocessing_plan,
+                engineered_features=engineered_features,
                 random_state=random_state,
             )
 
@@ -231,15 +234,7 @@ class TrainingService:
         self.run_repo.create(run)
 
         # Create initial ModelRun DB records (queued)
-        model_name_map = {
-            "dummy_classifier": "Dummy Classifier (Baseline)",
-            "dummy_regressor": "Dummy Regressor (Mean Baseline)",
-            "logistic_regression": "Logistic Regression",
-            "ridge_regression": "Ridge Regression",
-            "random_forest": "Random Forest",
-            "gradient_boosting": "HistGradientBoosting",
-            "hist_gradient_boosting": "HistGradientBoosting",
-        }
+        full_registry = {**CLASSIFICATION_REGISTRY, **REGRESSION_REGISTRY}
 
         for m_id in selected_model_ids:
             is_base = "dummy" in m_id
@@ -247,7 +242,9 @@ class TrainingService:
                 id=str(uuid.uuid4()),
                 run_id=run.id,
                 model_id=m_id,
-                model_name=model_name_map.get(m_id, m_id.replace("_", " ").title()),
+                model_name=full_registry[m_id].name
+                if m_id in full_registry
+                else m_id.replace("_", " ").title(),
                 is_baseline=is_base,
                 status="queued",
                 primary_metric_name=primary_metric,
@@ -357,17 +354,8 @@ class TrainingService:
             cv = KFold(n_splits=5, shuffle=True, random_state=42)
             cv_splits = list(cv.split(X, y))
 
-        model_name_map = {
-            "dummy_classifier": "Dummy Classifier (Baseline)",
-            "dummy_regressor": "Dummy Regressor (Mean Baseline)",
-            "logistic_regression": "Logistic Regression",
-            "ridge_regression": "Ridge Regression",
-            "random_forest": "Random Forest",
-            "gradient_boosting": "HistGradientBoosting",
-            "hist_gradient_boosting": "HistGradientBoosting",
-            "xgboost": "XGBoost",
-            "xgb": "XGBoost",
-        }
+        full_registry = {**CLASSIFICATION_REGISTRY, **REGRESSION_REGISTRY}
+        engineered_features = target_config.get("engineered_features", [])
 
         # Build worker payload args
         tasks: list[dict[str, Any]] = []
@@ -382,7 +370,9 @@ class TrainingService:
             tasks.append(
                 {
                     "model_id": m_id,
-                    "model_name": model_name_map.get(m_id, m_id.replace("_", " ").title()),
+                    "model_name": full_registry[m_id].name
+                    if m_id in full_registry
+                    else m_id.replace("_", " ").title(),
                     "is_baseline": "dummy" in m_id,
                     "task_type": task_type_str,
                     "primary_metric": primary_metric,
@@ -393,6 +383,7 @@ class TrainingService:
                     "cv_splits": cv_splits,
                     "random_state": 42,
                     "save_artifact_path": save_path,
+                    "engineered_features": engineered_features,
                 }
             )
 
