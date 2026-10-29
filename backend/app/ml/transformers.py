@@ -39,15 +39,9 @@ class DateTimeFeatureExtractor(BaseEstimator, TransformerMixin):
                 else 2020.0
             )
             m_med = (
-                float(dt_series.dt.month.median())
-                if not dt_series.dt.month.dropna().empty
-                else 1.0
+                float(dt_series.dt.month.median()) if not dt_series.dt.month.dropna().empty else 1.0
             )
-            d_med = (
-                float(dt_series.dt.day.median())
-                if not dt_series.dt.day.dropna().empty
-                else 1.0
-            )
+            d_med = float(dt_series.dt.day.median()) if not dt_series.dt.day.dropna().empty else 1.0
             dow_med = (
                 float(dt_series.dt.dayofweek.median())
                 if not dt_series.dt.dayofweek.dropna().empty

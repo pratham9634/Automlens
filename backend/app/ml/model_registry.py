@@ -231,9 +231,7 @@ def get_candidate_models(
             ["logistic_regression", "random_forest", "hist_gradient_boosting", "extra_trees"]
         )
     else:
-        default_ids.update(
-            ["ridge", "random_forest", "hist_gradient_boosting", "extra_trees"]
-        )
+        default_ids.update(["ridge", "random_forest", "hist_gradient_boosting", "extra_trees"])
 
     # Intent-driven adjustments
     if any(k in obj_lower for k in ("neural", "deep", "mlp")):

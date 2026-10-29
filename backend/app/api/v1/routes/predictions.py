@@ -138,4 +138,3 @@ def download_model_artifact(
         media_type="application/octet-stream",
         filename=f"{project_id}_{model_id}.joblib",
     )
-

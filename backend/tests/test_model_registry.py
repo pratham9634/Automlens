@@ -105,4 +105,3 @@ def test_all_regression_estimators_instantiate_and_fit() -> None:
         assert "test_score" in scores
         assert len(scores["test_score"]) == 3
         assert not np.isnan(scores["test_score"]).any()
-

@@ -1,7 +1,17 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Terminal, Cpu, Sparkles, CheckCircle2, AlertCircle, Wand2, ArrowRight } from "lucide-react";
+import {
+  Terminal,
+  Cpu,
+  CheckCircle2,
+  AlertCircle,
+  Wand2,
+  Filter,
+  Layers,
+  Database,
+  Info,
+} from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { EngineeredFeature, PreprocessingStep } from "@/lib/types";
@@ -27,6 +37,7 @@ export function AiReasoningTerminal({
 }: AiReasoningTerminalProps) {
   const terminalEndRef = useRef<HTMLDivElement>(null);
   const [activeTab, setActiveTab] = useState<"stream" | "features" | "cleaning">("stream");
+  const [cleaningFilter, setCleaningFilter] = useState<string>("all");
 
   // Auto-scroll to bottom of reasoning stream
   useEffect(() => {
@@ -34,6 +45,41 @@ export function AiReasoningTerminal({
       terminalEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [tokens, isStreaming]);
+
+  // Counts for cleaning filter pills
+  const imputeCount = preprocessingSteps.filter((s) => s.step_type === "imputation").length;
+  const scaleCount = preprocessingSteps.filter((s) => s.step_type === "scaling").length;
+  const encodeCount = preprocessingSteps.filter((s) => s.step_type === "encoding").length;
+  const dimRedCount = preprocessingSteps.filter(
+    (s) => s.step_type === "dimensionality_reduction" || s.step_type === "drop"
+  ).length;
+
+  const filteredSteps = preprocessingSteps.filter((step) => {
+    if (cleaningFilter === "all") return true;
+    if (cleaningFilter === "imputation") return step.step_type === "imputation";
+    if (cleaningFilter === "scaling") return step.step_type === "scaling";
+    if (cleaningFilter === "encoding") return step.step_type === "encoding";
+    if (cleaningFilter === "reduction")
+      return step.step_type === "dimensionality_reduction" || step.step_type === "drop";
+    return true;
+  });
+
+  const getStepBadgeColor = (stepType: string) => {
+    switch (stepType) {
+      case "imputation":
+        return "bg-purple-500/20 text-purple-300 border-purple-500/30";
+      case "scaling":
+        return "bg-blue-500/20 text-blue-300 border-blue-500/30";
+      case "encoding":
+        return "bg-emerald-500/20 text-emerald-300 border-emerald-500/30";
+      case "dimensionality_reduction":
+        return "bg-amber-500/20 text-amber-300 border-amber-500/30";
+      case "drop":
+        return "bg-rose-500/20 text-rose-300 border-rose-500/30";
+      default:
+        return "bg-gray-500/20 text-gray-300 border-gray-500/30";
+    }
+  };
 
   return (
     <Card className="border border-border bg-[#0d1117] text-gray-200 overflow-hidden shadow-lg">
@@ -94,6 +140,19 @@ export function AiReasoningTerminal({
 
         <button
           type="button"
+          onClick={() => setActiveTab("cleaning")}
+          className={`py-2 px-3 border-b-2 font-mono transition-colors flex items-center gap-1.5 ${
+            activeTab === "cleaning"
+              ? "border-accent text-accent font-medium"
+              : "border-transparent text-gray-400 hover:text-gray-200"
+          }`}
+        >
+          <Database className="w-3 h-3" />
+          <span>Data Cleaning Plan ({preprocessingSteps.length})</span>
+        </button>
+
+        <button
+          type="button"
           onClick={() => setActiveTab("features")}
           className={`py-2 px-3 border-b-2 font-mono transition-colors flex items-center gap-1.5 ${
             activeTab === "features"
@@ -102,25 +161,13 @@ export function AiReasoningTerminal({
           }`}
         >
           <Wand2 className="w-3 h-3" />
-          <span>Extracted Features ({engineeredFeatures.length})</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveTab("cleaning")}
-          className={`py-2 px-3 border-b-2 font-mono transition-colors ${
-            activeTab === "cleaning"
-              ? "border-accent text-accent font-medium"
-              : "border-transparent text-gray-400 hover:text-gray-200"
-          }`}
-        >
-          Data Cleaning Plan ({preprocessingSteps.length})
+          <span>Features &amp; Reductions ({engineeredFeatures.length})</span>
         </button>
       </div>
 
       {/* Tab 1: Live Stream */}
       {activeTab === "stream" && (
-        <div className="p-4 sm:p-5 font-mono text-xs leading-relaxed max-h-[380px] overflow-y-auto space-y-2 select-text">
+        <div className="p-4 sm:p-5 font-mono text-xs leading-relaxed max-h-[420px] overflow-y-auto space-y-2 select-text">
           {tokens ? (
             <div className="whitespace-pre-wrap text-gray-200">
               {tokens}
@@ -138,34 +185,113 @@ export function AiReasoningTerminal({
         </div>
       )}
 
-      {/* Tab 2: Engineered Features */}
-      {activeTab === "features" && (
-        <div className="p-4 max-h-[380px] overflow-y-auto space-y-3 font-sans text-xs">
-          {engineeredFeatures.length === 0 ? (
-            <div className="text-center py-6 text-gray-400">
-              No custom domain extractions required for this schema. Standard tabular preprocessing applies.
+      {/* Tab 2: Plain-English Data Cleaning Plan Cards */}
+      {activeTab === "cleaning" && (
+        <div className="p-4 max-h-[420px] overflow-y-auto space-y-3 font-sans text-xs">
+          {/* Category Filter Bar */}
+          <div className="flex flex-wrap items-center gap-1.5 pb-2 border-b border-border/40 text-[11px] font-mono">
+            <span className="text-gray-400 flex items-center gap-1 mr-1">
+              <Filter className="w-3 h-3" /> Filter:
+            </span>
+            <button
+              type="button"
+              onClick={() => setCleaningFilter("all")}
+              className={`px-2 py-0.5 rounded text-[11px] transition-colors ${
+                cleaningFilter === "all"
+                  ? "bg-accent text-white font-medium"
+                  : "bg-surface-subtle/50 text-gray-400 hover:text-gray-200"
+              }`}
+            >
+              All ({preprocessingSteps.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setCleaningFilter("imputation")}
+              className={`px-2 py-0.5 rounded text-[11px] transition-colors ${
+                cleaningFilter === "imputation"
+                  ? "bg-purple-600 text-white font-medium"
+                  : "bg-surface-subtle/50 text-gray-400 hover:text-gray-200"
+              }`}
+            >
+              Imputation ({imputeCount})
+            </button>
+            <button
+              type="button"
+              onClick={() => setCleaningFilter("scaling")}
+              className={`px-2 py-0.5 rounded text-[11px] transition-colors ${
+                cleaningFilter === "scaling"
+                  ? "bg-blue-600 text-white font-medium"
+                  : "bg-surface-subtle/50 text-gray-400 hover:text-gray-200"
+              }`}
+            >
+              Scaling ({scaleCount})
+            </button>
+            <button
+              type="button"
+              onClick={() => setCleaningFilter("encoding")}
+              className={`px-2 py-0.5 rounded text-[11px] transition-colors ${
+                cleaningFilter === "encoding"
+                  ? "bg-emerald-600 text-white font-medium"
+                  : "bg-surface-subtle/50 text-gray-400 hover:text-gray-200"
+              }`}
+            >
+              Encoding ({encodeCount})
+            </button>
+            {dimRedCount > 0 && (
+              <button
+                type="button"
+                onClick={() => setCleaningFilter("reduction")}
+                className={`px-2 py-0.5 rounded text-[11px] transition-colors ${
+                  cleaningFilter === "reduction"
+                    ? "bg-amber-600 text-white font-medium"
+                    : "bg-surface-subtle/50 text-gray-400 hover:text-gray-200"
+                }`}
+              >
+                Dimensionality / Drop ({dimRedCount})
+              </button>
+            )}
+          </div>
+
+          {filteredSteps.length === 0 ? (
+            <div className="text-center py-8 text-gray-400">
+              No cleaning transformations match the selected filter.
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {engineeredFeatures.map((feat, idx) => (
+            <div className="grid grid-cols-1 gap-2.5">
+              {filteredSteps.map((step, idx) => (
                 <div
                   key={idx}
-                  className="p-3 rounded border border-border/80 bg-[#161b22] space-y-1.5"
+                  className="p-3 rounded-lg border border-border/80 bg-[#161b22] space-y-2 hover:border-accent/40 transition-colors"
                 >
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="font-mono font-semibold text-accent text-xs">
-                      {feat.name}
-                    </span>
-                    <Badge variant="accent" className="text-[10px] font-mono">
-                      {feat.transformation_type}
+                  {/* Card Header */}
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono font-bold text-accent text-xs">
+                        {step.column}
+                      </span>
+                      <span
+                        className={`text-[10px] font-mono px-2 py-0.5 rounded border uppercase ${getStepBadgeColor(
+                          step.step_type
+                        )}`}
+                      >
+                        {step.step_type.replace("_", " ")}
+                      </span>
+                    </div>
+
+                    <Badge variant="neutral" className="text-[10px] font-mono text-gray-300">
+                      Strategy: {step.strategy}
                     </Badge>
                   </div>
-                  <div className="text-[11px] font-mono text-gray-400 bg-black/40 px-2 py-1 rounded">
-                    Formula: {feat.formula_or_desc}
+
+                  {/* Plain English Reason Box */}
+                  <div className="p-2.5 rounded bg-[#0d1117] border border-border/50 space-y-1">
+                    <div className="text-[10px] font-mono text-accent flex items-center gap-1 font-semibold">
+                      <Info className="w-3 h-3 text-accent" /> Why this step is needed:
+                    </div>
+                    <p className="text-xs text-gray-200 leading-relaxed font-sans whitespace-normal">
+                      {step.reason}
+                    </p>
                   </div>
-                  <p className="text-[11px] text-gray-300 leading-relaxed">
-                    {feat.rationale}
-                  </p>
                 </div>
               ))}
             </div>
@@ -173,28 +299,39 @@ export function AiReasoningTerminal({
         </div>
       )}
 
-      {/* Tab 3: Cleaning Plan */}
-      {activeTab === "cleaning" && (
-        <div className="p-4 max-h-[380px] overflow-y-auto space-y-2 font-mono text-xs">
-          {preprocessingSteps.length === 0 ? (
-            <div className="text-center py-6 text-gray-400">
-              No preprocessing steps formulated yet.
+      {/* Tab 3: Engineered Features & Reductions */}
+      {activeTab === "features" && (
+        <div className="p-4 max-h-[420px] overflow-y-auto space-y-3 font-sans text-xs">
+          {engineeredFeatures.length === 0 ? (
+            <div className="text-center py-8 text-gray-400">
+              No custom domain extractions or PCA reduction required for this schema. Standard tabular preprocessing applies.
             </div>
           ) : (
-            <div className="space-y-1.5">
-              {preprocessingSteps.map((step, idx) => (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {engineeredFeatures.map((feat, idx) => (
                 <div
                   key={idx}
-                  className="flex items-center justify-between p-2 rounded bg-[#161b22] border border-border/40 text-[11px]"
+                  className="p-3.5 rounded-lg border border-border/80 bg-[#161b22] space-y-2 hover:border-accent/40 transition-colors"
                 >
-                  <div className="flex items-center gap-2">
-                    <span className="text-accent font-semibold">{step.column}</span>
-                    <ArrowRight className="w-3 h-3 text-gray-500" />
-                    <span className="text-gray-300">{step.step_type} ({step.strategy})</span>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-mono font-semibold text-accent text-xs flex items-center gap-1.5">
+                      <Layers className="w-3.5 h-3.5 text-accent" />
+                      {feat.name}
+                    </span>
+                    <Badge variant="accent" className="text-[10px] font-mono">
+                      {feat.transformation_type.replace("_", " ")}
+                    </Badge>
                   </div>
-                  <span className="text-gray-400 text-[10px] truncate max-w-[280px]">
-                    {step.reason}
-                  </span>
+
+                  <div className="text-[11px] font-mono text-gray-400 bg-black/50 px-2.5 py-1.5 rounded border border-border/40">
+                    Formula: {feat.formula_or_desc}
+                  </div>
+
+                  <div className="p-2 rounded bg-[#0d1117] border border-border/40">
+                    <p className="text-xs text-gray-300 leading-relaxed font-sans">
+                      {feat.rationale}
+                    </p>
+                  </div>
                 </div>
               ))}
             </div>
@@ -204,4 +341,3 @@ export function AiReasoningTerminal({
     </Card>
   );
 }
-

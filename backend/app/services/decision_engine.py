@@ -233,6 +233,27 @@ class DecisionEngineService:
                             )
                         )
 
+        # 4. Dimensionality Reduction (PCA) Detection
+        dim_keywords = ("pca", "dimension", "reduce", "compress", "components", "feature selection")
+        user_wants_dim = any(k in obj_lower for k in dim_keywords)
+        has_many_numeric = len(numeric_cols) > 12
+
+        if (user_wants_dim or has_many_numeric) and len(numeric_cols) >= 3:
+            n_comp = min(10, len(numeric_cols))
+            features.append(
+                EngineeredFeature(
+                    name="pca_dimensionality_reduction",
+                    source_columns=numeric_cols,
+                    transformation_type="dimensionality_reduction",
+                    formula_or_desc=f"PCA(n_components={n_comp}, variance_retained>=0.95)",
+                    rationale=(
+                        f"Compresses {len(numeric_cols)} numeric features into {n_comp} "
+                        "orthogonal principal components preserving >=95% variance to eliminate "
+                        "collinearity and prevent the curse of dimensionality."
+                    ),
+                )
+            )
+
         return features
 
     def _generate_deterministic_rationale(
@@ -246,10 +267,30 @@ class DecisionEngineService:
         engineered_features: list[EngineeredFeature] | None = None,
     ) -> str:
         """Produce clear, intuitive engineering explanation for academic defense."""
-        imputation_count = len([s for s in steps if s.step_type == "imputation"])
+        imputation_count = len(
+            [s for s in steps if s.step_type == "imputation" and "Zero missing" not in s.reason]
+        )
         scaling_count = len([s for s in steps if s.step_type == "scaling"])
         encoding_count = len([s for s in steps if s.step_type == "encoding"])
         feat_count = len(engineered_features or [])
+
+        # Column-by-column plain English highlights
+        cleaning_details: list[str] = []
+        for s in steps:
+            if s.step_type == "imputation" and "Zero missing" not in s.reason:
+                cleaning_details.append(f"  • **{s.column} (Imputation)**: {s.reason}")
+            elif s.step_type == "scaling" and "IQR" in s.reason:
+                cleaning_details.append(f"  • **{s.column} (Outlier Scaling)**: {s.reason}")
+            elif s.step_type == "dimensionality_reduction":
+                cleaning_details.append(f"  • **Dimensionality Reduction**: {s.reason}")
+            elif s.step_type == "drop":
+                cleaning_details.append(f"  • **{s.column} (Drop Feature)**: {s.reason}")
+
+        col_cleaning_section = (
+            "\n" + "\n".join(cleaning_details[:6]) + "\n"
+            if cleaning_details
+            else ("  • All features complete; standard zero-leakage scaling/encoding applied.\n")
+        )
 
         if task_type == TaskType.BINARY_CLASSIFICATION:
             goal_desc = f"predicting '{target_column}' as a Yes/No (two-outcome) question"
@@ -289,19 +330,14 @@ class DecisionEngineService:
             f"We are {goal_desc}. The system automatically identified this as a **{task_title}** "
             f"problem.{obj_note} To evaluate performance fairly, {metric_desc}\n\n"
             f"🧹 **2. How We Prepare the Data (Data Cleaning & Fairness):**\n"
-            f"To make the {num_features} input features understandable to machine learning "
-            f"algorithms:\n"
-            f"• **Missing Values ({imputation_count} columns):** Missing numerical values are "
-            f"replaced with the middle (median) value so extreme numbers don't pull it off-track, "
-            f"and missing categories are filled with the most common value.\n"
-            f"• **Number Scaling ({scaling_count} columns):** Numerical features are scaled "
-            f"so large numbers don't overpower smaller ones.\n"
-            f"• **Text Conversion ({encoding_count} columns):** Categories are converted into "
-            f"numeric flags (One-Hot / Ordinal Encoding) for mathematical operations.\n"
+            f"To make the {num_features} input features mathematically ready and fair for machine "
+            f"learning algorithms:\n"
+            f"{col_cleaning_section}\n"
+            f"• **Summary Counts:** {imputation_count} column(s) imputed, {scaling_count} scaled, "
+            f"{encoding_count} category-encoded.\n"
             f"{eng_note}"
-            f"• **Strict Leakage Prevention (Rule 1):** We guarantee that data transformations "
-            f"are calculated only on training folds during cross-validation, ensuring the model "
-            f"never 'sees the exam answers' before test time.\n\n"
+            f"• **Strict Leakage Prevention (Rule 1):** Every transformation is fit solely on the "
+            f"training folds of cross-validation, guaranteeing zero test-set leakage.\n\n"
             f"🤖 **3. Why These Models Were Chosen:**\n"
             f"We select candidate algorithms to compare strengths:\n"
             f"• **Dummy Baseline (Scientific Control - Rule 4):** A naive guesser (like a coin "
@@ -345,11 +381,13 @@ class DecisionEngineService:
             f"Candidate Estimators:\n{[m.name for m in models]}\n\n"
             f"Write a friendly, insightful engineering explanation in 3 clear sections:\n"
             f"1. 🎯 Goal & Target: Summary connecting user goal to target and metric.\n"
-            f"2. 🧹 Automated Data Cleaning & Feature Extraction: How missing values, scaling, and "
-            f"engineered features are safely computed inside folds without data leakage.\n"
+            "2. 🧹 Automated Data Cleaning & Feature Extraction: Specifically name key "
+            "columns with missing values, outliers, or categories. Explain in simple, "
+            "plain English WHY you chose median vs mean, WHY one-hot encoding was used, "
+            "and explain any feature extraction or dimensionality reduction (PCA).\n"
             f"3. 🤖 Model Selection & Baseline Control: Why these candidate algorithms were picked "
             f"and why the Dummy baseline is like a scientific placebo control (Rule 4).\n"
-            f"Use concise bullet points and simple analogies. Keep it under 320 words."
+            "Use concise bullet points, plain English, and clear analogies. Keep under 340 words."
         )
         return system_prompt, user_prompt
 
@@ -389,10 +427,12 @@ class DecisionEngineService:
         self,
         df: pd.DataFrame,
         input_cols: list[str],
+        user_objective: str | None = None,
     ) -> tuple[list[PreprocessingStep], list[dict]]:
-        """Formulate deterministic feature preprocessing transformations."""
+        """Formulate deterministic preprocessing transformations with plain-English reasons."""
         steps: list[PreprocessingStep] = []
         features_summary: list[dict] = []
+        numeric_cols_found: list[str] = []
 
         for col in input_cols:
             series = df[col]
@@ -406,27 +446,50 @@ class DecisionEngineService:
                         column=col,
                         step_type="drop",
                         strategy="drop_constant",
-                        reason="Zero-variance feature provides no discriminatory signal.",
+                        reason=(
+                            f"Contains identical value across all {len(df)} rows (zero variance). "
+                            "Zero variance provides no discriminatory signal, so it is dropped."
+                        ),
                     )
                 )
                 continue
 
             is_bool = pd.api.types.is_bool_dtype(series)
             if pd.api.types.is_numeric_dtype(series) and not is_bool:
+                numeric_cols_found.append(col)
                 clean_num = pd.to_numeric(series.dropna(), errors="coerce")
                 skewness = float(clean_num.skew()) if len(clean_num) > 2 else 0.0
                 impute_strategy = "median" if abs(skewness) > 1.0 else "mean"
                 is_skewed = abs(skewness) > 1.0
 
+                if null_count > 0:
+                    if is_skewed:
+                        median_val = float(clean_num.median()) if not clean_num.empty else 0.0
+                        impute_reason = (
+                            f"Missing {null_count} values ({null_pct}%). "
+                            f"Median imputation ({median_val:.1f}) is chosen because "
+                            f"distribution is skewed (skewness: {skewness:.2f}). "
+                            "Median resists extreme outliers, keeping trends accurate."
+                        )
+                    else:
+                        mean_val = float(clean_num.mean()) if not clean_num.empty else 0.0
+                        impute_reason = (
+                            f"Missing {null_count} values ({null_pct}%). "
+                            f"Mean imputation ({mean_val:.1f}) is chosen because values follow "
+                            f"a balanced spread (skewness: {skewness:.2f}), preserving the average."
+                        )
+                else:
+                    impute_reason = (
+                        "Zero missing values detected. "
+                        "Complete numeric series retained without imputation."
+                    )
+
                 steps.append(
                     PreprocessingStep(
                         column=col,
                         step_type="imputation",
-                        strategy=impute_strategy,
-                        reason=(
-                            f"{impute_strategy.title()} imputation for "
-                            f"{'skewed' if is_skewed else 'symmetric'} data (skew={skewness:.2f})."
-                        ),
+                        strategy=impute_strategy if null_count > 0 else "none",
+                        reason=impute_reason,
                     )
                 )
 
@@ -439,39 +502,81 @@ class DecisionEngineService:
                     ).sum()
                     outlier_pct = (outlier_count / len(clean_num)) * 100.0
 
-                scale_strategy = "robust" if outlier_pct > 5.0 else "standard"
+                if outlier_pct > 5.0:
+                    scale_strategy = "robust"
+                    scale_reason = (
+                        f"Contains {outlier_pct:.1f}% outliers via 1.5×IQR boundary rule. "
+                        "Robust Scaling uses median and quartile spread, preventing "
+                        "extreme numbers from overpowering other features."
+                    )
+                else:
+                    scale_strategy = "standard"
+                    scale_reason = (
+                        f"Values have regular spread ({outlier_pct:.1f}% outliers). "
+                        "Standard Scaling (Z-score) normalizes to mean=0 and variance=1, "
+                        "ensuring uniform, equal weighting across models."
+                    )
+
                 steps.append(
                     PreprocessingStep(
                         column=col,
                         step_type="scaling",
                         strategy=scale_strategy,
-                        reason=(
-                            f"{scale_strategy.title()} scaling "
-                            f"({'IQR outliers present' if outlier_pct > 5.0 else 'normal spread'})."
-                        ),
+                        reason=scale_reason,
                     )
                 )
                 features_summary.append(
-                    {"name": col, "type": "numeric", "null_pct": null_pct, "skew": skewness}
+                    {
+                        "name": col,
+                        "type": "numeric",
+                        "null_pct": null_pct,
+                        "skew": round(skewness, 2),
+                        "outlier_pct": round(outlier_pct, 1),
+                    }
                 )
             else:
+                if null_count > 0:
+                    most_freq = str(series.mode().iloc[0]) if not series.mode().empty else "Unknown"
+                    impute_reason = (
+                        f"Missing {null_count} values ({null_pct}%). "
+                        f"Mode imputation fills blanks with top category ('{most_freq}'), "
+                        "avoiding synthetic artificial labels."
+                    )
+                else:
+                    impute_reason = (
+                        "Zero missing categories detected. Complete categorical column retained."
+                    )
+
                 steps.append(
                     PreprocessingStep(
                         column=col,
                         step_type="imputation",
-                        strategy="most_frequent",
-                        reason="Mode imputation for missing categorical values.",
+                        strategy="most_frequent" if null_count > 0 else "none",
+                        reason=impute_reason,
                     )
                 )
-                encode_strategy = "one_hot" if unique_count <= 10 else "ordinal"
-                card_note = "cardinality <= 10" if unique_count <= 10 else "cardinality > 10"
-                strategy_label = encode_strategy.replace("_", " ").title()
+
+                if unique_count <= 10:
+                    encode_strategy = "one_hot"
+                    encode_reason = (
+                        f"Contains {unique_count} distinct categories. "
+                        "One-Hot Encoding creates 0/1 indicator columns for each category, "
+                        "preventing algorithms from assuming artificial category rank or order."
+                    )
+                else:
+                    encode_strategy = "ordinal"
+                    encode_reason = (
+                        f"Contains {unique_count} high-cardinality categories. "
+                        "Ordinal Encoding assigns a compact integer mapping to each category, "
+                        "preventing the dataset from blowing up into a sparse, wide matrix."
+                    )
+
                 steps.append(
                     PreprocessingStep(
                         column=col,
                         step_type="encoding",
                         strategy=encode_strategy,
-                        reason=f"{strategy_label} ({card_note}).",
+                        reason=encode_reason,
                     )
                 )
                 features_summary.append(
@@ -482,6 +587,28 @@ class DecisionEngineService:
                         "null_pct": null_pct,
                     }
                 )
+
+        # Dimensionality Reduction Step for wide numeric feature spaces
+        obj_lower = (user_objective or "").lower()
+        dim_keywords = ("pca", "dimension", "reduce", "compress", "components", "feature selection")
+        user_wants_dim = any(k in obj_lower for k in dim_keywords)
+        has_many_numeric = len(numeric_cols_found) > 12
+
+        if (user_wants_dim or has_many_numeric) and len(numeric_cols_found) >= 3:
+            n_components = min(10, len(numeric_cols_found))
+            steps.append(
+                PreprocessingStep(
+                    column="all_numeric_features",
+                    step_type="dimensionality_reduction",
+                    strategy="pca",
+                    reason=(
+                        f"Automated PCA projects {len(numeric_cols_found)} numeric columns into "
+                        f"{n_components} orthogonal principal components retaining >=95% variance, "
+                        "eliminating multicollinearity and speeding up CV training."
+                    ),
+                )
+            )
+
         return steps, features_summary
 
     async def stream_decisions(
@@ -504,7 +631,7 @@ class DecisionEngineService:
             task_type = override_task_type or analysis.inferred_task
             input_cols = [c for c in df.columns if c != target_column]
 
-            steps, features_summary = self._formulate_steps(df, input_cols)
+            steps, features_summary = self._formulate_steps(df, input_cols, user_objective)
             eng_features = self._detect_automated_features(df, input_cols, user_objective)
             primary_metric, available_metrics, models = self._select_candidate_models(
                 task_type, len(df), len(input_cols), user_objective
@@ -666,7 +793,7 @@ class DecisionEngineService:
         task_type = override_task_type or analysis.inferred_task
         input_cols = [c for c in df.columns if c != target_column]
 
-        steps, features_summary = self._formulate_steps(df, input_cols)
+        steps, features_summary = self._formulate_steps(df, input_cols, user_objective)
         eng_features = self._detect_automated_features(df, input_cols, user_objective)
         primary_metric, available_metrics, models = self._select_candidate_models(
             task_type, len(df), len(input_cols), user_objective

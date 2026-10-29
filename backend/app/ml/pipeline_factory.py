@@ -308,6 +308,17 @@ def create_pipeline(
         if parsed_interact:
             interactions = (interactions or []) + parsed_interact
 
+        # Auto-enable PCA if dimensionality reduction was formulated by AI
+        if not enable_pca:
+            has_dim_red = any(
+                f.get("transformation_type") in ("dimensionality_reduction", "pca")
+                for f in engineered_features
+            )
+            if has_dim_red:
+                enable_pca = True
+                if pca_n_components is None and numeric_cols:
+                    pca_n_components = min(10, max(2, len(numeric_cols)))
+
     preprocessor = create_preprocessor(
         numeric_cols=numeric_cols,
         categorical_cols=categorical_cols,

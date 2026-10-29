@@ -125,4 +125,3 @@ def test_end_to_end_pipeline_with_extractions_and_pca() -> None:
     assert "test_score" in scores
     assert len(scores["test_score"]) == 3
     assert not np.isnan(scores["test_score"]).any()
-

@@ -60,6 +60,8 @@ def _train_single_model_worker(args: dict[str, Any]) -> dict[str, Any]:
     categorical_cols: list[str] = args["categorical_cols"]
     preprocessing_plan: list[dict[str, Any]] = args.get("preprocessing_plan", [])
     engineered_features: list[dict[str, Any]] = args.get("engineered_features", [])
+    enable_pca: bool = args.get("enable_pca", False)
+    pca_n_components: int | None = args.get("pca_n_components", None)
     cv_splits: list[tuple[np.ndarray, np.ndarray]] = args["cv_splits"]
     random_state: int = args.get("random_state", 42)
     save_artifact_path: str = args["save_artifact_path"]
@@ -87,6 +89,8 @@ def _train_single_model_worker(args: dict[str, Any]) -> dict[str, Any]:
                 categorical_cols=categorical_cols,
                 preprocessing_plan=preprocessing_plan,
                 engineered_features=engineered_features,
+                enable_pca=enable_pca,
+                pca_n_components=pca_n_components,
                 random_state=random_state,
             )
 
@@ -121,6 +125,9 @@ def _train_single_model_worker(args: dict[str, Any]) -> dict[str, Any]:
             numeric_cols=numeric_cols,
             categorical_cols=categorical_cols,
             preprocessing_plan=preprocessing_plan,
+            engineered_features=engineered_features,
+            enable_pca=enable_pca,
+            pca_n_components=pca_n_components,
             random_state=random_state,
         )
         full_pipe.fit(X_df, y_series)
@@ -384,6 +391,11 @@ class TrainingService:
                     "random_state": 42,
                     "save_artifact_path": save_path,
                     "engineered_features": engineered_features,
+                    "enable_pca": any(
+                        f.get("transformation_type") in ("dimensionality_reduction", "pca")
+                        for f in engineered_features
+                    ),
+                    "pca_n_components": None,
                 }
             )
 

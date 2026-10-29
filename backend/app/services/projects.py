@@ -115,9 +115,7 @@ class ProjectService:
         from app.db.repositories.datasets import DatasetRepository
 
         # Query and delete all training runs and their child model runs
-        runs = (
-            self.repo.db.query(TrainingRun).filter(TrainingRun.project_id == project_id).all()
-        )
+        runs = self.repo.db.query(TrainingRun).filter(TrainingRun.project_id == project_id).all()
         for r in runs:
             self.repo.db.query(ModelRun).filter(ModelRun.run_id == r.id).delete(
                 synchronize_session=False
@@ -125,9 +123,9 @@ class ProjectService:
             self.repo.db.delete(r)
 
         # Clear prediction inference logs
-        self.repo.db.query(PredictionLog).filter(
-            PredictionLog.project_id == project_id
-        ).delete(synchronize_session=False)
+        self.repo.db.query(PredictionLog).filter(PredictionLog.project_id == project_id).delete(
+            synchronize_session=False
+        )
         self.repo.db.commit()
 
         # Clean filesystem models, exports, and profiles folders

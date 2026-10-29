@@ -347,4 +347,3 @@ class DatasetService:
             content = f.read()
 
         return self.upload_dataset(project_id, filename, content)
-

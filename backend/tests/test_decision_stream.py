@@ -129,13 +129,7 @@ def test_decision_stream_mock_ollama_tokens(client: TestClient) -> None:
 
 def test_target_confirmation_persists_user_objective(client: TestClient) -> None:
     """Verify that confirmed target persists user objective and engineered features."""
-    csv_data = (
-        b"Income,CreditScore,Default\n"
-        b"50000,700,0\n"
-        b"80000,750,0\n"
-        b"30000,550,1\n"
-        b"120000,800,0\n"
-    )
+    csv_data = b"Income,CreditScore,Default\n50000,700,0\n80000,750,0\n30000,550,1\n120000,800,0\n"
     project_id = _create_project_with_dataset(client, csv_data)
 
     confirm_payload = {
@@ -168,4 +162,3 @@ def test_target_confirmation_persists_user_objective(client: TestClient) -> None
     get_data = get_res.json()
     assert get_data["user_objective"] == "Credit risk minimization"
     assert len(get_data["engineered_features"]) == 1
-
