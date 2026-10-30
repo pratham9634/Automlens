@@ -11,13 +11,13 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Canonical Design Tokens
+        // Icy Tech Telemetry Canonical Design Tokens
         canvas: "var(--canvas)",
         surface: {
           DEFAULT: "var(--surface)",
           subtle: "var(--surface-subtle)",
+          container: "var(--surface-container)",
           hover: "var(--surface-hover)",
-          // Backwards compatibility aliases for existing unrefactored components
           1: "var(--surface)",
           2: "var(--surface-subtle)",
           3: "var(--surface-hover)",
@@ -32,33 +32,63 @@ const config: Config = {
         "text-secondary": "var(--text-secondary)",
         "text-muted": "var(--text-muted)",
         "text-subtle": "var(--text-subtle)",
+
+        // Primary / Action (Azure)
         accent: {
           DEFAULT: "var(--accent)",
           hover: "var(--accent-hover)",
         },
+        azure: {
+          400: "#38BDF8",
+          500: "#0EA5E9",
+          600: "#0284C7",
+        },
+
+        // Secondary / Streaming Telemetry (Electric Cyan)
+        secondary: {
+          DEFAULT: "var(--secondary)",
+          hover: "var(--secondary-hover)",
+        },
+        cyan: {
+          400: "#22D3EE",
+          500: "#06B6D4",
+          600: "#0891B2",
+        },
+
+        // Tertiary / User Override (Indigo / Violet)
+        tertiary: {
+          DEFAULT: "var(--tertiary)",
+          400: "#818CF8",
+          500: "#6366F1",
+          600: "#4F46E5",
+        },
+
+        // Cold Slate Neutrals
+        slate: {
+          800: "#1E293B",
+          900: "#0F172A",
+          950: "#090D16",
+        },
+
+        // Telemetry Diagnostics
         success: "var(--success)",
         warning: "var(--warning)",
         danger: "var(--danger)",
         info: "var(--info)",
 
-        // Backwards compatibility mappings for existing components
-        hairline: {
-          subtle: "var(--border-subtle)",
-          DEFAULT: "var(--border)",
-          strong: "var(--border-strong)",
-        },
+        // Legacy Aliases for seamless component compatibility
         brand: {
           lavender: "var(--accent)",
           hover: "var(--accent-hover)",
-          glow: "transparent",
+          glow: "rgba(6, 182, 212, 0.35)",
         },
         telemetry: {
-          cyan: "var(--info)",
-          emerald: "var(--success)",
-          amber: "var(--warning)",
-          rose: "var(--danger)",
-          indigo: "var(--accent)",
-          violet: "#8B5CF6",
+          cyan: "#06B6D4",
+          azure: "#0EA5E9",
+          indigo: "#6366F1",
+          amber: "#F59E0B",
+          rose: "#EF4444",
+          emerald: "#10B981",
         },
         ink: {
           DEFAULT: "var(--text-primary)",
@@ -68,6 +98,12 @@ const config: Config = {
         },
       },
       borderRadius: {
+        sm: "0.25rem",        // 4px
+        DEFAULT: "0.5rem",    // 8px
+        md: "0.75rem",        // 12px
+        lg: "1rem",           // 16px
+        xl: "1.5rem",         // 24px
+        full: "9999px",
         input: "var(--radius-input)",
         button: "var(--radius-button)",
         card: "var(--radius-card)",
@@ -76,8 +112,10 @@ const config: Config = {
         pill: "var(--radius-pill)",
       },
       fontFamily: {
-        sans: ["var(--font-sans)", "system-ui", "sans-serif"],
-        mono: ["var(--font-mono)", "monospace"],
+        display: ["var(--font-display)", "Anton", "Impact", "sans-serif"],
+        sans: ["var(--font-sans)", "Arimo", "system-ui", "sans-serif"],
+        body: ["var(--font-sans)", "Arimo", "system-ui", "sans-serif"],
+        mono: ["var(--font-mono)", "'Be Vietnam Pro'", "ui-monospace", "monospace"],
       },
       transitionDuration: {
         fast: "var(--motion-fast)",
@@ -87,11 +125,6 @@ const config: Config = {
       transitionTimingFunction: {
         "ease-enter": "var(--ease-enter)",
         "ease-exit": "var(--ease-exit)",
-      },
-      letterSpacing: {
-        tighter: "-0.045em",
-        tight: "-0.02em",
-        normal: "-0.005em",
       },
     },
   },

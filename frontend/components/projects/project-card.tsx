@@ -49,9 +49,9 @@ export function ProjectCard({ project, onDeleted }: ProjectCardProps) {
       case "created":
         return <Badge variant="neutral">Ready for Data</Badge>;
       case "dataset_uploaded":
-        return <Badge variant="info">Dataset Uploaded</Badge>;
+        return <Badge variant="streaming" withBeacon>Dataset Active</Badge>;
       case "profiled":
-        return <Badge variant="warning">Profiled</Badge>;
+        return <Badge variant="optimal">Profiled</Badge>;
       case "trained":
         return <Badge variant="success">Trained & Evaluated</Badge>;
       default:
@@ -61,7 +61,7 @@ export function ProjectCard({ project, onDeleted }: ProjectCardProps) {
 
   return (
     <>
-      <Card className="hover:border-border-strong hover:bg-surface-hover/20 transition-all duration-150 p-4 sm:p-5 flex flex-col justify-between space-y-4">
+      <Card className="hover:border-cyan-500/40 hover:shadow-[0_0_12px_rgba(6,182,212,0.12)] transition-all duration-160 p-4 sm:p-5 flex flex-col justify-between space-y-4">
         {/* Top Header */}
         <div className="space-y-2.5">
           <div className="flex items-start justify-between gap-2.5">

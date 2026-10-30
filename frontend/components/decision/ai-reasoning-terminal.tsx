@@ -11,6 +11,7 @@ import {
   Layers,
   Database,
   Info,
+  Activity,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -67,50 +68,53 @@ export function AiReasoningTerminal({
   const getStepBadgeColor = (stepType: string) => {
     switch (stepType) {
       case "imputation":
-        return "bg-purple-500/20 text-purple-300 border-purple-500/30";
+        return "bg-indigo-500/15 text-indigo-300 border-indigo-500/30";
       case "scaling":
-        return "bg-blue-500/20 text-blue-300 border-blue-500/30";
+        return "bg-cyan-500/15 text-cyan-300 border-cyan-500/30";
       case "encoding":
-        return "bg-emerald-500/20 text-emerald-300 border-emerald-500/30";
+        return "bg-sky-500/15 text-sky-300 border-sky-500/30";
       case "dimensionality_reduction":
-        return "bg-amber-500/20 text-amber-300 border-amber-500/30";
+        return "bg-amber-500/15 text-amber-300 border-amber-500/30";
       case "drop":
-        return "bg-rose-500/20 text-rose-300 border-rose-500/30";
+        return "bg-rose-500/15 text-rose-300 border-rose-500/30";
       default:
-        return "bg-gray-500/20 text-gray-300 border-gray-500/30";
+        return "bg-slate-500/15 text-slate-300 border-slate-500/30";
     }
   };
 
   return (
-    <Card className="border border-border bg-[#0d1117] text-gray-200 overflow-hidden shadow-lg">
+    <Card className="border border-border/90 bg-[#090D16] text-gray-200 overflow-hidden shadow-lg rounded-card">
       {/* Terminal Header */}
-      <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 bg-[#161b22] border-b border-border/80">
+      <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 bg-[#0F172A] border-b border-border/80">
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-1.5 mr-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-red-500/80 inline-block" />
-            <span className="w-2.5 h-2.5 rounded-full bg-yellow-500/80 inline-block" />
-            <span className="w-2.5 h-2.5 rounded-full bg-green-500/80 inline-block" />
+            <span className="w-2.5 h-2.5 rounded-full bg-rose-500/80 inline-block" />
+            <span className="w-2.5 h-2.5 rounded-full bg-amber-500/80 inline-block" />
+            <span className="w-2.5 h-2.5 rounded-full bg-cyan-500/80 inline-block" />
           </div>
-          <Terminal className="w-4 h-4 text-accent" />
-          <span className="text-xs font-mono font-medium text-gray-300">
-            AutoMLens AI Terminal
+          <Terminal className="w-4 h-4 text-cyan-400" />
+          <span className="text-xs font-mono uppercase tracking-wider font-semibold text-gray-200">
+            AutoMLens Telemetry Terminal
           </span>
-          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-surface-subtle/40 text-text-muted border border-border/40">
+          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-300 border border-cyan-500/25">
             {provider === "ollama" ? "Ollama: qwen2.5:3b" : provider.toUpperCase()}
           </span>
         </div>
 
-        {/* Status indicator */}
+        {/* Status indicator with Cyan Luminescence */}
         <div className="flex items-center gap-2">
           {isStreaming ? (
-            <div className="flex items-center gap-1.5 text-xs text-accent font-mono">
-              <span className="w-2 h-2 rounded-full bg-accent animate-ping inline-block" />
+            <div className="flex items-center gap-1.5 text-xs text-cyan-400 font-mono">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500 shadow-[0_0_8px_rgba(6,182,212,0.8)]" />
+              </span>
               <span>Streaming Reasoning...</span>
             </div>
           ) : (
-            <div className="flex items-center gap-1.5 text-xs text-success font-mono">
-              <CheckCircle2 className="w-3.5 h-3.5 text-success" />
-              <span>Reasoning Complete</span>
+            <div className="flex items-center gap-1.5 text-xs text-emerald-400 font-mono">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Reasoning Formulated</span>
             </div>
           )}
         </div>
@@ -118,20 +122,20 @@ export function AiReasoningTerminal({
 
       {/* Notice Banner (if fallback triggered) */}
       {notice && (
-        <div className="flex items-center gap-2 px-4 py-2 bg-warning/10 border-b border-warning/20 text-warning text-xs">
-          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+        <div className="flex items-center gap-2 px-4 py-2 bg-amber-500/10 border-b border-amber-500/25 text-amber-400 text-xs font-mono">
+          <AlertCircle className="w-4 h-4 flex-shrink-0 text-amber-400" />
           <span>{notice}</span>
         </div>
       )}
 
       {/* Tabs */}
-      <div className="flex border-b border-border/60 bg-[#12161f] px-4 text-xs">
+      <div className="flex border-b border-border/60 bg-[#0F172A]/70 px-4 text-xs">
         <button
           type="button"
           onClick={() => setActiveTab("stream")}
-          className={`py-2 px-3 border-b-2 font-mono transition-colors ${
+          className={`py-2 px-3 border-b-2 font-mono uppercase tracking-wider text-[11px] transition-colors ${
             activeTab === "stream"
-              ? "border-accent text-accent font-medium"
+              ? "border-cyan-400 text-cyan-400 font-semibold"
               : "border-transparent text-gray-400 hover:text-gray-200"
           }`}
         >
@@ -141,43 +145,43 @@ export function AiReasoningTerminal({
         <button
           type="button"
           onClick={() => setActiveTab("cleaning")}
-          className={`py-2 px-3 border-b-2 font-mono transition-colors flex items-center gap-1.5 ${
+          className={`py-2 px-3 border-b-2 font-mono uppercase tracking-wider text-[11px] transition-colors flex items-center gap-1.5 ${
             activeTab === "cleaning"
-              ? "border-accent text-accent font-medium"
+              ? "border-cyan-400 text-cyan-400 font-semibold"
               : "border-transparent text-gray-400 hover:text-gray-200"
           }`}
         >
-          <Database className="w-3 h-3" />
-          <span>Data Cleaning Plan ({preprocessingSteps.length})</span>
+          <Database className="w-3 h-3 text-cyan-400" />
+          <span>Cleaning Strategy ({preprocessingSteps.length})</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab("features")}
-          className={`py-2 px-3 border-b-2 font-mono transition-colors flex items-center gap-1.5 ${
+          className={`py-2 px-3 border-b-2 font-mono uppercase tracking-wider text-[11px] transition-colors flex items-center gap-1.5 ${
             activeTab === "features"
-              ? "border-accent text-accent font-medium"
+              ? "border-cyan-400 text-cyan-400 font-semibold"
               : "border-transparent text-gray-400 hover:text-gray-200"
           }`}
         >
-          <Wand2 className="w-3 h-3" />
+          <Wand2 className="w-3 h-3 text-cyan-400" />
           <span>Features &amp; Reductions ({engineeredFeatures.length})</span>
         </button>
       </div>
 
       {/* Tab 1: Live Stream */}
       {activeTab === "stream" && (
-        <div className="p-4 sm:p-5 font-mono text-xs leading-relaxed max-h-[420px] overflow-y-auto space-y-2 select-text">
+        <div className="p-4 sm:p-5 font-mono text-xs leading-relaxed max-h-[420px] overflow-y-auto space-y-2 select-text bg-[#090D16]">
           {tokens ? (
             <div className="whitespace-pre-wrap text-gray-200">
               {tokens}
               {isStreaming && (
-                <span className="inline-block w-2 h-3.5 bg-accent ml-1 animate-pulse align-middle" />
+                <span className="inline-block w-2 h-3.5 bg-cyan-400 ml-1 animate-pulse align-middle shadow-[0_0_8px_rgba(6,182,212,0.8)]" />
               )}
             </div>
           ) : (
-            <div className="flex items-center gap-2 text-gray-400 py-6 justify-center">
-              <Cpu className="w-4 h-4 animate-spin text-accent" />
+            <div className="flex items-center gap-2 text-gray-400 py-8 justify-center">
+              <Cpu className="w-4 h-4 animate-spin text-cyan-400" />
               <span>{statusMessage}</span>
             </div>
           )}
@@ -187,18 +191,18 @@ export function AiReasoningTerminal({
 
       {/* Tab 2: Plain-English Data Cleaning Plan Cards */}
       {activeTab === "cleaning" && (
-        <div className="p-4 max-h-[420px] overflow-y-auto space-y-3 font-sans text-xs">
+        <div className="p-4 max-h-[420px] overflow-y-auto space-y-3 font-sans text-xs bg-[#090D16]">
           {/* Category Filter Bar */}
           <div className="flex flex-wrap items-center gap-1.5 pb-2 border-b border-border/40 text-[11px] font-mono">
             <span className="text-gray-400 flex items-center gap-1 mr-1">
-              <Filter className="w-3 h-3" /> Filter:
+              <Filter className="w-3 h-3 text-cyan-400" /> Filter:
             </span>
             <button
               type="button"
               onClick={() => setCleaningFilter("all")}
               className={`px-2 py-0.5 rounded text-[11px] transition-colors ${
                 cleaningFilter === "all"
-                  ? "bg-accent text-white font-medium"
+                  ? "bg-cyan-500 text-white font-medium shadow-[0_0_8px_rgba(6,182,212,0.4)]"
                   : "bg-surface-subtle/50 text-gray-400 hover:text-gray-200"
               }`}
             >
@@ -209,7 +213,7 @@ export function AiReasoningTerminal({
               onClick={() => setCleaningFilter("imputation")}
               className={`px-2 py-0.5 rounded text-[11px] transition-colors ${
                 cleaningFilter === "imputation"
-                  ? "bg-purple-600 text-white font-medium"
+                  ? "bg-indigo-600 text-white font-medium shadow-[0_0_8px_rgba(99,102,241,0.4)]"
                   : "bg-surface-subtle/50 text-gray-400 hover:text-gray-200"
               }`}
             >
@@ -220,7 +224,7 @@ export function AiReasoningTerminal({
               onClick={() => setCleaningFilter("scaling")}
               className={`px-2 py-0.5 rounded text-[11px] transition-colors ${
                 cleaningFilter === "scaling"
-                  ? "bg-blue-600 text-white font-medium"
+                  ? "bg-sky-600 text-white font-medium shadow-[0_0_8px_rgba(14,165,233,0.4)]"
                   : "bg-surface-subtle/50 text-gray-400 hover:text-gray-200"
               }`}
             >
@@ -231,7 +235,7 @@ export function AiReasoningTerminal({
               onClick={() => setCleaningFilter("encoding")}
               className={`px-2 py-0.5 rounded text-[11px] transition-colors ${
                 cleaningFilter === "encoding"
-                  ? "bg-emerald-600 text-white font-medium"
+                  ? "bg-emerald-600 text-white font-medium shadow-[0_0_8px_rgba(16,185,129,0.4)]"
                   : "bg-surface-subtle/50 text-gray-400 hover:text-gray-200"
               }`}
             >
@@ -243,7 +247,7 @@ export function AiReasoningTerminal({
                 onClick={() => setCleaningFilter("reduction")}
                 className={`px-2 py-0.5 rounded text-[11px] transition-colors ${
                   cleaningFilter === "reduction"
-                    ? "bg-amber-600 text-white font-medium"
+                    ? "bg-amber-600 text-white font-medium shadow-[0_0_8px_rgba(245,158,11,0.4)]"
                     : "bg-surface-subtle/50 text-gray-400 hover:text-gray-200"
                 }`}
               >
@@ -253,7 +257,7 @@ export function AiReasoningTerminal({
           </div>
 
           {filteredSteps.length === 0 ? (
-            <div className="text-center py-8 text-gray-400">
+            <div className="text-center py-8 text-gray-400 font-mono">
               No cleaning transformations match the selected filter.
             </div>
           ) : (
@@ -261,12 +265,12 @@ export function AiReasoningTerminal({
               {filteredSteps.map((step, idx) => (
                 <div
                   key={idx}
-                  className="p-3 rounded-lg border border-border/80 bg-[#161b22] space-y-2 hover:border-accent/40 transition-colors"
+                  className="p-3.5 rounded-card border border-border/80 bg-[#0F172A] space-y-2 hover:border-cyan-500/40 transition-colors shadow-sm"
                 >
                   {/* Card Header */}
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
-                      <span className="font-mono font-bold text-accent text-xs">
+                      <span className="font-mono font-bold text-cyan-400 text-xs">
                         {step.column}
                       </span>
                       <span
@@ -284,9 +288,9 @@ export function AiReasoningTerminal({
                   </div>
 
                   {/* Plain English Reason Box */}
-                  <div className="p-2.5 rounded bg-[#0d1117] border border-border/50 space-y-1">
-                    <div className="text-[10px] font-mono text-accent flex items-center gap-1 font-semibold">
-                      <Info className="w-3 h-3 text-accent" /> Why this step is needed:
+                  <div className="p-2.5 rounded-button bg-[#090D16] border border-border/50 space-y-1">
+                    <div className="text-[10px] font-mono text-cyan-400 flex items-center gap-1 font-semibold">
+                      <Info className="w-3 h-3 text-cyan-400" /> Why this step is needed:
                     </div>
                     <p className="text-xs text-gray-200 leading-relaxed font-sans whitespace-normal">
                       {step.reason}
@@ -301,9 +305,9 @@ export function AiReasoningTerminal({
 
       {/* Tab 3: Engineered Features & Reductions */}
       {activeTab === "features" && (
-        <div className="p-4 max-h-[420px] overflow-y-auto space-y-3 font-sans text-xs">
+        <div className="p-4 max-h-[420px] overflow-y-auto space-y-3 font-sans text-xs bg-[#090D16]">
           {engineeredFeatures.length === 0 ? (
-            <div className="text-center py-8 text-gray-400">
+            <div className="text-center py-8 text-gray-400 font-mono">
               No custom domain extractions or PCA reduction required for this schema. Standard tabular preprocessing applies.
             </div>
           ) : (
@@ -311,23 +315,23 @@ export function AiReasoningTerminal({
               {engineeredFeatures.map((feat, idx) => (
                 <div
                   key={idx}
-                  className="p-3.5 rounded-lg border border-border/80 bg-[#161b22] space-y-2 hover:border-accent/40 transition-colors"
+                  className="p-3.5 rounded-card border border-border/80 bg-[#0F172A] space-y-2 hover:border-cyan-500/40 transition-colors shadow-sm"
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <span className="font-mono font-semibold text-accent text-xs flex items-center gap-1.5">
-                      <Layers className="w-3.5 h-3.5 text-accent" />
+                    <span className="font-mono font-semibold text-cyan-400 text-xs flex items-center gap-1.5">
+                      <Layers className="w-3.5 h-3.5 text-cyan-400" />
                       {feat.name}
                     </span>
-                    <Badge variant="accent" className="text-[10px] font-mono">
+                    <Badge variant="streaming" className="text-[10px]">
                       {feat.transformation_type.replace("_", " ")}
                     </Badge>
                   </div>
 
-                  <div className="text-[11px] font-mono text-gray-400 bg-black/50 px-2.5 py-1.5 rounded border border-border/40">
+                  <div className="text-[11px] font-mono text-gray-300 bg-black/60 px-2.5 py-1.5 rounded-button border border-border/50">
                     Formula: {feat.formula_or_desc}
                   </div>
 
-                  <div className="p-2 rounded bg-[#0d1117] border border-border/40">
+                  <div className="p-2 rounded-button bg-[#090D16] border border-border/40">
                     <p className="text-xs text-gray-300 leading-relaxed font-sans">
                       {feat.rationale}
                     </p>

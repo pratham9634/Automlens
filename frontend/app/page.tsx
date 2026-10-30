@@ -70,7 +70,7 @@ export default function DashboardPage() {
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-border">
         <div className="space-y-1">
-          <h1 className="page-title text-text-primary">Workspace Overview</h1>
+          <h1 className="font-display tracking-wide text-2xl uppercase text-text-primary">Workspace Overview</h1>
           <p className="text-xs text-text-muted">
             Human-assisted tabular AutoML with fold-safe preprocessing, parallel CV, and SHAP explainability.
           </p>
@@ -103,7 +103,7 @@ export default function DashboardPage() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <FolderOpen className="w-4 h-4 text-accent" />
-            <h2 className="section-title text-text-primary">
+            <h2 className="font-display tracking-wider text-base uppercase text-text-primary">
               Active Projects
             </h2>
             <Badge variant="neutral" size="sm" className="tabular-nums">
@@ -175,7 +175,7 @@ export default function DashboardPage() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
           {/* API Gateway Card */}
-          <Card className="p-4 space-y-2">
+          <Card accentTop="azure" className="p-4 space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-text-primary">API Gateway</span>
               <Server className="w-3.5 h-3.5 text-accent" />
@@ -190,7 +190,7 @@ export default function DashboardPage() {
           </Card>
 
           {/* Database Card */}
-          <Card className="p-4 space-y-2">
+          <Card accentTop="cyan" className="p-4 space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-text-primary">Metadata Storage</span>
               <Database className="w-3.5 h-3.5 text-success" />
@@ -215,7 +215,7 @@ export default function DashboardPage() {
           </Card>
 
           {/* Concurrency Card */}
-          <Card className="p-4 space-y-2">
+          <Card accentTop="cyan" className="p-4 space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-text-primary">Parallel Workers</span>
               <Cpu className="w-3.5 h-3.5 text-info" />
@@ -232,7 +232,7 @@ export default function DashboardPage() {
           </Card>
 
           {/* Hybrid Decision Engine Card */}
-          <Card className="p-4 space-y-2">
+          <Card accentTop="indigo" className="p-4 space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-text-primary">AI Decision Engine</span>
               <BrainCircuit className="w-3.5 h-3.5 text-accent" />

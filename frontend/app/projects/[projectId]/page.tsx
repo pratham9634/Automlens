@@ -419,7 +419,7 @@ export default function ProjectWorkspacePage() {
             onClick={() => setActiveTab("dataset")}
             className={`px-3 py-1.5 border-b-2 transition-colors ${
               activeTab === "dataset"
-                ? "border-brand-lavender text-brand-hover font-semibold"
+                ? "border-cyan-400 text-cyan-400 font-semibold shadow-[0_2px_8px_rgba(6,182,212,0.3)]"
                 : "border-transparent text-ink-muted hover:text-ink"
             }`}
           >
@@ -430,7 +430,7 @@ export default function ProjectWorkspacePage() {
             disabled={!isTargetReady}
             className={`px-3 py-1.5 border-b-2 transition-colors ${
               activeTab === "target"
-                ? "border-brand-lavender text-brand-hover font-semibold"
+                ? "border-cyan-400 text-cyan-400 font-semibold shadow-[0_2px_8px_rgba(6,182,212,0.3)]"
                 : isTargetReady
                 ? "border-transparent text-ink-muted hover:text-ink"
                 : "border-transparent text-ink-faint cursor-not-allowed opacity-40"
@@ -443,7 +443,7 @@ export default function ProjectWorkspacePage() {
             disabled={!isTrainingReady}
             className={`px-3 py-1.5 border-b-2 transition-colors ${
               activeTab === "training"
-                ? "border-brand-lavender text-brand-hover font-semibold"
+                ? "border-cyan-400 text-cyan-400 font-semibold shadow-[0_2px_8px_rgba(6,182,212,0.3)]"
                 : isTrainingReady
                 ? "border-transparent text-ink-muted hover:text-ink"
                 : "border-transparent text-ink-faint cursor-not-allowed opacity-40"
@@ -456,7 +456,7 @@ export default function ProjectWorkspacePage() {
             disabled={!isResultsReady}
             className={`px-3 py-1.5 border-b-2 transition-colors ${
               activeTab === "leaderboard"
-                ? "border-brand-lavender text-brand-hover font-semibold"
+                ? "border-cyan-400 text-cyan-400 font-semibold shadow-[0_2px_8px_rgba(6,182,212,0.3)]"
                 : isResultsReady
                 ? "border-transparent text-ink-muted hover:text-ink"
                 : "border-transparent text-ink-faint cursor-not-allowed opacity-40"
@@ -469,7 +469,7 @@ export default function ProjectWorkspacePage() {
             disabled={!isResultsReady}
             className={`px-3 py-1.5 border-b-2 transition-colors ${
               activeTab === "predict"
-                ? "border-brand-lavender text-brand-hover font-semibold"
+                ? "border-cyan-400 text-cyan-400 font-semibold shadow-[0_2px_8px_rgba(6,182,212,0.3)]"
                 : isResultsReady
                 ? "border-transparent text-ink-muted hover:text-ink"
                 : "border-transparent text-ink-faint cursor-not-allowed opacity-40"
@@ -482,7 +482,7 @@ export default function ProjectWorkspacePage() {
             disabled={!isResultsReady}
             className={`px-3 py-1.5 border-b-2 transition-colors ${
               activeTab === "explanations"
-                ? "border-brand-lavender text-brand-hover font-semibold"
+                ? "border-cyan-400 text-cyan-400 font-semibold shadow-[0_2px_8px_rgba(6,182,212,0.3)]"
                 : isResultsReady
                 ? "border-transparent text-ink-muted hover:text-ink"
                 : "border-transparent text-ink-faint cursor-not-allowed opacity-40"
@@ -494,7 +494,7 @@ export default function ProjectWorkspacePage() {
             onClick={() => setActiveTab("audit")}
             className={`px-3 py-1.5 border-b-2 transition-colors ${
               activeTab === "audit"
-                ? "border-brand-lavender text-brand-hover font-semibold"
+                ? "border-cyan-400 text-cyan-400 font-semibold shadow-[0_2px_8px_rgba(6,182,212,0.3)]"
                 : "border-transparent text-ink-muted hover:text-ink"
             }`}
           >
@@ -504,7 +504,7 @@ export default function ProjectWorkspacePage() {
             onClick={() => setActiveTab("exports")}
             className={`px-3 py-1.5 border-b-2 transition-colors ${
               activeTab === "exports"
-                ? "border-brand-lavender text-brand-hover font-semibold"
+                ? "border-cyan-400 text-cyan-400 font-semibold shadow-[0_2px_8px_rgba(6,182,212,0.3)]"
                 : "border-transparent text-ink-muted hover:text-ink"
             }`}
           >

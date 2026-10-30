@@ -1,19 +1,34 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 
-export const Card = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={cn(
-      "rounded-card border border-border bg-surface text-text-primary transition-colors",
-      className
-    )}
-    {...props}
-  />
-));
+export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
+  accentTop?: "azure" | "cyan" | "indigo" | "none";
+}
+
+export const Card = React.forwardRef<HTMLDivElement, CardProps>(
+  ({ className, accentTop = "none", children, ...props }, ref) => {
+    const accentStyles = {
+      none: "",
+      azure: "border-t-2 border-t-accent",
+      cyan: "border-t-2 border-t-secondary",
+      indigo: "border-t-2 border-t-tertiary",
+    };
+
+    return (
+      <div
+        ref={ref}
+        className={cn(
+          "rounded-card border border-border/80 bg-surface text-text-primary transition-all duration-160 shadow-sm",
+          accentStyles[accentTop],
+          className
+        )}
+        {...props}
+      >
+        {children}
+      </div>
+    );
+  }
+);
 Card.displayName = "Card";
 
 export const CardHeader = React.forwardRef<
@@ -34,7 +49,7 @@ export const CardTitle = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <h3
     ref={ref}
-    className={cn("card-title text-text-primary", className)}
+    className={cn("text-sm sm:text-base font-semibold tracking-tight text-text-primary font-sans", className)}
     {...props}
   />
 ));
@@ -46,7 +61,7 @@ export const CardDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <p
     ref={ref}
-    className={cn("text-xs text-text-muted", className)}
+    className={cn("text-xs text-text-muted font-sans leading-relaxed", className)}
     {...props}
   />
 ));

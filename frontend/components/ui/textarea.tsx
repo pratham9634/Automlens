@@ -13,12 +13,12 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
         ref={ref}
         disabled={disabled}
         className={cn(
-          "flex min-h-[80px] w-full rounded-input border bg-surface px-3 py-2 text-xs text-text-primary transition-colors",
-          "placeholder:text-text-muted",
+          "flex min-h-[80px] w-full rounded-input border bg-surface px-3 py-2 text-xs text-text-primary font-mono transition-all duration-160",
+          "placeholder:text-text-muted/70",
           "focus-visible:outline-none focus-visible:ring-1",
           error
             ? "border-danger focus-visible:border-danger focus-visible:ring-danger"
-            : "border-border focus-visible:border-accent focus-visible:ring-accent",
+            : "border-border/80 focus-visible:border-accent focus-visible:ring-accent focus-visible:shadow-[0_0_8px_rgba(6,182,212,0.3)]",
           "disabled:cursor-not-allowed disabled:opacity-50",
           className
         )}
