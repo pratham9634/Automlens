@@ -86,7 +86,7 @@ export function DatasetPreviewTable({
 
   return (
     <div className="space-y-6">
-      {/* Telemetry Stats Grid */}
+      {/* Dataset Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
         {/* File Name & Format */}
         <Card className="p-4 flex flex-col justify-between space-y-2">

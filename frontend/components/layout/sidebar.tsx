@@ -28,7 +28,7 @@ const projectPipelineNav = [
   { id: "predict", label: "Predictions", icon: BarChart3 },
   { id: "explanations", label: "SHAP Analysis", icon: Sparkles },
   { id: "audit", label: "Audit Ledger", icon: History },
-  { id: "exports", label: "Viva Exports", icon: HardDriveDownload },
+  { id: "exports", label: "Reports & Exports", icon: HardDriveDownload },
 ];
 
 export function Sidebar() {
@@ -163,7 +163,7 @@ export function Sidebar() {
         {collapsed ? (
           <div
             className="flex items-center justify-center p-2 rounded-button bg-surface-subtle border border-border text-text-muted"
-            title="Telemetry: Active | 4 Cores CPU"
+            title="System: Online | 4 Cores CPU"
           >
             <div className="relative flex items-center justify-center">
               <span className="w-2 h-2 rounded-full bg-cyan-400 inline-block animate-pulse shadow-[0_0_8px_rgba(6,182,212,0.8)]" />
@@ -174,7 +174,7 @@ export function Sidebar() {
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-1.5 text-xs font-medium text-text-primary font-sans">
                 <Activity className="w-3.5 h-3.5 text-secondary animate-pulse" />
-                <span className="font-mono text-[11px] uppercase tracking-wider">Telemetry</span>
+                <span className="font-mono text-[11px] uppercase tracking-wider">System Status</span>
               </div>
               <span className="flex items-center gap-1.5 text-[10px] font-mono text-cyan-400 bg-cyan-500/10 px-1.5 py-0.5 rounded border border-cyan-500/25">
                 <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 inline-block animate-ping" />

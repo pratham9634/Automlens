@@ -19,7 +19,7 @@ import {
   Trash2,
   RotateCcw,
   Copy,
-  GraduationCap,
+  FileText,
   CheckCircle2,
   ChevronRight,
   ShieldCheck,
@@ -70,9 +70,9 @@ const pipelineSteps = [
   {
     step: 5,
     id: "exports",
-    title: "5. Governance & Viva",
-    subtitle: "Audit ledger & defense summary",
-    icon: GraduationCap,
+    title: "5. Reports & Exports",
+    subtitle: "Audit ledger & executive report",
+    icon: HardDriveDownload,
   },
 ];
 
@@ -265,15 +265,15 @@ export default function ProjectWorkspacePage() {
           <span>Back to Workspaces</span>
         </Link>
 
-        {/* Header Action Suite: Clone, Reset, Delete, Viva Summary */}
+        {/* Header Action Suite: Clone, Reset, Delete, Executive Report */}
         <div className="flex items-center gap-2 flex-wrap">
           <button
             onClick={() => setActiveTab("exports")}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-brand-lavender/30 bg-brand-lavender/10 hover:bg-brand-lavender/20 text-xs font-mono text-brand-hover transition-colors"
-            title="Jump to Viva Defense Report"
+            title="Jump to Executive Report & Exports"
           >
-            <GraduationCap className="w-3.5 h-3.5" />
-            <span>Viva Summary</span>
+            <FileText className="w-3.5 h-3.5" />
+            <span>Executive Report</span>
           </button>
 
           <button
@@ -508,7 +508,7 @@ export default function ProjectWorkspacePage() {
                 : "border-transparent text-ink-muted hover:text-ink"
             }`}
           >
-            Viva &amp; Exports
+            Reports &amp; Exports
           </button>
         </div>
       </div>
@@ -709,7 +709,7 @@ export default function ProjectWorkspacePage() {
         <AuditLedger projectId={project.id} />
       )}
 
-      {/* Active Tab: Artifact Export Hub & Viva Executive Summary */}
+      {/* Active Tab: Artifact Export Hub & Executive Report */}
       {activeTab === "exports" && (
         <ExportView projectId={project.id} projectName={project.name} />
       )}

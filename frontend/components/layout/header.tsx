@@ -38,7 +38,7 @@ export function Header() {
 
   return (
     <header className="h-[60px] border-b border-border/80 bg-surface/90 backdrop-blur-md px-5 sm:px-6 flex items-center justify-between sticky top-0 z-40 transition-colors select-none">
-      {/* Dynamic Telemetry Breadcrumbs */}
+      {/* Dynamic Navigation Breadcrumbs */}
       <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-xs font-sans">
         <Link
           href="/"
@@ -69,7 +69,7 @@ export function Header() {
         )}
       </nav>
 
-      {/* Telemetry Status Bar & Controls */}
+      {/* System Status Bar & Controls */}
       <div className="flex items-center gap-2.5 sm:gap-3">
         {/* Backend & DB Status Pill */}
         <div
@@ -77,7 +77,7 @@ export function Header() {
           className="flex items-center gap-1.5 px-2.5 py-1 rounded-pill border border-border/80 bg-surface-subtle text-[11px] font-mono shadow-sm"
         >
           <Database className="w-3 h-3 text-text-muted" />
-          <span className="text-text-secondary hidden md:inline">Telemetry DB:</span>
+          <span className="text-text-secondary hidden md:inline">PostgreSQL:</span>
           {loading ? (
             <RefreshCw className="w-3 h-3 text-secondary animate-spin" />
           ) : isConnected ? (

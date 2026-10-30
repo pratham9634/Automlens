@@ -11,6 +11,7 @@ import {
   Play,
   Loader2,
   ArrowRight,
+  BarChart2,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -23,6 +24,17 @@ import {
   TableHead,
   TableCell,
 } from "@/components/ui/table";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  Cell,
+  CartesianGrid,
+  ReferenceLine,
+} from "recharts";
 
 interface ModelLeaderboardProps {
   projectId: string;
@@ -46,6 +58,7 @@ export function ModelLeaderboard({
   const [sortDir, setSortDir] = useState<SortDirection>("asc");
 
   const [inspectingModel, setInspectingModel] = useState<ModelRun | null>(null);
+  const [showChart, setShowChart] = useState(true);
 
   useEffect(() => {
     let mounted = true;
@@ -115,6 +128,27 @@ export function ModelLeaderboard({
       setSortDir("desc");
     }
   };
+
+  const comparisonChartData = useMemo(() => {
+    if (!latestRun) return [];
+    const byScore = [...latestRun.model_runs].sort((a, b) => {
+      const sA = a.primary_metric_score ?? -Infinity;
+      const sB = b.primary_metric_score ?? -Infinity;
+      return sB - sA;
+    });
+
+    return byScore
+      .map((m, idx) => ({
+        name: m.model_name,
+        score: Number((m.primary_metric_score ?? 0).toFixed(4)),
+        std: m.primary_metric_std ?? 0,
+        time: m.train_time_seconds ?? 0,
+        isBaseline: m.is_baseline,
+        isWinner: idx === 0,
+        rank: idx + 1,
+      }))
+      .reverse();
+  }, [latestRun]);
 
   if (loading) {
     return (
@@ -194,6 +228,166 @@ export function ModelLeaderboard({
               </Button>
             )}
           </div>
+        </Card>
+      )}
+
+      {/* Visual Model Performance Benchmark Chart */}
+      {comparisonChartData.length > 0 && (
+        <Card className="p-4 sm:p-5 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border pb-3">
+            <div className="flex items-center gap-2">
+              <span className="p-1.5 rounded-md bg-surface-muted text-accent border border-border-subtle">
+                <BarChart2 className="w-4 h-4" />
+              </span>
+              <div>
+                <h3 className="text-sm font-semibold text-text-primary flex items-center gap-2">
+                  <span>Cross-Validated Algorithm Comparison</span>
+                  <Badge variant="accent" size="sm" className="font-mono uppercase text-[10px]">
+                    Metric: {latestRun.primary_metric}
+                  </Badge>
+                </h3>
+                <p className="text-xs text-text-muted">
+                  Mean test fold score across 5-fold cross-validation. Higher is better.
+                </p>
+              </div>
+            </div>
+
+            {/* Legend & Toggle */}
+            <div className="flex items-center gap-2.5 text-xs font-mono">
+              <span className="flex items-center gap-1.5 text-text-secondary">
+                <span className="w-2.5 h-2.5 rounded-sm bg-emerald-500 inline-block" />
+                Winner
+              </span>
+              <span className="flex items-center gap-1.5 text-text-secondary">
+                <span className="w-2.5 h-2.5 rounded-sm bg-sky-500 inline-block" />
+                Evaluated
+              </span>
+              {baselineScore !== null && (
+                <span className="flex items-center gap-1.5 text-text-secondary">
+                  <span className="w-2.5 h-2.5 rounded-sm bg-amber-500 inline-block" />
+                  Baseline
+                </span>
+              )}
+              <button
+                type="button"
+                onClick={() => setShowChart(!showChart)}
+                className="px-2 py-1 rounded text-[11px] border border-border bg-surface-subtle hover:bg-surface-hover transition-colors text-text-secondary cursor-pointer"
+              >
+                {showChart ? "Hide Chart" : "Show Chart"}
+              </button>
+            </div>
+          </div>
+
+          {showChart && (
+            <div style={{ height: `${Math.max(240, comparisonChartData.length * 44)}px` }} className="w-full pt-2">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={comparisonChartData}
+                  layout="vertical"
+                  margin={{ top: 8, right: 35, left: 130, bottom: 8 }}
+                >
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    horizontal={false}
+                    stroke="var(--border)"
+                    opacity={0.6}
+                  />
+                  <XAxis
+                    type="number"
+                    stroke="var(--border)"
+                    tick={{ fill: "var(--text-muted)", fontSize: 11, fontFamily: "monospace" }}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    type="category"
+                    dataKey="name"
+                    stroke="var(--border)"
+                    tick={{ fill: "var(--text-secondary)", fontSize: 11, fontFamily: "monospace" }}
+                    tickLine={false}
+                    width={150}
+                  />
+                  {baselineScore !== null && (
+                    <ReferenceLine
+                      x={baselineScore}
+                      stroke="#F59E0B"
+                      strokeDasharray="4 4"
+                      strokeWidth={1.5}
+                      label={{
+                        value: "Baseline",
+                        fill: "#F59E0B",
+                        fontSize: 10,
+                        position: "insideTopRight",
+                        fontFamily: "monospace",
+                      }}
+                    />
+                  )}
+                  <Tooltip
+                    cursor={{ fill: "rgba(14, 165, 233, 0.08)" }}
+                    content={({ active, payload }) => {
+                      if (active && payload && payload.length) {
+                        const item = payload[0].payload;
+                        const lift = baselineScore !== null ? item.score - baselineScore : null;
+                        return (
+                          <div className="bg-surface border border-border p-3 rounded-card shadow-xl text-xs font-mono space-y-1.5 min-w-[220px]">
+                            <div className="text-text-primary font-semibold flex items-center justify-between gap-2 border-b border-border/60 pb-1.5">
+                              <span className={item.isWinner ? "text-emerald-500 font-bold" : "text-accent"}>
+                                #{item.rank} {item.name}
+                              </span>
+                              {item.isBaseline && (
+                                <Badge variant="warning" size="sm">
+                                  Baseline
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="flex justify-between items-center text-[11px] text-text-muted">
+                              <span>CV Mean Score:</span>
+                              <span className="text-text-primary font-bold tabular-nums">
+                                {item.score.toFixed(4)} {item.std > 0 ? `± ${item.std.toFixed(4)}` : ""}
+                              </span>
+                            </div>
+                            {lift !== null && (
+                              <div className="flex justify-between items-center text-[11px]">
+                                <span className="text-text-muted">Lift vs Baseline:</span>
+                                <span
+                                  className={`font-semibold tabular-nums ${
+                                    lift > 0 ? "text-emerald-500" : lift < 0 ? "text-rose-500" : "text-text-muted"
+                                  }`}
+                                >
+                                  {lift >= 0 ? `+${lift.toFixed(4)}` : lift.toFixed(4)}
+                                </span>
+                              </div>
+                            )}
+                            <div className="flex justify-between items-center text-[11px] text-text-muted pt-1 border-t border-border/40">
+                              <span>Train Duration:</span>
+                              <span className="text-text-secondary tabular-nums">{item.time.toFixed(2)}s</span>
+                            </div>
+                          </div>
+                        );
+                      }
+                      return null;
+                    }}
+                  />
+                  <Bar dataKey="score" radius={[0, 4, 4, 0]}>
+                    {comparisonChartData.map((item, index) => {
+                      const fill = item.isWinner
+                        ? "#10B981"
+                        : item.isBaseline
+                        ? "#F59E0B"
+                        : "#0EA5E9";
+
+                      return (
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={fill}
+                          opacity={0.88 + (index / comparisonChartData.length) * 0.12}
+                        />
+                      );
+                    })}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
         </Card>
       )}
 

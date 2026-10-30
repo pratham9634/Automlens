@@ -111,7 +111,7 @@ export function FeatureDistributionViewer({
       {/* Content for Numeric Feature */}
       {activeType === "numeric" && currentNumeric && (
         <div className="space-y-4">
-          {/* 9-Stat Telemetry Grid */}
+          {/* 9-Stat Statistical Grid */}
           <div className="grid grid-cols-3 sm:grid-cols-6 lg:grid-cols-9 gap-2">
             {[
               { label: "Mean", val: currentNumeric.mean },
@@ -191,8 +191,8 @@ export function FeatureDistributionViewer({
                         style={{ height: `${Math.max(heightPct, 4)}%` }}
                         className={`w-full rounded-t-[3px] transition-all duration-150 ${
                           isHovered
-                            ? "bg-accent shadow-xs"
-                            : "bg-accent/70 group-hover:bg-accent/90"
+                            ? "bg-gradient-to-t from-cyan-500 to-sky-400 shadow-[0_0_10px_rgba(6,182,212,0.45)]"
+                            : "bg-sky-500/80 group-hover:bg-sky-400"
                         }`}
                       />
                       <span className="text-[9px] font-mono text-text-muted pt-1 truncate w-full text-center tabular-nums">
@@ -232,7 +232,7 @@ export function FeatureDistributionViewer({
                 <div className="w-full h-2 rounded-pill bg-surface-subtle border border-border overflow-hidden">
                   <div
                     style={{ width: `${cat.percentage}%` }}
-                    className="h-full bg-accent/80 rounded-pill transition-all"
+                    className="h-full bg-gradient-to-r from-sky-500 to-cyan-400 rounded-pill transition-all"
                   />
                 </div>
               </div>

@@ -262,9 +262,9 @@ export function ModelInspectorDialog({
                                       key={cIdx}
                                       className={`p-3 text-center border border-border min-w-[60px] tabular-nums ${
                                         isDiagonal
-                                          ? "bg-success/20 text-success font-semibold"
+                                          ? "bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-bold"
                                           : ratio > 0
-                                          ? "bg-danger/15 text-danger"
+                                          ? "bg-rose-500/15 text-rose-700 dark:text-rose-300 font-medium"
                                           : "bg-surface text-text-muted"
                                       }`}
                                     >

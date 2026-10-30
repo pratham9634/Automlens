@@ -33,23 +33,23 @@ export function CorrelationHeatmap({ matrix }: CorrelationHeatmapProps) {
 
   const getCellBg = (val: number | null) => {
     if (val === null || val === undefined) return "bg-surface-subtle text-text-subtle";
-    if (val === 1) return "bg-accent/20 text-accent font-bold";
+    if (val === 1) return "bg-cyan-500/25 text-cyan-700 dark:text-cyan-300 font-bold";
     if (val > 0) {
-      if (val >= 0.7) return "bg-info/30 text-info font-semibold";
-      if (val >= 0.4) return "bg-info/15 text-text-primary";
-      return "bg-info/5 text-text-secondary";
+      if (val >= 0.7) return "bg-sky-500/35 text-sky-800 dark:text-sky-200 font-semibold";
+      if (val >= 0.4) return "bg-sky-500/20 text-sky-700 dark:text-sky-300 font-medium";
+      return "bg-sky-500/10 text-text-secondary";
     }
     if (val < 0) {
-      if (val <= -0.7) return "bg-danger/30 text-danger font-semibold";
-      if (val <= -0.4) return "bg-danger/15 text-text-primary";
-      return "bg-danger/5 text-text-secondary";
+      if (val <= -0.7) return "bg-rose-500/35 text-rose-800 dark:text-rose-200 font-semibold";
+      if (val <= -0.4) return "bg-rose-500/20 text-rose-700 dark:text-rose-300 font-medium";
+      return "bg-rose-500/10 text-text-secondary";
     }
     return "bg-surface-subtle text-text-muted";
   };
 
   return (
     <Card className="p-4 sm:p-5 space-y-5">
-      {/* Header and Cell Hover Telemetry */}
+      {/* Header and Cell Hover Metrics */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h3 className="card-title text-text-primary flex items-center gap-2">
@@ -157,7 +157,7 @@ export function CorrelationHeatmap({ matrix }: CorrelationHeatmapProps) {
       <div className="flex flex-wrap items-center justify-between text-[11px] font-mono text-text-muted pt-1">
         <div className="flex items-center gap-3">
           <span className="flex items-center gap-1">
-            <span className="w-3 h-3 rounded-[3px] bg-danger/30 inline-block border border-danger/40" />
+            <span className="w-3 h-3 rounded-[3px] bg-rose-500/35 inline-block border border-rose-500/40" />
             Negative (r &lt; 0)
           </span>
           <span className="flex items-center gap-1">
@@ -165,11 +165,11 @@ export function CorrelationHeatmap({ matrix }: CorrelationHeatmapProps) {
             Neutral (r ≈ 0)
           </span>
           <span className="flex items-center gap-1">
-            <span className="w-3 h-3 rounded-[3px] bg-info/30 inline-block border border-info/40" />
+            <span className="w-3 h-3 rounded-[3px] bg-sky-500/35 inline-block border border-sky-500/40" />
             Positive (r &gt; 0)
           </span>
           <span className="flex items-center gap-1">
-            <span className="w-3 h-3 rounded-[3px] bg-accent/20 inline-block border border-accent/40" />
+            <span className="w-3 h-3 rounded-[3px] bg-cyan-500/25 inline-block border border-cyan-500/40" />
             Identity (r = 1.0)
           </span>
         </div>

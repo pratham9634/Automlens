@@ -14,7 +14,7 @@ import {
   ShieldCheck,
   RefreshCw,
   Hash,
-  GraduationCap,
+  FileText,
   Layers,
 } from "lucide-react";
 import { apiClient } from "@/lib/api-client";
@@ -36,7 +36,7 @@ export function ExportView({ projectId, projectName }: ExportViewProps) {
   const [loading, setLoading] = useState(true);
   const [downloadingType, setDownloadingType] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [subView, setSubView] = useState<"artifacts" | "viva-summary">("artifacts");
+  const [subView, setSubView] = useState<"artifacts" | "executive-summary">("artifacts");
 
   const fetchStatus = async () => {
     setLoading(true);
@@ -200,22 +200,22 @@ export function ExportView({ projectId, projectName }: ExportViewProps) {
         </button>
 
         <button
-          onClick={() => setSubView("viva-summary")}
+          onClick={() => setSubView("executive-summary")}
           className={`flex items-center gap-2 px-3.5 py-1.5 rounded-md transition-colors ${
-            subView === "viva-summary"
+            subView === "executive-summary"
               ? "bg-surface-muted text-text-primary font-semibold border border-border"
               : "text-text-muted hover:text-text-primary hover:bg-surface-subtle/50"
           }`}
         >
-          <GraduationCap className="w-3.5 h-3.5 text-accent" />
-          <span>Viva Defense Executive Summary</span>
+          <FileText className="w-3.5 h-3.5 text-accent" />
+          <span>Executive Model Report</span>
           <Badge variant="accent" size="sm" className="text-[10px] py-0 px-1.5">
             Printable
           </Badge>
         </button>
       </div>
 
-      {subView === "viva-summary" ? (
+      {subView === "executive-summary" ? (
         <VivaExecutiveSummary projectId={projectId} projectName={projectName || "Workspace"} />
       ) : (
         <>

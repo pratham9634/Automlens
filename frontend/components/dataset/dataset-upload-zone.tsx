@@ -203,7 +203,7 @@ export function DatasetUploadZone({
           <div>
             <h4 className="card-title text-text-primary flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-info" />
-              1-Click Benchmark Datasets for Viva Defense
+              1-Click Benchmark Datasets
             </h4>
             <p className="text-xs text-text-muted">
               Pre-bundled real datasets to test end-to-end AutoML workflows without manual file uploads.

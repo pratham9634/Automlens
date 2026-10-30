@@ -89,7 +89,7 @@ export interface ProjectListResponse {
 }
 
 export const apiClient = {
-  // System Telemetry
+  // System Health & Engine Status
   getHealth: () => request<SystemHealth>("/health"),
 
   // Projects CRUD

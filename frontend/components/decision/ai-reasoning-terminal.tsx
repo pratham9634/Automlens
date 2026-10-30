@@ -94,7 +94,7 @@ export function AiReasoningTerminal({
           </div>
           <Terminal className="w-4 h-4 text-cyan-400" />
           <span className="text-xs font-mono uppercase tracking-wider font-semibold text-gray-200">
-            AutoMLens Telemetry Terminal
+            AutoMLens AI Terminal
           </span>
           <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-300 border border-cyan-500/25">
             {provider === "ollama" ? "Ollama: qwen2.5:3b" : provider.toUpperCase()}

@@ -241,7 +241,7 @@ export function TrainingDashboard({
       <div className="py-16 flex flex-col items-center justify-center space-y-3">
         <Loader2 className="w-6 h-6 animate-spin text-accent" />
         <span className="text-xs font-mono text-text-muted">
-          Loading training status and worker telemetry...
+          Loading training status and worker processes...
         </span>
       </div>
     );

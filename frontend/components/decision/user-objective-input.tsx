@@ -38,7 +38,7 @@ export function UserObjectiveInput({
             <h4 className="text-sm font-semibold text-text-primary font-sans flex items-center gap-2">
               Modeling Goal &amp; Desired Output
               <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 uppercase">
-                Telemetry Prompt
+                Objective Prompt
               </span>
             </h4>
             <p className="text-xs text-text-muted font-sans">

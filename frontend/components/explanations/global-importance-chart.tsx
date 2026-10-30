@@ -9,6 +9,7 @@ import {
   Tooltip,
   ResponsiveContainer,
   Cell,
+  CartesianGrid,
 } from "recharts";
 import { GlobalExplanationResponse } from "@/lib/types";
 import { BarChart3 } from "lucide-react";
@@ -112,11 +113,12 @@ export function GlobalImportanceChart({ data }: GlobalImportanceChartProps) {
               <BarChart
                 data={chartData}
                 layout="vertical"
-                margin={{ top: 5, right: 30, left: 80, bottom: 5 }}
+                margin={{ top: 8, right: 30, left: 100, bottom: 8 }}
               >
+                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--border)" opacity={0.6} />
                 <XAxis
                   type="number"
-                  stroke="currentColor"
+                  stroke="var(--border)"
                   className="text-text-muted"
                   tick={{ fontSize: 11, fontFamily: "monospace" }}
                   tickLine={false}
@@ -124,7 +126,7 @@ export function GlobalImportanceChart({ data }: GlobalImportanceChartProps) {
                 <YAxis
                   type="category"
                   dataKey="name"
-                  stroke="currentColor"
+                  stroke="var(--border)"
                   className="text-text-secondary"
                   tick={{ fontSize: 11, fontFamily: "monospace" }}
                   tickLine={false}
@@ -155,10 +157,10 @@ export function GlobalImportanceChart({ data }: GlobalImportanceChartProps) {
                   }}
                 />
                 <Bar dataKey="value" radius={[0, 4, 4, 0]}>
-                  {chartData.map((_, index) => (
+                  {chartData.map((item, index) => (
                     <Cell
                       key={`cell-${index}`}
-                      fill={metricMode === "shap" ? "hsl(var(--accent))" : "hsl(var(--text-secondary))"}
+                      fill={metricMode === "shap" ? (item.rank === 1 ? "#06B6D4" : "#0EA5E9") : (item.rank === 1 ? "#818CF8" : "#6366F1")}
                       opacity={0.85 + (index / chartData.length) * 0.15}
                     />
                   ))}

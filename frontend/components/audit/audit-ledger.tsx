@@ -212,7 +212,7 @@ export function AuditLedger({ projectId }: AuditLedgerProps) {
           </Button>
         </div>
 
-        {/* Telemetry Counter Cards */}
+        {/* Ledger Counter Cards */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3 border-t border-border">
           <div className="p-3 rounded-lg border border-border bg-surface-subtle/50">
             <span className="text-[10px] font-mono text-text-muted block uppercase tracking-wider">

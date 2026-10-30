@@ -162,11 +162,11 @@ export default function DashboardPage() {
         )}
       </section>
 
-      {/* Infrastructure Telemetry Grid */}
+      {/* System Infrastructure Grid */}
       <section className="space-y-3 pt-6 border-t border-border">
         <div className="flex items-center justify-between">
           <h3 className="text-xs font-mono uppercase tracking-wider text-text-muted">
-            Infrastructure & Engine Telemetry
+            System &amp; Infrastructure Status
           </h3>
           <span className="text-[11px] font-mono text-text-subtle">
             Single-Node Parallel Architecture

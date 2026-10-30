@@ -6,7 +6,7 @@ import {
   CheckCircle2,
   Printer,
   ShieldCheck,
-  GraduationCap,
+  FileText,
   BarChart3,
   Loader2,
 } from "lucide-react";
@@ -93,7 +93,7 @@ export function VivaExecutiveSummary({
       <div className="py-20 text-center rounded-xl border border-border bg-surface">
         <Loader2 className="w-5 h-5 animate-spin text-accent mx-auto mb-3" />
         <p className="text-xs font-mono text-text-muted">
-          Compiling academic viva defense summary...
+          Compiling executive model report...
         </p>
       </div>
     );
@@ -110,14 +110,14 @@ export function VivaExecutiveSummary({
       <Card className="no-print p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-2.5">
           <span className="p-1.5 rounded-md bg-surface-muted text-accent border border-border-subtle">
-            <GraduationCap className="w-4 h-4" />
+            <FileText className="w-4 h-4" />
           </span>
           <div>
             <h3 className="text-sm font-semibold text-text-primary">
-              Viva Defense Executive Summary
+              Executive Model &amp; Governance Report
             </h3>
             <p className="text-xs text-text-muted">
-              Structured academic evaluation document formatted for the final-year examination panel.
+              Structured model evaluation document detailing validation rigor, audit trails, and governance.
             </p>
           </div>
         </div>
@@ -141,7 +141,7 @@ export function VivaExecutiveSummary({
             <div>
               <div className="flex items-center gap-2 text-xs font-mono font-semibold text-accent uppercase tracking-wider mb-1">
                 <ShieldCheck className="w-4 h-4 text-success" />
-                <span>B.Tech Final-Year Minor Project • Technical Defense</span>
+                <span>Automated Machine Learning Platform • Technical Verification</span>
               </div>
               <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-text-primary print-text-dark">
                 AutoMLens: Human-Assisted AutoML Platform for Tabular Data
@@ -153,7 +153,7 @@ export function VivaExecutiveSummary({
 
             <div className="sm:text-right font-mono text-xs text-text-muted print-text-muted space-y-0.5 shrink-0">
               <div className="font-semibold text-text-primary print-text-dark">
-                Candidate: Pratham Petwal
+                Author / Engineer: Pratham Petwal
               </div>
               <div>Dept. of Computer Science &amp; Engineering</div>
               <div>Shivalik College of Engineering, Dehradun</div>
@@ -231,7 +231,7 @@ export function VivaExecutiveSummary({
               },
               {
                 title: "9. Explainability & SHAP Attributions",
-                desc: "TreeExplainer/LinearExplainer feature attributions with non-causal academic disclaimers.",
+                desc: "TreeExplainer/LinearExplainer feature attributions with non-causal analytical disclaimers.",
               },
               {
                 title: "10. Deterministic Audit Trail & Exports",
@@ -344,26 +344,26 @@ export function VivaExecutiveSummary({
         <div className="p-4 rounded-md border border-border bg-surface-subtle/50 print-card space-y-1.5 text-xs">
           <h3 className="font-semibold text-text-primary print-text-dark flex items-center gap-1.5">
             <ShieldCheck className="w-4 h-4 text-accent" />
-            <span>Academic Rigor &amp; Reproducibility Disclosure</span>
+            <span>Methodological Rigor &amp; Reproducibility Disclosure</span>
           </h3>
           <p className="text-text-muted print-text-muted leading-relaxed">
             In accordance with the 10 AutoMLens ML Correctness Rules: All data transformations (missing value imputation, one-hot encoding, and continuous scaling) were isolated strictly inside cross-validation splits to guarantee mathematical independence of test folds. Model explainability attributions derived via SHAP TreeExplainer/LinearExplainer represent mathematical feature sensitivity for the trained parameters and do not assert empirical causal relationships in the physical data-generating process.
           </p>
         </div>
 
-        {/* Examiner Signature Block */}
+        {/* Sign-off & Verification Block */}
         <div className="pt-6 border-t border-border grid grid-cols-2 sm:grid-cols-3 gap-6 text-center text-xs font-mono">
           <div className="space-y-8">
             <div className="border-b border-border pb-6" />
-            <span className="text-text-muted print-text-muted block">Project Guide / Supervisor</span>
+            <span className="text-text-muted print-text-muted block">Lead ML Engineer</span>
           </div>
           <div className="space-y-8">
             <div className="border-b border-border pb-6" />
-            <span className="text-text-muted print-text-muted block">Internal Examiner</span>
+            <span className="text-text-muted print-text-muted block">Technical Reviewer</span>
           </div>
           <div className="space-y-8">
             <div className="border-b border-border pb-6" />
-            <span className="text-text-muted print-text-muted block">External Examiner</span>
+            <span className="text-text-muted print-text-muted block">Release Approver</span>
           </div>
         </div>
       </Card>
