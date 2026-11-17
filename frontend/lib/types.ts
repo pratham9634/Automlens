@@ -440,4 +440,30 @@ export interface ChatSuggestion {
   category: "quality" | "models" | "features" | "executive";
 }
 
+// Advanced XAI Counterfactual Types (Phase 4)
+
+export interface FeatureChange {
+  feature: string;
+  original_value: any;
+  proposed_value: any;
+  delta?: number | null;
+  percentage_change?: number | null;
+  description: string;
+}
+
+export interface CounterfactualResponse {
+  project_id: string;
+  model_id: string;
+  model_name: string;
+  task_type: string;
+  original_prediction: any;
+  original_probability?: number | null;
+  counterfactual_prediction: any;
+  counterfactual_probability?: number | null;
+  outcome_flipped: boolean;
+  required_changes: FeatureChange[];
+  recourse_summary: string;
+  academic_disclaimer: string;
+}
+
 

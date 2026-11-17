@@ -6,6 +6,7 @@ import { Sidebar } from "@/components/layout/sidebar";
 import { Header } from "@/components/layout/header";
 import { ThemeProvider } from "@/components/theme-provider";
 import { AuthSync } from "@/components/auth-sync";
+import { ELI5Provider } from "@/components/eli5/eli5-context";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -46,12 +47,14 @@ export default function RootLayout({
         </head>
         <body className="bg-canvas text-text-primary flex min-h-screen font-sans antialiased selection:bg-cyan-500/25 selection:text-cyan-200">
           <ThemeProvider>
-            <AuthSync />
-            <Sidebar />
-            <div className="flex-1 flex flex-col min-w-0">
-              <Header />
-              <main className="flex-1 p-7 overflow-y-auto">{children}</main>
-            </div>
+            <ELI5Provider>
+              <AuthSync />
+              <Sidebar />
+              <div className="flex-1 flex flex-col min-w-0">
+                <Header />
+                <main className="flex-1 p-7 overflow-y-auto">{children}</main>
+              </div>
+            </ELI5Provider>
           </ThemeProvider>
         </body>
       </html>

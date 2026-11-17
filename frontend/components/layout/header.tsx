@@ -11,9 +11,11 @@ import { ThemeToggle } from "./theme-toggle";
 import { AutoMLensIcon } from "@/components/ui/logo";
 import { BYOKModal, GEMINI_KEY_STORAGE_NAME } from "@/components/modals/byok-modal";
 import { Button } from "@/components/ui/button";
+import { useELI5 } from "@/components/eli5/eli5-context";
 
 export function Header() {
   const pathname = usePathname();
+  const { isELI5, toggleELI5 } = useELI5();
   const [health, setHealth] = useState<SystemHealth | null>(null);
   const [loading, setLoading] = useState(true);
   const [isByokOpen, setIsByokOpen] = useState(false);
@@ -125,6 +127,22 @@ export function Header() {
             </span>
           )}
         </div>
+
+        {/* ELI5 (Explain Like I'm 5) Toggle Pill */}
+        <button
+          type="button"
+          onClick={toggleELI5}
+          title="ELI5 Mode: Translates technical ML jargon into plain human language"
+          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-pill border text-[11px] font-mono transition-all ${
+            isELI5
+              ? "bg-amber-500/15 border-amber-500/40 text-amber-300 shadow-[0_0_8px_rgba(245,158,11,0.2)]"
+              : "bg-surface-subtle border-border/80 text-text-muted hover:text-text-primary hover:border-text-secondary"
+          }`}
+        >
+          <Sparkles className={`w-3 h-3 ${isELI5 ? "text-amber-400" : "text-text-muted"}`} />
+          <span className="hidden sm:inline">ELI5:</span>
+          <span className="font-semibold">{isELI5 ? "ON" : "OFF"}</span>
+        </button>
 
         {/* 3-State Theme Toggle */}
         <ThemeToggle />

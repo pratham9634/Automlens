@@ -5,6 +5,7 @@ import {
   ConfirmedTargetResponse,
   ConfirmTargetRequest,
   ConfusionMatrixResponse,
+  CounterfactualResponse,
   DatasetPreviewResponse,
   DatasetProfileResponse,
   DecisionEngineResponse,
@@ -371,6 +372,23 @@ export const apiClient = {
       {
         method: "POST",
         body: JSON.stringify({ inputs }),
+      }
+    ),
+
+  getCounterfactual: (
+    projectId: string,
+    modelId: string,
+    data: {
+      inputs: Record<string, unknown>;
+      desired_outcome?: unknown;
+      features_to_vary?: string[];
+    }
+  ) =>
+    request<CounterfactualResponse>(
+      `/projects/${projectId}/models/${modelId}/counterfactual`,
+      {
+        method: "POST",
+        body: JSON.stringify(data),
       }
     ),
 

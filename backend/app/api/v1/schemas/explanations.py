@@ -88,3 +88,48 @@ class LocalExplanationResponse(BaseModel):
     layman_explanation: str = Field(
         description="Plain-English breakdown of why the model reached this specific prediction"
     )
+
+
+class FeatureChange(BaseModel):
+    """Specific feature adjustment proposed by the counterfactual recourse solver."""
+
+    feature: str
+    original_value: Any
+    proposed_value: Any
+    delta: float | None = None
+    percentage_change: float | None = None
+    description: str
+
+
+class CounterfactualRequest(BaseModel):
+    """Input query to search for the smallest change needed to alter the model outcome."""
+
+    inputs: dict[str, Any] = Field(description="Baseline observation feature values")
+    desired_outcome: Any | None = Field(
+        default=None,
+        description="Optional target prediction class to reach (defaults to flipping outcome)",
+    )
+    features_to_vary: list[str] | None = Field(
+        default=None,
+        description="List of feature names permitted to be adjusted (defaults to all)",
+    )
+
+
+class CounterfactualResponse(BaseModel):
+    """Minimum recourse counterfactual scenario explaining how to change the prediction."""
+
+    project_id: str
+    model_id: str
+    model_name: str
+    task_type: str
+    original_prediction: Any
+    original_probability: float | None = None
+    counterfactual_prediction: Any
+    counterfactual_probability: float | None = None
+    outcome_flipped: bool
+    required_changes: list[FeatureChange]
+    recourse_summary: str
+    academic_disclaimer: str = Field(
+        default="Counterfactual recourse identifies minimum mathematical perturbations required by the model and should not be interpreted as actionable clinical or financial advice."
+    )
+

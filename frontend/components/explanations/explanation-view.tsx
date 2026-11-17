@@ -9,6 +9,7 @@ import {
 import { apiClient } from "@/lib/api-client";
 import { GlobalImportanceChart } from "./global-importance-chart";
 import { LocalAttributionCard } from "./local-attribution-card";
+import { WhatIfSimulator } from "./what-if-simulator";
 import {
   BrainCircuit,
   Loader2,
@@ -17,6 +18,7 @@ import {
   Sparkles,
   ArrowRight,
   ChevronDown,
+  SlidersHorizontal,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -41,7 +43,7 @@ export function ExplanationView({
   const [models, setModels] = useState<ModelRun[]>([]);
   const [selectedModelId, setSelectedModelId] = useState<string>("");
 
-  const [activeTab, setActiveTab] = useState<"global" | "local">("global");
+  const [activeTab, setActiveTab] = useState<"global" | "local" | "whatif">("global");
   const [globalData, setGlobalData] = useState<GlobalExplanationResponse | null>(null);
   const [explLoading, setExplLoading] = useState<boolean>(false);
   const [explError, setExplError] = useState<string | null>(null);
@@ -248,6 +250,19 @@ export function ExplanationView({
           <Search className="w-3.5 h-3.5" />
           <span>Local Observation Decomposition</span>
         </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab("whatif")}
+          className={`flex items-center gap-2 px-3.5 py-1.5 rounded-md transition-colors ${
+            activeTab === "whatif"
+              ? "bg-surface-muted text-text-primary font-semibold border border-border"
+              : "text-text-muted hover:text-text-primary hover:bg-surface-subtle/50"
+          }`}
+        >
+          <SlidersHorizontal className="w-3.5 h-3.5 text-cyan-400" />
+          <span>What-If Recourse (DiCE)</span>
+        </button>
       </div>
 
       {/* Content Rendering */}
@@ -262,12 +277,29 @@ export function ExplanationView({
         </AlertRow>
       ) : activeTab === "global" && globalData ? (
         <GlobalImportanceChart data={globalData} />
-      ) : (
+      ) : activeTab === "local" ? (
         <LocalAttributionCard
           projectId={projectId}
           modelId={selectedModelId}
           columns={columns}
           targetColumn={targetColumn}
+        />
+      ) : (
+        <WhatIfSimulator
+          projectId={projectId}
+          modelId={selectedModelId}
+          modelName={models.find((m) => m.model_id === selectedModelId)?.model_name || selectedModelId}
+          availableColumns={columns
+            .filter((c) => c.name !== targetColumn)
+            .map((c) => ({
+              name: c.name,
+              isNumeric:
+                c.dtype === "numeric" ||
+                c.dtype === "int64" ||
+                c.dtype === "float64" ||
+                c.dtype.includes("int") ||
+                c.dtype.includes("float"),
+            }))}
         />
       )}
     </div>

@@ -140,3 +140,25 @@ def test_explanation_model_not_found(client: TestClient) -> None:
     assert res.status_code == 400
     err = res.json()
     assert err["error"]["code"] == "MODEL_NOT_FOUND"
+
+
+def test_counterfactual_recourse_explanation(client: TestClient) -> None:
+    """Verify minimum recourse counterfactual scenario computation."""
+    project_id, model_id = _create_trained_project_with_models(
+        client, ["dummy_classifier", "logistic_regression"]
+    )
+
+    sample_input = {"Age": 22, "Salary": 45000, "Department": "Engineering"}
+    res = client.post(
+        f"/api/v1/projects/{project_id}/models/{model_id}/counterfactual",
+        json={"inputs": sample_input},
+    )
+    assert res.status_code == 200
+    data = res.json()
+    assert "outcome_flipped" in data
+    assert "original_prediction" in data
+    assert "counterfactual_prediction" in data
+    assert "recourse_summary" in data
+    assert "academic_disclaimer" in data
+    assert len(data["recourse_summary"]) > 10
+
