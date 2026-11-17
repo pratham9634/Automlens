@@ -59,3 +59,25 @@ def check_db_connection() -> dict:
             "status": "unreachable",
             "error": str(exc),
         }
+
+
+def migrate_schema(target_engine) -> None:
+    """Ensure newly introduced columns exist across dialects without breaking."""
+    try:
+        from sqlalchemy import inspect
+        inspector = inspect(target_engine)
+        table_names = inspector.get_table_names()
+        if "projects" in table_names:
+            columns = [c["name"] for c in inspector.get_columns("projects")]
+            if "user_id" not in columns:
+                with target_engine.begin() as conn:
+                    conn.execute(
+                        text(
+                            "ALTER TABLE projects ADD COLUMN "
+                            "user_id VARCHAR(255) DEFAULT 'user_default_local_dev' NOT NULL"
+                        )
+                    )
+        logger.info("Schema auto-migration verified successfully.")
+    except Exception as exc:
+        logger.warning("Schema auto-migration notice: %s", exc)
+

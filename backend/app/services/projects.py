@@ -22,9 +22,10 @@ class ProjectService:
     def __init__(self, db: Session):
         self.repo = ProjectRepository(db)
 
-    def create_project(self, data: ProjectCreate) -> Project:
-        """Create a new project workspace after verifying name uniqueness."""
-        existing = self.repo.get_by_name(data.name.strip())
+    def create_project(self, data: ProjectCreate, user_id: str | None = None) -> Project:
+        """Create a new project workspace after verifying name uniqueness per user."""
+        target_user = user_id or settings.DEFAULT_DEV_USER_ID
+        existing = self.repo.get_by_name(data.name.strip(), user_id=target_user)
         if existing:
             logger.warning("Attempted to create duplicate project: %s", data.name)
             raise ProjectAlreadyExistsError(data.name.strip())
@@ -33,6 +34,7 @@ class ProjectService:
             name=data.name.strip(),
             description=data.description.strip() if data.description else None,
             status="created",
+            user_id=target_user,
         )
         saved = self.repo.create(project)
 
@@ -43,7 +45,7 @@ class ProjectService:
         os.makedirs(os.path.join(project_artifact_dir, "profiles"), exist_ok=True)
         os.makedirs(os.path.join(project_artifact_dir, "exports"), exist_ok=True)
 
-        logger.info("Created project '%s' (ID: %s)", saved.name, saved.id)
+        logger.info("Created project '%s' (ID: %s) for user %s", saved.name, saved.id, target_user)
         try:
             from app.services.audit import AuditService
 
@@ -51,7 +53,7 @@ class ProjectService:
                 project_id=saved.id,
                 action="project_created",
                 reason=f"Initialized new project workspace '{saved.name}'",
-                evidence={"project_name": saved.name, "description": saved.description},
+                evidence={"project_name": saved.name, "description": saved.description, "user_id": target_user},
                 result="success",
             )
         except Exception as audit_err:
@@ -59,27 +61,31 @@ class ProjectService:
 
         return saved
 
-    def get_project(self, project_id: str) -> Project:
+    def get_project(self, project_id: str, user_id: str | None = None) -> Project:
         """Fetch project or raise not found."""
-        project = self.repo.get_by_id(project_id)
+        project = self.repo.get_by_id(project_id, user_id=user_id)
         if not project:
             raise ProjectNotFoundError(project_id)
         return project
 
-    def list_projects(self, skip: int = 0, limit: int = 50) -> tuple[list[Project], int]:
-        """Return list of projects and total count."""
-        items = self.repo.list_all(skip=skip, limit=limit)
-        total = self.repo.count()
+    def list_projects(
+        self, user_id: str | None = None, skip: int = 0, limit: int = 50
+    ) -> tuple[list[Project], int]:
+        """Return list of projects and total count for user."""
+        items = self.repo.list_all(user_id=user_id, skip=skip, limit=limit)
+        total = self.repo.count(user_id=user_id)
         return items, total
 
-    def update_project(self, project_id: str, data: ProjectUpdate) -> Project:
+    def update_project(
+        self, project_id: str, data: ProjectUpdate, user_id: str | None = None
+    ) -> Project:
         """Update project metadata."""
-        project = self.get_project(project_id)
+        project = self.get_project(project_id, user_id=user_id)
 
         if data.name is not None:
             new_name = data.name.strip()
             if new_name != project.name:
-                existing = self.repo.get_by_name(new_name)
+                existing = self.repo.get_by_name(new_name, user_id=project.user_id)
                 if existing:
                     raise ProjectAlreadyExistsError(new_name)
                 project.name = new_name
@@ -91,9 +97,9 @@ class ProjectService:
         logger.info("Updated project %s", project_id)
         return updated
 
-    def delete_project(self, project_id: str) -> None:
+    def delete_project(self, project_id: str, user_id: str | None = None) -> None:
         """Delete project entity and purge associated filesystem artifacts."""
-        project = self.get_project(project_id)
+        project = self.get_project(project_id, user_id=user_id)
         self.repo.delete(project)
 
         # Purge filesystem artifacts

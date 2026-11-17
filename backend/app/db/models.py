@@ -3,7 +3,18 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import JSON, Boolean, DateTime, Float, ForeignKey, Integer, String, Text, func
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+    func,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.session import Base
@@ -13,6 +24,9 @@ class Project(Base):
     """Project entity representing an isolated AutoML workspace."""
 
     __tablename__ = "projects"
+    __table_args__ = (
+        UniqueConstraint("user_id", "name", name="uq_user_project_name"),
+    )
 
     id: Mapped[str] = mapped_column(
         String(36),
@@ -20,9 +34,14 @@ class Project(Base):
         default=lambda: str(uuid.uuid4()),
         index=True,
     )
+    user_id: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+        default="user_default_local_dev",
+        index=True,
+    )
     name: Mapped[str] = mapped_column(
         String(255),
-        unique=True,
         nullable=False,
         index=True,
     )

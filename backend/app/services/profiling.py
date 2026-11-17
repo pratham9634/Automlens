@@ -31,6 +31,7 @@ from app.core.errors import (
     ProjectNotFoundError,
 )
 from app.core.logging import get_logger
+from app.core.redis import redis_manager
 from app.db.repositories.datasets import DatasetRepository
 from app.db.repositories.projects import ProjectRepository
 from app.storage.base import StorageBackend
@@ -423,6 +424,12 @@ class ProfilingService:
         )
         logger.info("Persisted statistical profile for project '%s'", project_id)
 
+        # Cache in Redis with SHA-256 hash and project_id keys
+        profile_dict = profile_response.model_dump()
+        redis_manager.set_json(f"automlens:profile:{project_id}", profile_dict)
+        if hasattr(dataset, "sha256_hash") and dataset.sha256_hash:
+            redis_manager.set_json(f"automlens:profile:hash:{dataset.sha256_hash}", profile_dict)
+
         # Update Project status to 'profiled' if currently 'dataset_uploaded'
         if project.status == "dataset_uploaded":
             project.status = "profiled"
@@ -452,17 +459,28 @@ class ProfilingService:
         return profile_response
 
     def get_profile(self, project_id: str) -> DatasetProfileResponse:
-        """Fetch previously persisted profile artifact from storage."""
+        """Fetch previously persisted profile artifact from cache or storage."""
         project = self.project_repo.get_by_id(project_id)
         if not project:
             raise ProjectNotFoundError(project_id)
 
+        # 1. Fast path: check Redis cache first (<5ms)
+        cache_key = f"automlens:profile:{project_id}"
+        cached_data = redis_manager.get_json(cache_key)
+        if cached_data is not None:
+            try:
+                return DatasetProfileResponse.model_validate(cached_data)
+            except Exception as exc:
+                logger.warning("Failed to validate cached profile JSON for %s: %s", project_id, exc)
+
+        # 2. Storage fallback
         if not self.storage.file_exists(project_id, PROFILE_SUBFOLDER, PROFILE_FILENAME):
             raise ProfileNotFoundError(project_id)
 
         try:
             raw_bytes = self.storage.read_file(project_id, PROFILE_SUBFOLDER, PROFILE_FILENAME)
             data_dict = json.loads(raw_bytes.decode("utf-8"))
+            redis_manager.set_json(cache_key, data_dict)
             return DatasetProfileResponse.model_validate(data_dict)
         except Exception as exc:
             logger.error("Failed to read profile artifact for %s: %s", project_id, exc)

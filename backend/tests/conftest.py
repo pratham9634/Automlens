@@ -6,7 +6,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.db.models import Base
-from app.db.session import engine
+from app.db.session import engine, migrate_schema
 from app.main import app
 
 
@@ -14,6 +14,7 @@ from app.main import app
 def setup_test_db() -> Generator[None, None, None]:
     """Ensure database tables exist before running test suite."""
     Base.metadata.create_all(bind=engine)
+    migrate_schema(engine)
     yield
 
 

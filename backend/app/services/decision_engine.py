@@ -668,7 +668,8 @@ class DecisionEngineService:
                     client = AsyncOpenAI(
                         base_url=settings.OLLAMA_BASE_URL,
                         api_key="ollama",
-                        timeout=httpx.Timeout(20.0, connect=4.0),
+                        timeout=httpx.Timeout(5.0, connect=1.0),
+                        max_retries=0,
                     )
                     stream = await client.chat.completions.create(
                         model=settings.OLLAMA_MODEL,

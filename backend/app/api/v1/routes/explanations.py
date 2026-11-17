@@ -10,6 +10,8 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.api.v1.schemas.explanations import (
+    CounterfactualRequest,
+    CounterfactualResponse,
     GlobalExplanationResponse,
     LocalExplanationRequest,
     LocalExplanationResponse,
@@ -72,3 +74,25 @@ def get_local_explanation(
         model_id=model_id,
         inputs=payload.inputs,
     )
+
+
+@router.post(
+    "/projects/{project_id}/models/{model_id}/counterfactual",
+    response_model=CounterfactualResponse,
+    summary="Compute minimum recourse counterfactual scenario (What-If analysis)",
+)
+def get_counterfactual_explanation(
+    project_id: str,
+    model_id: str,
+    payload: CounterfactualRequest,
+    service: ExplainabilityService = Depends(get_explainability_service),
+) -> CounterfactualResponse:
+    """Find the minimal feature adjustments required to flip or alter the model decision."""
+    return service.get_counterfactual_explanation(
+        project_id=project_id,
+        model_id=model_id,
+        inputs=payload.inputs,
+        desired_outcome=payload.desired_outcome,
+        features_to_vary=payload.features_to_vary,
+    )
+

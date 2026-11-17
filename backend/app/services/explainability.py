@@ -27,6 +27,8 @@ from sklearn.linear_model import LogisticRegression, Ridge
 from sklearn.pipeline import Pipeline
 
 from app.api.v1.schemas.explanations import (
+    CounterfactualResponse,
+    FeatureChange,
     FeatureImportanceItem,
     GlobalExplanationResponse,
     LocalExplanationResponse,
@@ -39,6 +41,7 @@ from app.core.errors import (
     ProjectNotFoundError,
 )
 from app.core.logging import get_logger
+from app.core.redis import redis_manager
 from app.db.models import ModelRun, TrainingRun
 from app.db.repositories.datasets import DatasetRepository
 from app.db.repositories.projects import ProjectRepository
@@ -147,7 +150,15 @@ class ExplainabilityService:
         return target_model_run, latest_run, pipeline, target_config, dataset_df
 
     def get_global_explanation(self, project_id: str, model_id: str) -> GlobalExplanationResponse:
-        """Compute global feature importances and mean |SHAP| values."""
+        """Compute global feature importances and mean |SHAP| values with Redis caching."""
+        cache_key = f"automlens:shap:global:{project_id}:{model_id}"
+        cached_data = redis_manager.get_json(cache_key)
+        if cached_data is not None:
+            try:
+                return GlobalExplanationResponse.model_validate(cached_data)
+            except Exception as exc:
+                logger.warning("Failed to validate cached SHAP explanation for %s: %s", model_id, exc)
+
         target_model_run, _, pipeline, target_config, dataset_df = self._load_model_and_context(
             project_id, model_id
         )
@@ -301,7 +312,7 @@ class ExplainabilityService:
         except Exception as audit_err:
             logger.warning("Failed to record explanation_global audit event: %s", audit_err)
 
-        return GlobalExplanationResponse(
+        response = GlobalExplanationResponse(
             project_id=project_id,
             model_id=model_id,
             model_name=target_model_run.model_name or model_id,
@@ -313,6 +324,8 @@ class ExplainabilityService:
             academic_disclaimer=ACADEMIC_DISCLAIMER,
             layman_summary=layman_summary,
         )
+        redis_manager.set_json(cache_key, response.model_dump())
+        return response
 
     def get_local_explanation(
         self,
@@ -499,4 +512,255 @@ class ExplainabilityService:
             attributions=attributions,
             academic_disclaimer=ACADEMIC_DISCLAIMER,
             layman_explanation=layman_explanation,
+        )
+
+    def get_counterfactual_explanation(
+        self,
+        project_id: str,
+        model_id: str,
+        inputs: dict[str, Any],
+        desired_outcome: Any | None = None,
+        features_to_vary: list[str] | None = None,
+    ) -> CounterfactualResponse:
+        """Compute minimum recourse counterfactual perturbations to alter model prediction."""
+        target_model_run, _, pipeline, target_config, dataset_df = self._load_model_and_context(
+            project_id, model_id
+        )
+
+        task_type = str(target_config.get("task_type", "binary_classification"))
+        target_col = target_config.get("target_column")
+        base_df = pd.DataFrame([inputs])
+
+        # Get original prediction & probability
+        raw_pred = pipeline.predict(base_df)[0]
+        original_pred = bool(raw_pred) if isinstance(raw_pred, np.bool_) else int(raw_pred) if isinstance(raw_pred, np.integer) else float(raw_pred) if isinstance(raw_pred, np.floating) else str(raw_pred)
+
+        original_proba: float | None = None
+        if hasattr(pipeline, "predict_proba"):
+            try:
+                probs = pipeline.predict_proba(base_df)[0]
+                original_proba = round(float(np.max(probs)), 4)
+            except Exception:
+                pass
+
+        # Candidate features permitted to vary
+        valid_cols = [c for c in inputs.keys() if c in dataset_df.columns and c != target_col]
+        if features_to_vary:
+            valid_cols = [c for c in valid_cols if c in features_to_vary]
+
+        if not valid_cols:
+            valid_cols = [c for c in inputs.keys() if c != target_col]
+
+        # Prioritize search using global feature importances
+        try:
+            global_exp = self.get_global_explanation(project_id, model_id)
+            ranked_names = [f.original_feature for f in global_exp.features]
+            valid_cols.sort(key=lambda col: ranked_names.index(col) if col in ranked_names else 999)
+        except Exception:
+            pass
+
+        best_cost = float("inf")
+        best_pred = original_pred
+        best_proba: float | None = None
+        best_changes: list[FeatureChange] = []
+        outcome_flipped = False
+
+        # Compute distributions for search bounds
+        feature_stats: dict[str, dict[str, Any]] = {}
+        for col in valid_cols:
+            if col in dataset_df.columns:
+                series = dataset_df[col].dropna()
+                if pd.api.types.is_numeric_dtype(series):
+                    std = float(series.std()) if float(series.std()) > 0 else 1.0
+                    feature_stats[col] = {
+                        "is_numeric": True,
+                        "min": float(series.min()),
+                        "max": float(series.max()),
+                        "std": std,
+                        "median": float(series.median()),
+                    }
+                else:
+                    feature_stats[col] = {
+                        "is_numeric": False,
+                        "unique_vals": [str(v) for v in series.value_counts().head(5).index],
+                    }
+
+        # 1. Single feature perturbations
+        for col in valid_cols:
+            stats = feature_stats.get(col)
+            if not stats:
+                continue
+
+            orig_val = inputs.get(col)
+            candidates_to_try: list[tuple[Any, float]] = []
+
+            if stats["is_numeric"]:
+                try:
+                    num_val = float(orig_val) if orig_val is not None else stats["median"]
+                except (ValueError, TypeError):
+                    num_val = stats["median"]
+
+                std = stats["std"]
+                for multiplier in [-3.0, -2.0, -1.0, -0.5, 0.5, 1.0, 2.0, 3.0]:
+                    cand = num_val + multiplier * std
+                    cand = max(stats["min"], min(stats["max"], cand))
+                    cost = abs(cand - num_val) / (std + 1e-6)
+                    candidates_to_try.append((round(cand, 2), cost))
+            else:
+                for cat_val in stats["unique_vals"]:
+                    if str(cat_val) != str(orig_val):
+                        candidates_to_try.append((cat_val, 1.0))
+
+            for cand_val, cost in candidates_to_try:
+                test_df = base_df.copy()
+                test_df[col] = cand_val
+                try:
+                    p = pipeline.predict(test_df)[0]
+                    test_pred = bool(p) if isinstance(p, np.bool_) else int(p) if isinstance(p, np.integer) else float(p) if isinstance(p, np.floating) else str(p)
+
+                    flipped = (
+                        (test_pred == desired_outcome)
+                        if desired_outcome is not None
+                        else (test_pred != original_pred)
+                    )
+
+                    if flipped and cost < best_cost:
+                        best_cost = cost
+                        best_pred = test_pred
+                        outcome_flipped = True
+                        if hasattr(pipeline, "predict_proba"):
+                            try:
+                                best_proba = round(float(np.max(pipeline.predict_proba(test_df)[0])), 4)
+                            except Exception:
+                                pass
+
+                        delta_val = round(cand_val - float(orig_val), 2) if stats["is_numeric"] and orig_val is not None else None
+                        pct_change = round((delta_val / (abs(float(orig_val)) + 1e-5)) * 100, 1) if delta_val is not None and orig_val is not None else None
+                        desc = (
+                            f"Shift '{col}' from {orig_val} to {cand_val} ({'+' if delta_val and delta_val > 0 else ''}{delta_val})"
+                            if delta_val is not None
+                            else f"Change '{col}' from '{orig_val}' to '{cand_val}'"
+                        )
+                        best_changes = [
+                            FeatureChange(
+                                feature=col,
+                                original_value=orig_val,
+                                proposed_value=cand_val,
+                                delta=delta_val,
+                                percentage_change=pct_change,
+                                description=desc,
+                            )
+                        ]
+                except Exception:
+                    continue
+
+            if outcome_flipped:
+                break
+
+        # 2. If single-feature was not enough, try top pair combinations
+        if not outcome_flipped and len(valid_cols) >= 2:
+            top_pairs = [(valid_cols[i], valid_cols[j]) for i in range(min(3, len(valid_cols))) for j in range(i + 1, min(4, len(valid_cols)))]
+            for col1, col2 in top_pairs:
+                stats1, stats2 = feature_stats.get(col1), feature_stats.get(col2)
+                if not stats1 or not stats2:
+                    continue
+
+                val1, val2 = inputs.get(col1), inputs.get(col2)
+                shifts1 = [-2.0 * stats1["std"], 2.0 * stats1["std"]] if stats1["is_numeric"] else stats1["unique_vals"][:2]
+                shifts2 = [-2.0 * stats2["std"], 2.0 * stats2["std"]] if stats2["is_numeric"] else stats2["unique_vals"][:2]
+
+                for s1 in shifts1:
+                    for s2 in shifts2:
+                        test_df = base_df.copy()
+                        c1_val = round(float(val1) + s1, 2) if stats1["is_numeric"] and val1 is not None else s1
+                        c2_val = round(float(val2) + s2, 2) if stats2["is_numeric"] and val2 is not None else s2
+                        test_df[col1] = c1_val
+                        test_df[col2] = c2_val
+                        try:
+                            p = pipeline.predict(test_df)[0]
+                            test_pred = bool(p) if isinstance(p, np.bool_) else int(p) if isinstance(p, np.integer) else float(p) if isinstance(p, np.floating) else str(p)
+
+                            flipped = (
+                                (test_pred == desired_outcome)
+                                if desired_outcome is not None
+                                else (test_pred != original_pred)
+                            )
+                            if flipped:
+                                best_pred = test_pred
+                                outcome_flipped = True
+                                if hasattr(pipeline, "predict_proba"):
+                                    try:
+                                        best_proba = round(float(np.max(pipeline.predict_proba(test_df)[0])), 4)
+                                    except Exception:
+                                        pass
+                                best_changes = [
+                                    FeatureChange(
+                                        feature=col1,
+                                        original_value=val1,
+                                        proposed_value=c1_val,
+                                        description=f"Adjust '{col1}' from {val1} to {c1_val}",
+                                    ),
+                                    FeatureChange(
+                                        feature=col2,
+                                        original_value=val2,
+                                        proposed_value=c2_val,
+                                        description=f"Adjust '{col2}' from {val2} to {c2_val}",
+                                    ),
+                                ]
+                                break
+                        except Exception:
+                            continue
+                    if outcome_flipped:
+                        break
+                if outcome_flipped:
+                    break
+
+        # Build human-readable recourse summary
+        if outcome_flipped and best_changes:
+            changes_str = " and ".join([c.description for c in best_changes])
+            prob_str = f" with {best_proba * 100:.1f}% confidence" if best_proba is not None else ""
+            summary = (
+                f"To switch the model outcome from '{original_pred}' to '{best_pred}'{prob_str}, "
+                f"the following minimum recourse changes are required: {changes_str}."
+            )
+        else:
+            summary = (
+                f"The model decision for this observation is robustly anchored to '{original_pred}'. "
+                "No localized perturbation within plausible statistical bounds was sufficient to invert the decision boundary."
+            )
+
+        try:
+            from app.services.audit import AuditService
+
+            AuditService(self.db).record_event(
+                project_id=project_id,
+                action="counterfactual_generated",
+                reason=(
+                    f"Computed counterfactual recourse for model '{model_id}' "
+                    f"(Outcome flipped: {outcome_flipped})"
+                ),
+                evidence={
+                    "model_id": model_id,
+                    "original_prediction": str(original_pred),
+                    "counterfactual_prediction": str(best_pred),
+                    "flipped": outcome_flipped,
+                    "changes_count": len(best_changes),
+                },
+                result="success",
+            )
+        except Exception as audit_err:
+            logger.warning("Failed to record counterfactual audit event: %s", audit_err)
+
+        return CounterfactualResponse(
+            project_id=project_id,
+            model_id=model_id,
+            model_name=target_model_run.model_name or model_id,
+            task_type=task_type,
+            original_prediction=original_pred,
+            original_probability=original_proba,
+            counterfactual_prediction=best_pred,
+            counterfactual_probability=best_proba,
+            outcome_flipped=outcome_flipped,
+            required_changes=best_changes,
+            recourse_summary=summary,
         )

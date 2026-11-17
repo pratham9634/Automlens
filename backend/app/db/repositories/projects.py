@@ -12,24 +12,35 @@ class ProjectRepository:
     def __init__(self, db: Session):
         self.db = db
 
-    def get_by_id(self, project_id: str) -> Project | None:
-        """Fetch project by primary key."""
+    def get_by_id(self, project_id: str, user_id: str | None = None) -> Project | None:
+        """Fetch project by primary key and optional user scope."""
         stmt = select(Project).where(Project.id == project_id)
+        if user_id:
+            stmt = stmt.where(Project.user_id == user_id)
         return self.db.execute(stmt).scalar_one_or_none()
 
-    def get_by_name(self, name: str) -> Project | None:
-        """Fetch project by unique name."""
+    def get_by_name(self, name: str, user_id: str | None = None) -> Project | None:
+        """Fetch project by name within user scope."""
         stmt = select(Project).where(Project.name == name)
+        if user_id:
+            stmt = stmt.where(Project.user_id == user_id)
         return self.db.execute(stmt).scalar_one_or_none()
 
-    def list_all(self, skip: int = 0, limit: int = 50) -> list[Project]:
-        """List projects ordered by creation date descending."""
-        stmt = select(Project).order_by(Project.created_at.desc()).offset(skip).limit(limit)
+    def list_all(
+        self, user_id: str | None = None, skip: int = 0, limit: int = 50
+    ) -> list[Project]:
+        """List projects ordered by creation date descending within user scope."""
+        stmt = select(Project)
+        if user_id:
+            stmt = stmt.where(Project.user_id == user_id)
+        stmt = stmt.order_by(Project.created_at.desc()).offset(skip).limit(limit)
         return list(self.db.execute(stmt).scalars().all())
 
-    def count(self) -> int:
-        """Return total number of projects."""
+    def count(self, user_id: str | None = None) -> int:
+        """Return total number of projects for user."""
         stmt = select(func.count(Project.id))
+        if user_id:
+            stmt = stmt.where(Project.user_id == user_id)
         return self.db.execute(stmt).scalar() or 0
 
     def create(self, project: Project) -> Project:

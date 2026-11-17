@@ -1,8 +1,11 @@
 import {
   BatchPredictionResponse,
+  ChatMessage,
+  ChatSuggestion,
   ConfirmedTargetResponse,
   ConfirmTargetRequest,
   ConfusionMatrixResponse,
+  CounterfactualResponse,
   DatasetPreviewResponse,
   DatasetProfileResponse,
   DecisionEngineResponse,
@@ -24,6 +27,12 @@ import {
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
 
+let tokenProvider: (() => Promise<string | null>) | null = null;
+
+export function setAuthTokenProvider(provider: () => Promise<string | null>) {
+  tokenProvider = provider;
+}
+
 export class ApiClientError extends Error {
   code: string;
   status: number;
@@ -43,6 +52,26 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
   const headers: Record<string, string> = {};
   if (!(options.body instanceof FormData)) {
     headers["Content-Type"] = "application/json";
+  }
+
+  // Attach client-side BYOK Gemini API key if present in storage
+  if (typeof window !== "undefined") {
+    const geminiKey = localStorage.getItem("automlens_gemini_key");
+    if (geminiKey) {
+      headers["X-Gemini-API-Key"] = geminiKey;
+    }
+  }
+
+  // Attach Clerk Auth Bearer token if session exists
+  if (tokenProvider) {
+    try {
+      const token = await tokenProvider();
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+    } catch {
+      // Ignore token retrieval failure in public routes
+    }
   }
 
   if (options.headers) {
@@ -346,6 +375,23 @@ export const apiClient = {
       }
     ),
 
+  getCounterfactual: (
+    projectId: string,
+    modelId: string,
+    data: {
+      inputs: Record<string, unknown>;
+      desired_outcome?: unknown;
+      features_to_vary?: string[];
+    }
+  ) =>
+    request<CounterfactualResponse>(
+      `/projects/${projectId}/models/${modelId}/counterfactual`,
+      {
+        method: "POST",
+        body: JSON.stringify(data),
+      }
+    ),
+
   // Phase 9: Audit Ledger & Export Methods
   getAuditTimeline: (
     projectId: string,
@@ -365,4 +411,97 @@ export const apiClient = {
 
   getExportDownloadUrl: (projectId: string, exportType: string) =>
     `${API_BASE_URL}/projects/${projectId}/exports/${exportType}`,
+
+  // Tabular AI Analyst Methods (Phase 3)
+  getChatSuggestions: (projectId: string) =>
+    request<ChatSuggestion[]>(`/projects/${projectId}/chat/suggestions`),
+
+  streamChat: async (
+    projectId: string,
+    message: string,
+    history: ChatMessage[],
+    callbacks: {
+      onChunk: (text: string) => void;
+      onDone: () => void;
+      onError: (err: string) => void;
+    }
+  ): Promise<() => void> => {
+    const controller = new AbortController();
+    try {
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+      if (tokenProvider) {
+        const token = await tokenProvider();
+        if (token) headers["Authorization"] = `Bearer ${token}`;
+      }
+      if (typeof window !== "undefined") {
+        const geminiKey = localStorage.getItem("automlens_gemini_key");
+        if (geminiKey && geminiKey.trim()) {
+          headers["X-Gemini-API-Key"] = geminiKey.trim();
+        }
+      }
+
+      const response = await fetch(`${API_BASE_URL}/projects/${projectId}/chat`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ message, history }),
+        signal: controller.signal,
+      });
+
+      if (!response.ok) {
+        throw new Error(`Chat failed with status ${response.status}`);
+      }
+
+      if (!response.body) {
+        throw new Error("No response body available for chat streaming");
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      (async () => {
+        try {
+          while (true) {
+            const { value, done } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split("\n\n");
+            buffer = lines.pop() || "";
+
+            for (const line of lines) {
+              const trimmed = line.trim();
+              if (trimmed.startsWith("data: ")) {
+                const dataPart = trimmed.slice(6).trim();
+                if (dataPart === "[DONE]") {
+                  callbacks.onDone();
+                  return;
+                }
+                try {
+                  const parsed = JSON.parse(dataPart);
+                  if (parsed.text) {
+                    callbacks.onChunk(parsed.text);
+                  }
+                } catch {
+                  callbacks.onChunk(dataPart);
+                }
+              }
+            }
+          }
+          callbacks.onDone();
+        } catch (err: any) {
+          if (err.name !== "AbortError") {
+            callbacks.onError(err.message || "Stream read error");
+          }
+        }
+      })();
+    } catch (err: any) {
+      if (err.name !== "AbortError") {
+        callbacks.onError(err.message || "Failed to initiate chat stream");
+      }
+    }
+
+    return () => controller.abort();
+  },
 };
