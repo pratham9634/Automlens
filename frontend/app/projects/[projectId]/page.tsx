@@ -37,6 +37,7 @@ import { PredictionView } from "@/components/predictions/prediction-view";
 import { ExplanationView } from "@/components/explanations/explanation-view";
 import { AuditLedger } from "@/components/audit/audit-ledger";
 import { ExportView } from "@/components/exports/export-view";
+import { AnalystTrigger } from "@/components/analyst/analyst-trigger";
 
 const pipelineSteps = [
   {
@@ -713,6 +714,9 @@ export default function ProjectWorkspacePage() {
       {activeTab === "exports" && (
         <ExportView projectId={project.id} projectName={project.name} />
       )}
+
+      {/* Floating Tabular AI Analyst Trigger & Drawer */}
+      <AnalystTrigger projectId={project.id} />
     </div>
   );
 }

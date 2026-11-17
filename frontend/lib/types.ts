@@ -425,4 +425,19 @@ export interface ExportStatusResponse {
   exports: ExportItemStatus[];
 }
 
+// Tabular AI Analyst Types (Phase 3)
+
+export interface ChatMessage {
+  id?: string;
+  role: "user" | "assistant" | "system";
+  content: string;
+  timestamp?: string;
+}
+
+export interface ChatSuggestion {
+  title: string;
+  prompt: string;
+  category: "quality" | "models" | "features" | "executive";
+}
+
 
