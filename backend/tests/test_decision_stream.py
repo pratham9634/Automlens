@@ -37,12 +37,13 @@ def test_decision_stream_offline_fallback(client: TestClient) -> None:
         "user_objective": "Detect fraudulent transactions and extract transaction date patterns",
     }
 
-    # Request SSE stream
-    res = client.post(f"/api/v1/projects/{project_id}/decision/stream", json=payload)
-    assert res.status_code == 200
-    assert "text/event-stream" in res.headers["content-type"]
+    # Request SSE stream with Ollama mocked as offline
+    with patch("app.services.decision_engine.AsyncOpenAI", side_effect=Exception("ConnectionRefused")):
+        res = client.post(f"/api/v1/projects/{project_id}/decision/stream", json=payload)
+        assert res.status_code == 200
+        assert "text/event-stream" in res.headers["content-type"]
 
-    body = res.text
+        body = res.text
     assert "event: status" in body
     assert "event: token" in body
     assert "event: reasoning_completed" in body

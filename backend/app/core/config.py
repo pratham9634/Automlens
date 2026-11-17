@@ -50,6 +50,17 @@ class Settings(BaseSettings):
     OPENROUTER_API_KEY: str | None = None
     OPENROUTER_MODEL: str = "meta-llama/llama-3.3-70b-instruct:free"
 
+    # Gemini API (Tabular AI Copilot BYOK)
+    GEMINI_API_KEY: str | None = None
+    GEMINI_MODEL: str = "gemini-2.0-flash"
+
+    # Authentication (Clerk)
+    CLERK_SECRET_KEY: str | None = None
+    CLERK_PEM_PUBLIC_KEY: str | None = None
+    CLERK_JWKS_URL: str | None = None
+    AUTOMLENS_AUTH_DISABLED: bool = False
+    DEFAULT_DEV_USER_ID: str = "user_default_local_dev"
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

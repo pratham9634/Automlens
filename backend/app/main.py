@@ -20,7 +20,7 @@ from app.core.errors import (
 )
 from app.core.logging import get_logger, setup_logging
 from app.db.models import Base
-from app.db.session import check_db_connection, engine
+from app.db.session import check_db_connection, engine, migrate_schema
 
 setup_logging()
 logger = get_logger("main")
@@ -44,6 +44,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # Initialize database tables
     try:
         Base.metadata.create_all(bind=engine)
+        migrate_schema(engine)
         logger.info("Database schema initialized successfully.")
     except Exception as exc:
         logger.error("Failed to initialize database tables: %s", exc)

@@ -10,6 +10,7 @@ from app.api.v1.schemas.projects import (
     ProjectResponse,
     ProjectUpdate,
 )
+from app.core.auth import get_current_user
 from app.db.session import get_db
 from app.services.projects import ProjectService
 
@@ -27,10 +28,11 @@ router = APIRouter(prefix="/projects", tags=["Projects"])
 def create_project(
     data: ProjectCreate,
     db: Session = Depends(get_db),
+    current_user: str = Depends(get_current_user),
 ) -> ProjectResponse:
     """Create a new project workspace."""
     service = ProjectService(db)
-    return service.create_project(data)
+    return service.create_project(data, user_id=current_user)
 
 
 @router.get(
@@ -42,10 +44,11 @@ def list_projects(
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
     db: Session = Depends(get_db),
+    current_user: str = Depends(get_current_user),
 ) -> ProjectListResponse:
-    """List all projects sorted by newest first."""
+    """List all projects sorted by newest first for current user."""
     service = ProjectService(db)
-    items, total = service.list_projects(skip=skip, limit=limit)
+    items, total = service.list_projects(user_id=current_user, skip=skip, limit=limit)
     return ProjectListResponse(items=items, total=total)
 
 
@@ -60,10 +63,11 @@ def list_projects(
 def get_project(
     project_id: str,
     db: Session = Depends(get_db),
+    current_user: str = Depends(get_current_user),
 ) -> ProjectResponse:
     """Retrieve details for a single project by ID."""
     service = ProjectService(db)
-    return service.get_project(project_id)
+    return service.get_project(project_id, user_id=current_user)
 
 
 @router.patch(
@@ -79,10 +83,11 @@ def update_project(
     project_id: str,
     data: ProjectUpdate,
     db: Session = Depends(get_db),
+    current_user: str = Depends(get_current_user),
 ) -> ProjectResponse:
     """Update metadata for an existing project."""
     service = ProjectService(db)
-    return service.update_project(project_id, data)
+    return service.update_project(project_id, data, user_id=current_user)
 
 
 @router.delete(
@@ -95,10 +100,11 @@ def update_project(
 def delete_project(
     project_id: str,
     db: Session = Depends(get_db),
+    current_user: str = Depends(get_current_user),
 ) -> None:
     """Delete a project and all associated dataset and model artifacts."""
     service = ProjectService(db)
-    service.delete_project(project_id)
+    service.delete_project(project_id, user_id=current_user)
 
 
 @router.post(

@@ -24,6 +24,12 @@ import {
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
 
+let tokenProvider: (() => Promise<string | null>) | null = null;
+
+export function setAuthTokenProvider(provider: () => Promise<string | null>) {
+  tokenProvider = provider;
+}
+
 export class ApiClientError extends Error {
   code: string;
   status: number;
@@ -43,6 +49,26 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
   const headers: Record<string, string> = {};
   if (!(options.body instanceof FormData)) {
     headers["Content-Type"] = "application/json";
+  }
+
+  // Attach client-side BYOK Gemini API key if present in storage
+  if (typeof window !== "undefined") {
+    const geminiKey = localStorage.getItem("automlens_gemini_key");
+    if (geminiKey) {
+      headers["X-Gemini-API-Key"] = geminiKey;
+    }
+  }
+
+  // Attach Clerk Auth Bearer token if session exists
+  if (tokenProvider) {
+    try {
+      const token = await tokenProvider();
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+    } catch {
+      // Ignore token retrieval failure in public routes
+    }
   }
 
   if (options.headers) {
