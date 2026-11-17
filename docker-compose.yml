@@ -17,6 +17,45 @@ services:
       timeout: 5s
       retries: 5
 
+  redis:
+    image: redis:7-alpine
+    container_name: automlens-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: automlens-backend
+    restart: always
+    environment:
+      - PORT=8000
+      - AUTOMLENS_ENV=development
+      - DATABASE_URL=postgresql+psycopg://postgres:postgrespassword@postgres:5432/automlens
+      - REDIS_URL=redis://redis:6379
+      - AUTOMLENS_CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./backend/artifacts:/home/user/app/artifacts
+      - ./backend/data:/home/user/app/data
+
 volumes:
   pgdata:
+    driver: local
+  redisdata:
     driver: local
