@@ -31,6 +31,13 @@ class SSEEventHub:
         # Save to history for page-refresh resilience
         self._history[run_id].append(payload)
 
+        # Distribute over Redis Pub/Sub for multi-process / distributed workers
+        try:
+            from app.core.redis import redis_manager
+            redis_manager.publish_event(f"automlens:events:{run_id}", payload)
+        except Exception:
+            pass
+
         if event_type in ("run_completed", "run_failed"):
             self._completed_runs.add(run_id)
 

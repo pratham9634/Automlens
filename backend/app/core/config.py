@@ -61,6 +61,11 @@ class Settings(BaseSettings):
     AUTOMLENS_AUTH_DISABLED: bool = False
     DEFAULT_DEV_USER_ID: str = "user_default_local_dev"
 
+    # Caching & Queue (Upstash Redis or local memory fallback)
+    REDIS_URL: str | None = None
+    REDIS_CACHE_TTL_SECONDS: int = 86400  # 24 hours default cache TTL
+
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

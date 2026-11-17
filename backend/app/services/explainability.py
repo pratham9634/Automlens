@@ -39,6 +39,7 @@ from app.core.errors import (
     ProjectNotFoundError,
 )
 from app.core.logging import get_logger
+from app.core.redis import redis_manager
 from app.db.models import ModelRun, TrainingRun
 from app.db.repositories.datasets import DatasetRepository
 from app.db.repositories.projects import ProjectRepository
@@ -147,7 +148,15 @@ class ExplainabilityService:
         return target_model_run, latest_run, pipeline, target_config, dataset_df
 
     def get_global_explanation(self, project_id: str, model_id: str) -> GlobalExplanationResponse:
-        """Compute global feature importances and mean |SHAP| values."""
+        """Compute global feature importances and mean |SHAP| values with Redis caching."""
+        cache_key = f"automlens:shap:global:{project_id}:{model_id}"
+        cached_data = redis_manager.get_json(cache_key)
+        if cached_data is not None:
+            try:
+                return GlobalExplanationResponse.model_validate(cached_data)
+            except Exception as exc:
+                logger.warning("Failed to validate cached SHAP explanation for %s: %s", model_id, exc)
+
         target_model_run, _, pipeline, target_config, dataset_df = self._load_model_and_context(
             project_id, model_id
         )
@@ -301,7 +310,7 @@ class ExplainabilityService:
         except Exception as audit_err:
             logger.warning("Failed to record explanation_global audit event: %s", audit_err)
 
-        return GlobalExplanationResponse(
+        response = GlobalExplanationResponse(
             project_id=project_id,
             model_id=model_id,
             model_name=target_model_run.model_name or model_id,
@@ -313,6 +322,8 @@ class ExplainabilityService:
             academic_disclaimer=ACADEMIC_DISCLAIMER,
             layman_summary=layman_summary,
         )
+        redis_manager.set_json(cache_key, response.model_dump())
+        return response
 
     def get_local_explanation(
         self,
