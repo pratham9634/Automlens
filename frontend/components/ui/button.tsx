@@ -23,30 +23,30 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     ref
   ) => {
     const baseStyles =
-      "inline-flex items-center justify-center font-medium transition-all duration-160 ease-enter select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 disabled:pointer-events-none disabled:opacity-50 cursor-pointer font-sans";
+      "inline-flex items-center justify-center font-bold tracking-tight transition-all duration-100 ease-out select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:pointer-events-none disabled:opacity-50 cursor-pointer font-sans";
 
     const variantStyles = {
       primary:
-        "bg-accent text-white hover:bg-accent-hover hover:shadow-[0_0_12px_rgba(6,182,212,0.4)] active:scale-[0.98] border border-transparent shadow-sm",
+        "bg-accent text-white border-2 border-border shadow-neo-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-neo active:translate-x-0.5 active:translate-y-0.5 active:shadow-none hover:bg-accent-hover",
       secondary:
-        "bg-surface border border-border text-text-primary hover:bg-surface-hover hover:border-accent/40 active:bg-surface-subtle",
+        "bg-surface text-text-primary border-2 border-border shadow-neo-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-neo active:translate-x-0.5 active:translate-y-0.5 active:shadow-none hover:bg-surface-hover",
       outline:
-        "bg-transparent border border-border text-text-primary hover:bg-surface-hover hover:border-accent/40 active:bg-surface-subtle",
+        "bg-transparent text-text-primary border-2 border-border shadow-neo-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-neo active:translate-x-0.5 active:translate-y-0.5 active:shadow-none hover:bg-surface",
       ghost:
-        "bg-transparent text-text-secondary hover:text-text-primary hover:bg-surface-hover active:bg-surface-subtle",
+        "bg-transparent text-text-secondary hover:text-text-primary hover:bg-surface-subtle active:bg-surface-container border-2 border-transparent hover:border-border",
       danger:
-        "bg-danger text-white hover:bg-danger/90 active:scale-[0.98] border border-transparent shadow-sm",
+        "bg-danger text-white border-2 border-border shadow-neo-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-neo active:translate-x-0.5 active:translate-y-0.5 active:shadow-none hover:bg-danger/90",
       cyan:
-        "bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/20 hover:shadow-[0_0_12px_rgba(6,182,212,0.35)] active:scale-[0.98]",
+        "bg-cyan-400 dark:bg-cyan-500 text-slate-950 font-black border-2 border-border shadow-neo-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-neo active:translate-x-0.5 active:translate-y-0.5 active:shadow-none",
       telemetry:
-        "bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/20 hover:shadow-[0_0_12px_rgba(6,182,212,0.35)] active:scale-[0.98]",
+        "bg-cyan-500/15 border-2 border-cyan-500 text-cyan-600 dark:text-cyan-300 font-bold shadow-neo-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-neo active:translate-x-0.5 active:translate-y-0.5 active:shadow-none",
     };
 
     const sizeStyles = {
       sm: "h-8 px-2.5 text-xs rounded-button gap-1.5",
       md: "h-9 px-3.5 text-xs rounded-button gap-2",
       lg: "h-10 px-4 text-sm rounded-button gap-2.5",
-      icon: "h-8 w-8 p-0 rounded-button",
+      icon: "h-9 w-9 p-0 rounded-button",
     };
 
     return (

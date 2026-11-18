@@ -41,15 +41,15 @@ export function UserObjectiveInput({
                 Objective Prompt
               </span>
             </h4>
-            <p className="text-xs text-text-muted font-sans">
-              State what you want to predict. The local AI will formulate domain feature extractions, PCA reductions, and candidate algorithms.
+            <p className="text-xs text-text-muted font-sans font-medium">
+              State what you want to predict. Google Gemini AI will formulate domain feature extractions, PCA reductions, and candidate algorithms.
             </p>
           </div>
         </div>
 
         <div className="flex items-center gap-1.5 text-xs text-text-muted font-mono">
-          <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
-          <span className="text-[11px] text-cyan-400">Local Ollama: qwen2.5:3b</span>
+          <Sparkles className="w-3.5 h-3.5 text-accent" />
+          <span className="text-[11px] font-bold text-accent">Google Gemini 2.0 Flash</span>
         </div>
       </div>
 

@@ -255,12 +255,12 @@ export default function ProjectWorkspacePage() {
   const isResultsReady = ["trained", "completed"].includes(project.status);
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8">
+    <div className="max-w-7xl mx-auto space-y-6">
       {/* Top Navigation & Workspace Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <Link
           href="/"
-          className="inline-flex items-center gap-2 text-xs font-medium text-ink-muted hover:text-ink transition-colors"
+          className="inline-flex items-center gap-2 text-xs font-bold text-text-muted hover:text-text-primary transition-colors"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           <span>Back to Workspaces</span>
@@ -270,7 +270,7 @@ export default function ProjectWorkspacePage() {
         <div className="flex items-center gap-2 flex-wrap">
           <button
             onClick={() => setActiveTab("exports")}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-brand-lavender/30 bg-brand-lavender/10 hover:bg-brand-lavender/20 text-xs font-mono text-brand-hover transition-colors"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border-2 border-border bg-yellow-200 dark:bg-yellow-900/60 hover:bg-yellow-300 dark:hover:bg-yellow-800/80 text-xs font-mono font-bold text-slate-950 dark:text-yellow-200 shadow-neo-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-neo active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all cursor-pointer"
             title="Jump to Executive Report & Exports"
           >
             <FileText className="w-3.5 h-3.5" />
@@ -280,13 +280,13 @@ export default function ProjectWorkspacePage() {
           <button
             onClick={handleCloneProject}
             disabled={cloning}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-hairline bg-surface-2 hover:bg-surface-3 text-xs font-mono text-ink transition-colors"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border-2 border-border bg-surface hover:bg-surface-subtle text-xs font-mono font-bold text-text-primary shadow-neo-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-neo active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all cursor-pointer"
             title="Clone this workspace configuration and dataset"
           >
             {cloning ? (
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
             ) : (
-              <Copy className="w-3.5 h-3.5 text-ink-muted" />
+              <Copy className="w-3.5 h-3.5 text-text-muted" />
             )}
             <span>Clone</span>
           </button>
@@ -295,13 +295,13 @@ export default function ProjectWorkspacePage() {
             <button
               onClick={handleResetRun}
               disabled={resetting}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-hairline bg-surface-2 hover:bg-surface-3 text-xs font-mono text-ink transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border-2 border-border bg-amber-100 dark:bg-amber-950/60 hover:bg-amber-200 text-xs font-mono font-bold text-amber-900 dark:text-amber-200 shadow-neo-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-neo active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all cursor-pointer"
               title="Reset training models while keeping dataset"
             >
               {resetting ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin text-telemetry-amber" />
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
               ) : (
-                <RotateCcw className="w-3.5 h-3.5 text-telemetry-amber" />
+                <RotateCcw className="w-3.5 h-3.5" />
               )}
               <span>Reset Run</span>
             </button>
@@ -310,7 +310,7 @@ export default function ProjectWorkspacePage() {
           <button
             onClick={handleDelete}
             disabled={deleting}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-telemetry-rose/30 bg-telemetry-rose/10 hover:bg-telemetry-rose/20 text-xs font-mono text-telemetry-rose transition-colors"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border-2 border-border bg-rose-100 dark:bg-rose-950/60 hover:bg-rose-200 text-xs font-mono font-bold text-rose-900 dark:text-rose-200 shadow-neo-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-neo active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all cursor-pointer"
           >
             {deleting ? (
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -323,22 +323,22 @@ export default function ProjectWorkspacePage() {
       </div>
 
       {/* Project Banner Header */}
-      <div className="p-6 rounded-xl border border-hairline bg-surface-1 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6">
+      <div className="p-5 sm:p-6 rounded-card border-2 border-border bg-surface shadow-neo flex flex-col md:flex-row md:items-center justify-between gap-5">
         <div className="space-y-2">
           <div className="flex items-center gap-3">
-            <h1 className="text-xl md:text-2xl font-bold text-ink tracking-tight">
+            <h1 className="text-lg md:text-xl font-semibold font-display text-text-primary tracking-tight">
               {project.name}
             </h1>
-            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono bg-brand-lavender/10 text-brand-hover border border-brand-lavender/30">
+            <span className="px-2.5 py-0.5 rounded-md text-[10px] font-mono font-bold uppercase bg-sky-100 dark:bg-sky-950/80 text-sky-800 dark:text-sky-300 border-2 border-border shadow-[2px_2px_0px_0px_var(--neo-shadow-color)]">
               {project.status}
             </span>
           </div>
-          <p className="text-xs text-ink-muted max-w-2xl leading-relaxed">
+          <p className="text-xs text-text-secondary max-w-2xl leading-relaxed font-medium">
             {project.description || "Human-assisted tabular AutoML pipeline with zero-leakage isolation and SHAP explainability."}
           </p>
-          <div className="flex items-center gap-4 text-[11px] font-mono text-ink-subtle pt-1">
-            <span className="flex items-center gap-1.5">
-              <Calendar className="w-3 h-3" />
+          <div className="flex items-center gap-4 text-[11px] font-mono text-text-muted pt-1">
+            <span className="flex items-center gap-1.5 font-bold">
+              <Calendar className="w-3.5 h-3.5" />
               Created {formatDate(project.created_at)}
             </span>
             <span>•</span>
@@ -349,7 +349,7 @@ export default function ProjectWorkspacePage() {
 
       {/* 5-Stage Guided Pipeline Progress Stepper */}
       <div className="space-y-3">
-        <div className="grid grid-cols-1 sm:grid-cols-5 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-5 gap-2.5">
           {pipelineSteps.map((step) => {
             const Icon = step.icon;
             const isCurrent =
@@ -375,37 +375,37 @@ export default function ProjectWorkspacePage() {
                   }
                 }}
                 disabled={!isAccessible}
-                className={`p-3.5 rounded-xl border text-left transition-all flex flex-col justify-between ${
+                className={`p-3.5 rounded-card border-2 border-border text-left transition-all duration-100 flex flex-col justify-between ${
                   isCurrent
-                    ? "bg-surface-2 border-brand-lavender/50 shadow-[0_0_15px_rgba(99,102,241,0.12)]"
+                    ? "bg-sky-100 dark:bg-sky-950/80 shadow-neo -translate-x-0.5 -translate-y-0.5 font-bold text-text-primary"
                     : isAccessible
-                    ? "bg-surface-1/60 hover:bg-surface-2/80 border-hairline cursor-pointer"
-                    : "bg-surface-1/30 border-hairline/40 opacity-50 cursor-not-allowed"
+                    ? "bg-surface shadow-neo-sm hover:shadow-neo hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 active:shadow-none cursor-pointer"
+                    : "bg-surface-subtle opacity-50 cursor-not-allowed shadow-none"
                 }`}
               >
                 <div className="flex items-center justify-between mb-2">
                   <span
-                    className={`p-1.5 rounded-lg border ${
+                    className={`p-1.5 rounded-md border-2 border-border ${
                       isCurrent
-                        ? "bg-brand-lavender/20 border-brand-lavender/40 text-brand-hover"
-                        : "bg-surface-2 border-hairline text-ink-muted"
+                        ? "bg-surface text-accent shadow-[2px_2px_0px_0px_var(--neo-shadow-color)]"
+                        : "bg-surface-subtle text-text-muted"
                     }`}
                   >
                     <Icon className="w-3.5 h-3.5" />
                   </span>
                   {isCurrent && (
-                    <span className="w-2 h-2 rounded-full bg-brand-lavender animate-pulse" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-accent animate-pulse" />
                   )}
                 </div>
                 <div>
                   <div
-                    className={`text-xs font-semibold tracking-tight ${
-                      isCurrent ? "text-brand-hover" : "text-ink"
+                    className={`text-xs font-bold tracking-tight ${
+                      isCurrent ? "text-accent" : "text-text-primary"
                     }`}
                   >
                     {step.title}
                   </div>
-                  <div className="text-[10px] text-ink-subtle truncate mt-0.5">
+                  <div className="text-[10px] text-text-muted truncate mt-0.5 font-medium">
                     {step.subtitle}
                   </div>
                 </div>
@@ -415,13 +415,13 @@ export default function ProjectWorkspacePage() {
         </div>
 
         {/* Secondary Sub-Tabs for Fast Access */}
-        <div className="flex items-center gap-1 border-b border-hairline overflow-x-auto pb-px text-xs font-mono">
+        <div className="flex items-center gap-1 border-b-2 border-border overflow-x-auto pb-px text-xs font-mono font-bold">
           <button
             onClick={() => setActiveTab("dataset")}
-            className={`px-3 py-1.5 border-b-2 transition-colors ${
+            className={`px-3 py-2 border-b-2 transition-all cursor-pointer ${
               activeTab === "dataset"
-                ? "border-cyan-400 text-cyan-400 font-semibold shadow-[0_2px_8px_rgba(6,182,212,0.3)]"
-                : "border-transparent text-ink-muted hover:text-ink"
+                ? "border-accent text-accent font-black bg-surface-subtle/50"
+                : "border-transparent text-text-muted hover:text-text-primary hover:bg-surface-subtle/30"
             }`}
           >
             Dataset &amp; Quality
@@ -442,12 +442,12 @@ export default function ProjectWorkspacePage() {
           <button
             onClick={() => setActiveTab("training")}
             disabled={!isTrainingReady}
-            className={`px-3 py-1.5 border-b-2 transition-colors ${
+            className={`px-3 py-2 border-b-2 transition-all cursor-pointer ${
               activeTab === "training"
-                ? "border-cyan-400 text-cyan-400 font-semibold shadow-[0_2px_8px_rgba(6,182,212,0.3)]"
+                ? "border-accent text-accent font-black bg-surface-subtle/50"
                 : isTrainingReady
-                ? "border-transparent text-ink-muted hover:text-ink"
-                : "border-transparent text-ink-faint cursor-not-allowed opacity-40"
+                ? "border-transparent text-text-muted hover:text-text-primary hover:bg-surface-subtle/30"
+                : "border-transparent text-text-subtle cursor-not-allowed opacity-40"
             }`}
           >
             Training Monitor
@@ -455,12 +455,12 @@ export default function ProjectWorkspacePage() {
           <button
             onClick={() => setActiveTab("leaderboard")}
             disabled={!isResultsReady}
-            className={`px-3 py-1.5 border-b-2 transition-colors ${
+            className={`px-3 py-2 border-b-2 transition-all cursor-pointer ${
               activeTab === "leaderboard"
-                ? "border-cyan-400 text-cyan-400 font-semibold shadow-[0_2px_8px_rgba(6,182,212,0.3)]"
+                ? "border-accent text-accent font-black bg-surface-subtle/50"
                 : isResultsReady
-                ? "border-transparent text-ink-muted hover:text-ink"
-                : "border-transparent text-ink-faint cursor-not-allowed opacity-40"
+                ? "border-transparent text-text-muted hover:text-text-primary hover:bg-surface-subtle/30"
+                : "border-transparent text-text-subtle cursor-not-allowed opacity-40"
             }`}
           >
             Leaderboard
@@ -468,12 +468,12 @@ export default function ProjectWorkspacePage() {
           <button
             onClick={() => setActiveTab("predict")}
             disabled={!isResultsReady}
-            className={`px-3 py-1.5 border-b-2 transition-colors ${
+            className={`px-3 py-2 border-b-2 transition-all cursor-pointer ${
               activeTab === "predict"
-                ? "border-cyan-400 text-cyan-400 font-semibold shadow-[0_2px_8px_rgba(6,182,212,0.3)]"
+                ? "border-accent text-accent font-black bg-surface-subtle/50"
                 : isResultsReady
-                ? "border-transparent text-ink-muted hover:text-ink"
-                : "border-transparent text-ink-faint cursor-not-allowed opacity-40"
+                ? "border-transparent text-text-muted hover:text-text-primary hover:bg-surface-subtle/30"
+                : "border-transparent text-text-subtle cursor-not-allowed opacity-40"
             }`}
           >
             Predict &amp; What-If
@@ -481,32 +481,32 @@ export default function ProjectWorkspacePage() {
           <button
             onClick={() => setActiveTab("explanations")}
             disabled={!isResultsReady}
-            className={`px-3 py-1.5 border-b-2 transition-colors ${
+            className={`px-3 py-2 border-b-2 transition-all cursor-pointer ${
               activeTab === "explanations"
-                ? "border-cyan-400 text-cyan-400 font-semibold shadow-[0_2px_8px_rgba(6,182,212,0.3)]"
+                ? "border-accent text-accent font-black bg-surface-subtle/50"
                 : isResultsReady
-                ? "border-transparent text-ink-muted hover:text-ink"
-                : "border-transparent text-ink-faint cursor-not-allowed opacity-40"
+                ? "border-transparent text-text-muted hover:text-text-primary hover:bg-surface-subtle/30"
+                : "border-transparent text-text-subtle cursor-not-allowed opacity-40"
             }`}
           >
             SHAP Explainability
           </button>
           <button
             onClick={() => setActiveTab("audit")}
-            className={`px-3 py-1.5 border-b-2 transition-colors ${
+            className={`px-3 py-2 border-b-2 transition-all cursor-pointer ${
               activeTab === "audit"
-                ? "border-cyan-400 text-cyan-400 font-semibold shadow-[0_2px_8px_rgba(6,182,212,0.3)]"
-                : "border-transparent text-ink-muted hover:text-ink"
+                ? "border-accent text-accent font-black bg-surface-subtle/50"
+                : "border-transparent text-text-muted hover:text-text-primary hover:bg-surface-subtle/30"
             }`}
           >
             Audit Ledger
           </button>
           <button
             onClick={() => setActiveTab("exports")}
-            className={`px-3 py-1.5 border-b-2 transition-colors ${
+            className={`px-3 py-2 border-b-2 transition-all cursor-pointer ${
               activeTab === "exports"
-                ? "border-cyan-400 text-cyan-400 font-semibold shadow-[0_2px_8px_rgba(6,182,212,0.3)]"
-                : "border-transparent text-ink-muted hover:text-ink"
+                ? "border-accent text-accent font-black bg-surface-subtle/50"
+                : "border-transparent text-text-muted hover:text-text-primary hover:bg-surface-subtle/30"
             }`}
           >
             Reports &amp; Exports

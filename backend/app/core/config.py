@@ -1,6 +1,7 @@
 """Application Configuration using Pydantic Settings."""
 
 from functools import lru_cache
+from pathlib import Path
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -41,8 +42,8 @@ class Settings(BaseSettings):
     # Logging
     AUTOMLENS_LOG_LEVEL: str = "INFO"
 
-    # AI Decision Engine (Ollama / OpenRouter / Offline)
-    AI_PROVIDER: str = "ollama"  # "ollama", "openrouter", or "offline"
+    # AI Decision Engine (Gemini / Ollama / OpenRouter / Offline)
+    AI_PROVIDER: str = "ollama"  # "gemini", "ollama", "openrouter", or "offline"
     OLLAMA_BASE_URL: str = "http://localhost:11434/v1"
     OLLAMA_MODEL: str = "qwen2.5:3b"
 
@@ -67,7 +68,10 @@ class Settings(BaseSettings):
 
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=(
+            str(Path(__file__).resolve().parent.parent.parent / ".env"),
+            ".env",
+        ),
         env_file_encoding="utf-8",
         extra="ignore",
     )

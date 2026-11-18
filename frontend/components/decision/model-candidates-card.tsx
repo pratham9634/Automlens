@@ -63,10 +63,10 @@ export function ModelCandidatesCard({
           }
           onToggleModel(model.id);
         }}
-        className={`p-3.5 rounded-card border transition-all duration-160 cursor-pointer flex flex-col justify-between gap-2.5 ${
+        className={`p-3.5 rounded-card border-2 transition-all duration-100 cursor-pointer flex flex-col justify-between gap-2.5 ${
           isSelected
-            ? "bg-surface-subtle border-cyan-500/40 shadow-[0_0_12px_rgba(6,182,212,0.12)]"
-            : "bg-surface border-border/80 opacity-70 hover:opacity-100 hover:border-accent/40"
+            ? "bg-sky-50 dark:bg-sky-950/40 border-border shadow-neo -translate-x-0.5 -translate-y-0.5"
+            : "bg-surface border-border shadow-neo-sm hover:shadow-neo hover:-translate-x-0.5 hover:-translate-y-0.5 opacity-80 hover:opacity-100"
         }`}
       >
         <div className="space-y-1">

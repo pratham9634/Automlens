@@ -56,17 +56,17 @@ export function Header() {
   const projectId = isProjectPage ? pathname.split("/")[2] : null;
 
   return (
-    <header className="h-[60px] border-b border-border/80 bg-surface/90 backdrop-blur-md px-5 sm:px-6 flex items-center justify-between sticky top-0 z-40 transition-colors select-none">
+    <header className="h-[60px] border-b-2 border-border bg-surface px-5 sm:px-6 flex items-center justify-between sticky top-0 z-40 transition-colors select-none shadow-neo-sm">
       {/* Dynamic Navigation Breadcrumbs */}
       <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-xs font-sans">
         <Link
           href="/"
-          className="text-text-muted hover:text-text-primary transition-colors font-medium flex items-center gap-1"
+          className="text-text-muted hover:text-text-primary transition-colors font-bold flex items-center gap-1"
         >
-          <AutoMLensIcon size={18} />
+          <AutoMLensIcon size={20} />
           <span>AutoMLens</span>
         </Link>
-        <ChevronRight className="w-3 h-3 text-text-subtle" />
+        <ChevronRight className="w-3.5 h-3.5 text-text-muted" />
 
         {isProjectPage ? (
           <>
@@ -76,13 +76,13 @@ export function Header() {
             >
               Projects
             </Link>
-            <ChevronRight className="w-3 h-3 text-text-subtle" />
-            <span className="font-mono text-cyan-400 font-semibold truncate max-w-[180px] sm:max-w-[260px] bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20">
+            <ChevronRight className="w-3.5 h-3.5 text-text-muted" />
+            <span className="font-mono text-accent font-bold truncate max-w-[180px] sm:max-w-[260px] bg-sky-100 dark:bg-sky-950/80 px-2.5 py-0.5 rounded-md border-2 border-border shadow-[1px_1px_0px_0px_var(--neo-shadow-color)]">
               {projectId ? `${projectId.slice(0, 8)}...` : "Workspace"}
             </span>
           </>
         ) : (
-          <span className="font-mono text-xs uppercase tracking-wider text-text-primary">
+          <span className="font-mono text-xs font-bold uppercase tracking-wider text-text-primary">
             Workspace Canvas
           </span>
         )}
@@ -95,13 +95,13 @@ export function Header() {
           type="button"
           onClick={() => setIsByokOpen(true)}
           title="Configure your free Google Gemini API Key"
-          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-pill border text-[11px] font-mono transition-all ${
+          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md border-2 border-border text-[11px] font-mono font-bold shadow-neo-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-neo active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all cursor-pointer ${
             hasGeminiKey
-              ? "bg-cyan-500/10 border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/20"
-              : "bg-surface-subtle border-border/80 text-text-muted hover:text-text-primary hover:border-text-secondary"
+              ? "bg-cyan-200 dark:bg-cyan-950/80 text-cyan-950 dark:text-cyan-300"
+              : "bg-surface-subtle text-text-muted hover:text-text-primary"
           }`}
         >
-          <Sparkles className="w-3 h-3 text-cyan-400" />
+          <Sparkles className="w-3.5 h-3.5 text-cyan-500" />
           <span className="hidden lg:inline">Gemini AI:</span>
           <span>{hasGeminiKey ? "Active" : "Set Key"}</span>
         </button>
@@ -109,20 +109,20 @@ export function Header() {
         {/* Backend & DB Status Pill */}
         <div
           title={isConnected ? "PostgreSQL database connected" : "Database connection unavailable"}
-          className="flex items-center gap-1.5 px-2.5 py-1 rounded-pill border border-border/80 bg-surface-subtle text-[11px] font-mono shadow-sm"
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded-md border-2 border-border bg-surface-subtle text-[11px] font-mono font-bold shadow-neo-sm"
         >
           <Database className="w-3 h-3 text-text-muted" />
           <span className="text-text-secondary hidden md:inline">PostgreSQL:</span>
           {loading ? (
             <RefreshCw className="w-3 h-3 text-secondary animate-spin" />
           ) : isConnected ? (
-            <span className="flex items-center gap-1.5 text-cyan-400">
-              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 inline-block shadow-[0_0_6px_rgba(6,182,212,0.8)]" />
+            <span className="flex items-center gap-1 text-emerald-700 dark:text-emerald-300">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
               Connected
             </span>
           ) : (
-            <span className="flex items-center gap-1.5 text-danger">
-              <span className="w-1.5 h-1.5 rounded-full bg-danger inline-block shadow-[0_0_6px_rgba(239,68,68,0.8)]" />
+            <span className="flex items-center gap-1 text-danger">
+              <span className="w-1.5 h-1.5 rounded-full bg-danger inline-block" />
               Offline
             </span>
           )}
@@ -133,28 +133,28 @@ export function Header() {
           type="button"
           onClick={toggleELI5}
           title="ELI5 Mode: Translates technical ML jargon into plain human language"
-          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-pill border text-[11px] font-mono transition-all ${
+          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md border-2 border-border text-[11px] font-mono font-bold shadow-neo-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-neo active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all cursor-pointer ${
             isELI5
-              ? "bg-amber-500/15 border-amber-500/40 text-amber-300 shadow-[0_0_8px_rgba(245,158,11,0.2)]"
-              : "bg-surface-subtle border-border/80 text-text-muted hover:text-text-primary hover:border-text-secondary"
+              ? "bg-yellow-200 dark:bg-yellow-900/60 text-yellow-950 dark:text-yellow-300"
+              : "bg-surface-subtle text-text-muted hover:text-text-primary"
           }`}
         >
-          <Sparkles className={`w-3 h-3 ${isELI5 ? "text-amber-400" : "text-text-muted"}`} />
+          <Sparkles className={`w-3.5 h-3.5 ${isELI5 ? "text-amber-500" : "text-text-muted"}`} />
           <span className="hidden sm:inline">ELI5:</span>
-          <span className="font-semibold">{isELI5 ? "ON" : "OFF"}</span>
+          <span className="font-bold">{isELI5 ? "ON" : "OFF"}</span>
         </button>
 
         {/* 3-State Theme Toggle */}
         <ThemeToggle />
 
         {/* Clerk User & Sign-In Controls */}
-        <div className="pl-1 border-l border-border/80 flex items-center">
+        <div className="pl-1.5 border-l-2 border-border flex items-center">
           <Show when="signed-out">
             <SignInButton mode="modal">
               <Button
                 variant="outline"
                 size="sm"
-                className="h-7 text-xs px-2.5 border-border hover:bg-surface-subtle font-medium text-text-primary"
+                className="h-8 text-xs px-2.5"
               >
                 Sign in
               </Button>
@@ -164,7 +164,7 @@ export function Header() {
             <UserButton
               appearance={{
                 elements: {
-                  avatarBox: "w-7 h-7 ring-1 ring-cyan-500/30",
+                  avatarBox: "w-8 h-8 rounded-md border-2 border-border shadow-neo-sm",
                 },
               }}
             />

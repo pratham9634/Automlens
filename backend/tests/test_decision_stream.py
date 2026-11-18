@@ -38,7 +38,8 @@ def test_decision_stream_offline_fallback(client: TestClient) -> None:
     }
 
     # Request SSE stream with Ollama mocked as offline
-    with patch("app.services.decision_engine.AsyncOpenAI", side_effect=Exception("ConnectionRefused")):
+    err = Exception("ConnectionRefused")
+    with patch("app.services.decision_engine.AsyncOpenAI", side_effect=err):
         res = client.post(f"/api/v1/projects/{project_id}/decision/stream", json=payload)
         assert res.status_code == 200
         assert "text/event-stream" in res.headers["content-type"]
@@ -163,3 +164,26 @@ def test_target_confirmation_persists_user_objective(client: TestClient) -> None
     get_data = get_res.json()
     assert get_data["user_objective"] == "Credit risk minimization"
     assert len(get_data["engineered_features"]) == 1
+
+
+def test_decision_stream_gemini_provider_with_byok_header(client: TestClient) -> None:
+    """Verify that when X-Gemini-API-Key is provided, decision engine activates Gemini provider."""
+    csv_data = b"FeatureA,FeatureB,Target\n10,20,1\n30,40,0\n50,60,1\n"
+    project_id = _create_project_with_dataset(client, csv_data)
+
+    payload = {
+        "target_column": "Target",
+        "user_objective": "Predict binary target with high precision",
+    }
+    headers = {"X-Gemini-API-Key": "AIzaSyFakeTestKeyForGemini"}
+    res = client.post(
+        f"/api/v1/projects/{project_id}/decision/stream",
+        json=payload,
+        headers=headers,
+    )
+    assert res.status_code == 200
+    body = res.text
+    # Should broadcast that gemini was selected
+    assert '{"status": "reasoning_started", "provider": "gemini"}' in body
+    assert "event: pipeline_ready" in body
+

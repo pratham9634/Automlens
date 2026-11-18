@@ -74,8 +74,8 @@ export function CreateProjectModal({
       <DialogContent className="max-w-md">
         <DialogHeader>
           <div className="flex items-center gap-2 mb-1">
-            <div className="w-7 h-7 rounded-button bg-accent/10 border border-accent/25 flex items-center justify-center text-accent">
-              <Sparkles className="w-3.5 h-3.5" />
+            <div className="w-8 h-8 rounded-md bg-sky-100 dark:bg-sky-950/80 border-2 border-border shadow-neo-sm flex items-center justify-center text-accent">
+              <Sparkles className="w-4 h-4" />
             </div>
             <DialogTitle>Create New Project</DialogTitle>
           </div>

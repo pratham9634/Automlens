@@ -61,15 +61,15 @@ export function ProjectCard({ project, onDeleted }: ProjectCardProps) {
 
   return (
     <>
-      <Card className="hover:border-cyan-500/40 hover:shadow-[0_0_12px_rgba(6,182,212,0.12)] transition-all duration-160 p-4 sm:p-5 flex flex-col justify-between space-y-4">
+      <Card interactive className="p-4 sm:p-5 flex flex-col justify-between space-y-4">
         {/* Top Header */}
         <div className="space-y-2.5">
           <div className="flex items-start justify-between gap-2.5">
             <div className="flex items-center gap-2.5 min-w-0">
-              <div className="w-8 h-8 rounded-button bg-surface-subtle border border-border flex items-center justify-center text-text-muted shrink-0">
-                <FolderKanban className="w-4 h-4 text-accent" />
+              <div className="w-9 h-9 rounded-md bg-sky-100 dark:bg-sky-950/80 border-2 border-border shadow-neo-sm flex items-center justify-center text-accent shrink-0">
+                <FolderKanban className="w-4 h-4" />
               </div>
-              <h3 className="card-title text-text-primary line-clamp-1">
+              <h3 className="font-bold text-sm sm:text-base text-text-primary line-clamp-1">
                 {project.name}
               </h3>
             </div>
@@ -82,9 +82,9 @@ export function ProjectCard({ project, onDeleted }: ProjectCardProps) {
         </div>
 
         {/* Card Footer */}
-        <div className="pt-3 border-t border-border flex items-center justify-between text-xs">
+        <div className="pt-3 border-t-2 border-border flex items-center justify-between text-xs">
           <div className="flex items-center gap-1.5 text-text-muted text-[11px] font-mono tabular-nums">
-            <Calendar className="w-3 h-3 text-text-subtle" />
+            <Calendar className="w-3.5 h-3.5 text-text-subtle" />
             <span>{formatDate(project.created_at)}</span>
           </div>
 
@@ -95,14 +95,14 @@ export function ProjectCard({ project, onDeleted }: ProjectCardProps) {
               size="icon"
               onClick={() => setShowDeleteDialog(true)}
               title={`Delete ${project.name}`}
-              className="text-text-muted hover:text-danger hover:bg-danger/10"
+              className="text-text-muted hover:text-danger hover:border-border hover:bg-rose-100 dark:hover:bg-rose-950/40"
             >
               <Trash2 className="w-3.5 h-3.5" />
             </Button>
 
             {/* Open Project Workspace */}
             <Link href={`/projects/${project.id}`}>
-              <Button variant="secondary" size="sm" className="gap-1.5">
+              <Button variant="secondary" size="sm" className="gap-1.5 font-bold">
                 <span>Open</span>
                 <ArrowRight className="w-3 h-3 text-text-muted" />
               </Button>

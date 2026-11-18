@@ -23,10 +23,10 @@ export function AlertRow({
   };
 
   const variantStyles = {
-    info: "border-info/30 bg-info/5 text-text-primary",
-    warning: "border-warning/30 bg-warning/5 text-text-primary",
-    danger: "border-danger/30 bg-danger/5 text-text-primary",
-    success: "border-success/30 bg-success/5 text-text-primary",
+    info: "border-2 border-border bg-sky-50 dark:bg-sky-950/40 text-text-primary shadow-neo-sm",
+    warning: "border-2 border-border bg-amber-50 dark:bg-amber-950/40 text-text-primary shadow-neo-sm",
+    danger: "border-2 border-border bg-rose-50 dark:bg-rose-950/40 text-text-primary shadow-neo-sm",
+    success: "border-2 border-border bg-emerald-50 dark:bg-emerald-950/40 text-text-primary shadow-neo-sm",
   };
 
   const iconColors = {
@@ -42,7 +42,7 @@ export function AlertRow({
     <div
       role="alert"
       className={cn(
-        "flex items-start gap-2.5 p-3 rounded-card border text-xs leading-relaxed",
+        "flex items-start gap-2.5 p-3 rounded-card text-xs leading-relaxed",
         variantStyles[variant],
         className
       )}
@@ -50,7 +50,7 @@ export function AlertRow({
     >
       <Icon className={cn("w-4 h-4 shrink-0 mt-0.5", iconColors[variant])} />
       <div className="flex-1">
-        {title && <div className="font-medium text-text-primary mb-0.5">{title}</div>}
+        {title && <div className="font-bold text-text-primary mb-0.5">{title}</div>}
         <div className="text-text-secondary">{children}</div>
       </div>
     </div>

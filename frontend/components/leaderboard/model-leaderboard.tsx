@@ -191,26 +191,26 @@ export function ModelLeaderboard({
     <div className="space-y-6">
       {/* Top Highlight Banner: Winner & Primary Metric */}
       {winnerModel && (
-        <Card className="p-4 sm:p-5 border-success/30 bg-success/5 flex flex-col md:flex-row md:items-center justify-between gap-5">
+        <Card className="p-4 sm:p-5 border-2 border-border bg-emerald-50 dark:bg-emerald-950/40 shadow-neo flex flex-col md:flex-row md:items-center justify-between gap-5">
           <div className="flex items-start gap-4">
-            <div className="w-10 h-10 rounded-card bg-success/15 text-success flex items-center justify-center shrink-0 mt-0.5">
-              <Trophy className="w-5 h-5" />
+            <div className="w-12 h-12 rounded-card bg-yellow-200 dark:bg-yellow-900/60 border-2 border-border shadow-neo-sm text-yellow-950 dark:text-yellow-200 flex items-center justify-center shrink-0 mt-0.5">
+              <Trophy className="w-6 h-6" />
             </div>
             <div className="space-y-1">
-              <div className="text-sm font-semibold text-text-primary flex items-center gap-2 flex-wrap">
+              <div className="text-sm font-bold text-text-primary flex items-center gap-2 flex-wrap">
                 <span>Top by {latestRun.primary_metric}:</span>
-                <span className="text-success font-mono">{winnerModel.model_name}</span>
-                <Badge variant="success" size="sm">
-                  Rank #1
+                <span className="text-emerald-700 dark:text-emerald-300 font-mono font-black">{winnerModel.model_name}</span>
+                <Badge variant="optimal" size="sm">
+                  Rank #1 Champion
                 </Badge>
               </div>
-              <p className="text-xs text-text-muted leading-relaxed">
-                Primary Metric: <span className="font-mono text-text-primary font-semibold uppercase">{latestRun.primary_metric}</span> • Score:{" "}
-                <span className="font-mono text-text-primary font-bold tabular-nums">
+              <p className="text-xs text-text-muted leading-relaxed font-medium">
+                Primary Metric: <span className="font-mono text-text-primary font-bold uppercase">{latestRun.primary_metric}</span> • Score:{" "}
+                <span className="font-mono text-text-primary font-black tabular-nums">
                   {winnerModel.primary_metric_score?.toFixed(4)}
                 </span>
                 {winnerModel.primary_metric_std !== null && winnerModel.primary_metric_std !== undefined && (
-                  <span className="font-mono text-text-muted tabular-nums"> ± {winnerModel.primary_metric_std.toFixed(4)} std</span>
+                  <span className="font-mono text-text-muted tabular-nums font-bold"> ± {winnerModel.primary_metric_std.toFixed(4)} std</span>
                 )}
               </p>
             </div>
@@ -221,7 +221,7 @@ export function ModelLeaderboard({
               <Button
                 variant="primary"
                 onClick={() => onNavigateToPredict(winnerModel.model_id)}
-                className="gap-2 font-mono text-xs"
+                className="gap-2 font-mono text-xs font-bold"
               >
                 <span>Predict with Best Model</span>
                 <Play className="w-3.5 h-3.5 fill-current" />
