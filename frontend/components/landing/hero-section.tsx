@@ -29,28 +29,32 @@ const itemVariants: Variants = {
 
 export function HeroSection() {
   return (
-    <section id="hero-section" className="relative isolate pt-14 pb-20 sm:pt-24 sm:pb-32 border-b-2 border-border overflow-hidden bg-canvas">
+    <section id="hero-section" className="relative isolate pt-24 pb-20 sm:pt-36 sm:pb-32 lg:pt-40 border-b-2 border-border overflow-hidden bg-canvas">
+      {/* Eye-Soothing Ambient Dual-Mesh Aurora (Cyan + Warm Amber) */}
+      <div className="absolute -top-24 left-1/4 -translate-x-1/2 w-96 sm:w-[540px] h-96 sm:h-[480px] bg-cyan-500/10 dark:bg-cyan-500/8 rounded-full blur-[100px] pointer-events-none" />
+      <div className="absolute top-10 right-1/4 translate-x-1/2 w-80 sm:w-[500px] h-80 sm:h-[440px] bg-amber-400/10 dark:bg-amber-400/6 rounded-full blur-[110px] pointer-events-none" />
+
       {/* Precision Grid with Lighting Animation (Light & Dark Mode) */}
       <HeroGridBackground />
 
       {/* Floating decorative sketch stickers in margins */}
-      <div className="hidden xl:block absolute left-10 top-24 pointer-events-none">
+      <div className="hidden xl:block absolute left-10 top-32 lg:top-36 pointer-events-none">
         <motion.div
           animate={{ y: [0, -8, 0], rotate: [-4, -2, -4] }}
           transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
         >
-          <SketchStamp label="NO DATA LEAKAGE" sublabel="Guaranteed Fold Isolation" rotation="-rotate-6" />
+          <SketchStamp label="NO CODING REQUIRED" sublabel="Drop in Any CSV or Excel" rotation="-rotate-6" />
         </motion.div>
       </div>
 
-      <div className="hidden xl:block absolute right-12 top-28 pointer-events-none">
+      <div className="hidden xl:block absolute right-12 top-36 lg:top-40 pointer-events-none">
         <motion.div
           animate={{ y: [0, 8, 0], rotate: [3, 5, 3] }}
           transition={{ duration: 6, repeat: Infinity, ease: "easeInOut", delay: 1 }}
         >
           <SketchStamp
-            label="GEMINI 2.0 FLASH"
-            sublabel="Live Reasoning Copilot"
+            label="AI DATA ANALYST"
+            sublabel="Chat & Plan with Gemini"
             color="border-purple-500 text-purple-600 dark:border-purple-400 dark:text-purple-300"
             rotation="rotate-6"
           />
@@ -71,11 +75,11 @@ export function HeroSection() {
             className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border-2 border-border bg-pastel-cyan dark:bg-cyan-950/70 text-slate-900 dark:text-cyan-200 text-xs font-mono font-bold shadow-neo-sm cursor-default"
           >
             <Sparkles className="w-3.5 h-3.5 text-accent animate-pulse" />
-            <span>CHAPTER 01 // HUMAN-IN-THE-LOOP AUTOML</span>
+            <span>CHAPTER 01 // NO-CODE AUTOMATED MACHINE LEARNING</span>
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
           </motion.div>
           <MarkerBadge className="text-sm sm:text-base text-amber-500 dark:text-amber-400 font-bold ml-1" rotation="-rotate-3">
-            ★ Human + AI in the loop!
+            ★ No Tech Background Needed!
           </MarkerBadge>
         </motion.div>
 
@@ -84,9 +88,9 @@ export function HeroSection() {
           variants={itemVariants}
           className="font-display text-3xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-text-primary max-w-4xl leading-[1.12] mb-6 relative"
         >
-          Transparent, Leakage-Safe Machine Learning for{" "}
+          Turn Raw Spreadsheets into Machine Learning Models —{" "}
           <span className="relative inline-block text-accent font-marker font-bold text-4xl sm:text-6xl lg:text-7xl -rotate-1 px-1">
-            Tabular Data
+            No Code Needed
             <span className="absolute -bottom-2 sm:-bottom-3 left-0 w-full text-accent pointer-events-none">
               <DoodleUnderline />
             </span>
@@ -98,9 +102,9 @@ export function HeroSection() {
           variants={itemVariants}
           className="text-sm sm:text-base lg:text-lg text-text-secondary max-w-2xl font-sans font-medium mb-8 leading-relaxed"
         >
-          The human-assisted AutoML platform designed for scientific credibility. Strict 5-fold cross-validation inside each fold pipeline, Google Gemini 2.0 Flash reasoning, and Tree SHAP explainability.
+          The human-friendly AutoML platform built for non-technical creators, analysts, and students. Simply upload your CSV or Excel file, collaborate with our interactive AI Data Analyst Assistant in plain English, and get transparent, explainable predictions in minutes.
           <span className="block font-marker text-lg sm:text-xl text-emerald-600 dark:text-emerald-400 font-bold mt-2">
-            ✏️ Built for viva defense with zero synthetic fluff.
+            ✏️ Zero Python syntax • Plain-English explainability • Automatic 1-click training.
           </span>
         </motion.p>
 
@@ -119,7 +123,7 @@ export function HeroSection() {
                 size="lg"
                 className="h-12 px-7 text-sm font-mono font-bold bg-accent text-white shadow-neo hover:shadow-neo-lg transition-all rounded-xl"
               >
-                <span>Launch Workspace</span>
+                <span>Upload Dataset &amp; Begin</span>
                 <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
             </Link>
@@ -136,7 +140,7 @@ export function HeroSection() {
                 size="lg"
                 className="h-12 px-7 text-sm font-mono font-bold shadow-neo hover:shadow-neo-lg transition-all rounded-xl bg-surface"
               >
-                <span>Explore Benchmark Arena</span>
+                <span>See It in Action</span>
                 <ChevronRight className="w-4 h-4 ml-1 opacity-70" />
               </Button>
             </a>
@@ -149,10 +153,10 @@ export function HeroSection() {
           className="flex flex-wrap items-center justify-center gap-2.5 sm:gap-4 text-xs font-mono font-bold text-text-muted"
         >
           {[
-            { icon: ShieldCheck, label: "Zero-Leakage Pipelines", color: "text-emerald-500" },
-            { icon: Cpu, label: "5-Fold Parallel CV", color: "text-accent" },
-            { icon: Sparkles, label: "Gemini 2.0 Flash Copilot", color: "text-amber-500" },
-            { icon: Terminal, label: "PostgreSQL Audit Ledger", color: "text-cyan-500" },
+            { icon: ShieldCheck, label: "Zero Code Required", color: "text-emerald-500" },
+            { icon: Sparkles, label: "AI Data Analyst Assistant", color: "text-accent" },
+            { icon: Cpu, label: "ELI5 Plain-English Explanations", color: "text-amber-500" },
+            { icon: Terminal, label: "1-Click Predictions & Exports", color: "text-cyan-500" },
           ].map((item, idx) => {
             const Icon = item.icon;
             return (

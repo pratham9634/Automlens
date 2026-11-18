@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Show, SignInButton, UserButton } from "@clerk/nextjs";
 import { ArrowRight, LayoutDashboard } from "lucide-react";
@@ -8,8 +9,25 @@ import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 
 export function LandingNavbar() {
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 20);
+    };
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
   return (
-    <header className="sticky top-0 z-50 w-full border-b-2 border-border bg-surface/95 backdrop-blur-md px-4 sm:px-8 py-3 transition-colors shadow-neo-sm">
+    <header
+      className={`fixed top-0 left-0 right-0 z-50 w-full px-4 sm:px-8 py-3.5 transition-all duration-300 ${
+        isScrolled
+          ? "bg-canvas/85 backdrop-blur-md border-b-2 border-border shadow-neo-sm"
+          : "bg-transparent border-b border-transparent shadow-none"
+      }`}
+    >
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         {/* Brand */}
         <Link href="/" className="flex items-center gap-2.5 group cursor-pointer" title="AutoMLens">

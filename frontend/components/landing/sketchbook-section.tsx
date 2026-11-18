@@ -27,88 +27,90 @@ interface SketchNote {
 
 const sketchNotes: SketchNote[] = [
   {
-    id: "leakage-trap",
-    title: "1. The Hidden Leakage Trap",
-    badge: "The Problem",
+    id: "drag-and-clean",
+    title: "1. Drag, Drop & Auto-Clean",
+    badge: "Zero Setup",
     color: "bg-[#FFF9C4] text-amber-950 border-[#FBC02D]", // Sticky Yellow
     darkColor: "dark:bg-amber-950/70 dark:text-amber-100 dark:border-amber-600/50",
     rotation: -2.5,
-    annotation: "Why 90% of beginner AutoML pipelines secretly fail the viva defense.",
+    annotation: "Messy columns? Missing numbers? Fixed automatically in seconds.",
     summary:
-      "Most naive scripts fit StandardScaler or SimpleImputer on the full dataset before splitting train/test. That leaks future distributions into the evaluation fold. The test scores look amazing (0.95), but fail in real life.",
-    codeSnippet: "# ❌ WRONG (Data Leakage):\nimputer.fit(Full_Dataset)\nscores = cross_val(Full_Dataset)",
-    stamp: "LEAKAGE DETECTED",
-    stampColor: "border-rose-500 text-rose-600 dark:border-rose-400 dark:text-rose-400",
-  },
-  {
-    id: "fold-isolation",
-    title: "2. The Fold-Isolated Pipeline",
-    badge: "The AutoMLens Architecture",
-    color: "bg-[#E1F5FE] text-sky-950 border-[#81D4FA]", // Sticky Blue
-    darkColor: "dark:bg-sky-950/70 dark:text-sky-100 dark:border-sky-600/50",
-    rotation: 1.8,
-    annotation: "All transformations encapsulated strictly inside each cross-validation fold.",
-    summary:
-      "AutoMLens builds dynamic `sklearn.Pipeline` objects where imputation, one-hot encoding, and feature scaling are isolated per fold. Folds never observe test distributions during training.",
-    codeSnippet: "# ✅ AutoMLens Method:\npipeline = Pipeline([\n  ('prep', FoldLocalTransformer()),\n  ('model', LightGBM())\n])\ncross_validate(pipeline, X, y, cv=5)",
-    stamp: "100% VIVA-PROOF",
+      "You don't need to learn Python or pandas data cleaning scripts. Simply drag and drop your raw Excel or CSV spreadsheet. AutoMLens scans every column, detects missing values, repairs messy data, and prepares a pristine training set behind the scenes.",
+    codeSnippet: "// 📂 Uploaded: Sales_Q4_2024.xlsx (8,420 rows)\n✓ Detected: 12 numeric, 4 text categories\n✓ Repaired: 142 missing values handled safely\n✓ Status: 100% clean & ready for model training!",
+    stamp: "100% NO-CODE",
     stampColor: "border-emerald-600 text-emerald-700 dark:border-emerald-400 dark:text-emerald-300",
   },
   {
-    id: "gemini-copilot",
-    title: "3. The Gemini Reasoning Copilot",
-    badge: "Human-in-the-Loop",
+    id: "ai-analyst",
+    title: "2. Chat with Your AI Analyst",
+    badge: "Built-In AI Assistant",
+    color: "bg-[#E1F5FE] text-sky-950 border-[#81D4FA]", // Sticky Blue
+    darkColor: "dark:bg-sky-950/70 dark:text-sky-100 dark:border-sky-600/50",
+    rotation: 1.8,
+    annotation: "Ask questions in plain English: 'Which factors drive customer churn?'",
+    summary:
+      "Meet your 24/7 AI Data Analyst. Ask questions about your dataset in conversational language. It analyzes hidden correlations, translates complex statistics into plain English, and guides you on the best target column to predict.",
+    codeSnippet: "👤 User: \"Which factors impact customer renewals most?\"\n🤖 AI Analyst: \"Monthly fees and contract tenure have\nthe strongest influence. Let's predict 'Renewed'\nwith an automated model tournament!\"",
+    stamp: "AI ASSISTANT",
+    stampColor: "border-purple-600 text-purple-700 dark:border-purple-400 dark:text-purple-300",
+  },
+  {
+    id: "eli5-explain",
+    title: "3. Plain-English Explainability",
+    badge: "Zero Black Boxes",
     color: "bg-[#F3E5F5] text-purple-950 border-[#CE93D8]", // Sticky Lavender
     darkColor: "dark:bg-purple-950/70 dark:text-purple-100 dark:border-purple-600/50",
     rotation: -1.2,
-    annotation: "No mystery black boxes. Google Gemini 2.0 Flash explains every single choice.",
+    annotation: "Every prediction explained like you're five. No complex math needed.",
     summary:
-      "Instead of opaque hyperparameter guesses, the hybrid AI reasoning engine inspects dataset cardinality and user objectives ('minimize churn', 'penalize false negatives') to propose models with clear explanations.",
-    codeSnippet: "# Gemini Prompt Rationale:\n\"Selected LightGBM + Macro F1.\nEngineered FamilySize from\nSibSp + Parch. Handled high-skew Fare.\"",
-    stamp: "HUMAN-VERIFIED",
-    stampColor: "border-purple-600 text-purple-700 dark:border-purple-400 dark:text-purple-300",
+      "Traditional machine learning gives you confusing math formulas. AutoMLens translates complex mathematical SHAP scores into intuitive color-coded bars and plain-English sentences so you can explain findings to clients or managers with 100% confidence.",
+    codeSnippet: "★ Prediction: 84% Likely to Churn\n🟢 Risk Factor: MonthlyCharges ($115.00) [+32%]\n🔴 Safe Factor: TwoYearContractActive [-25%]\n💡 ELI5 Note: \"High monthly fees are the primary driver.\"",
+    stamp: "HUMAN EXPLAINABLE",
+    stampColor: "border-sky-600 text-sky-700 dark:border-sky-400 dark:text-sky-300",
   },
 ];
 
 export function SketchbookSection() {
-  const [activeNote, setActiveNote] = useState<string>("fold-isolation");
+  const [activeNote, setActiveNote] = useState<string>("drag-and-clean");
 
-  const current = sketchNotes.find((n) => n.id === activeNote) || sketchNotes[1];
+  const current = sketchNotes.find((n) => n.id === activeNote) || sketchNotes[0];
 
   return (
-    <section id="sketchbook" className="py-20 sm:py-28 border-b-2 border-border bg-[#F7F5EE] dark:bg-[#121316] relative overflow-hidden transition-colors">
-      {/* Notebook Grid / Graph Paper Background Pattern */}
+    <section id="sketchbook" className="py-20 sm:py-28 border-b-2 border-border bg-[#FAF8F3] dark:bg-[#0F111A] relative overflow-hidden transition-colors">
+      {/* Warm Moleskine Dot-Matrix Paper Texture with Edge Vignette */}
       <div
-        className="absolute inset-0 opacity-[0.4] dark:opacity-[0.15] pointer-events-none"
+        className="absolute inset-0 opacity-[0.45] dark:opacity-[0.20] pointer-events-none"
         style={{
-          backgroundImage: `
-            linear-gradient(to right, rgba(120, 110, 90, 0.15) 1px, transparent 1px),
-            linear-gradient(to bottom, rgba(120, 110, 90, 0.15) 1px, transparent 1px)
-          `,
-          backgroundSize: "20px 20px",
+          backgroundImage: `radial-gradient(circle, rgba(135, 120, 95, 0.35) 1.5px, transparent 1.5px)`,
+          backgroundSize: "22px 22px",
+          maskImage: "radial-gradient(ellipse at center, black 65%, transparent 100%)",
+          WebkitMaskImage: "radial-gradient(ellipse at center, black 65%, transparent 100%)",
         }}
       />
+
+      {/* Gentle Warm Paper Glow in Center */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[650px] h-[500px] bg-amber-300/10 dark:bg-amber-400/4 rounded-full blur-[120px] pointer-events-none" />
 
       <div className="relative max-w-7xl mx-auto px-4 sm:px-8">
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto mb-16">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border-2 border-border bg-white dark:bg-surface shadow-neo-sm text-xs font-mono font-bold text-accent mb-3">
             <Bookmark className="w-3.5 h-3.5" />
-            <span>CHAPTER 02 // ARCHITECT&apos;S LAB SKETCHBOOK</span>
-            <span className="font-marker text-sm font-bold text-amber-500 dark:text-amber-400 -rotate-3 ml-1">★ Field Notes</span>
+            <span>CHAPTER 02 // FROM SPREADSHEET TO SOLUTION</span>
+            <span className="font-marker text-sm font-bold text-amber-500 dark:text-amber-400 -rotate-3 ml-1">★ No Code Needed</span>
           </div>
 
           <h2 className="font-display text-3xl sm:text-5xl font-bold tracking-tight text-text-primary mb-3">
-            Inside the Engineer&apos;s{" "}
+            From Messy Spreadsheets to{" "}
             <span className="font-marker font-bold text-4xl sm:text-6xl text-accent -rotate-2 inline-block px-1">
-              Field Notes
+              Clear Insights
             </span>
           </h2>
 
           <p className="text-sm sm:text-base text-text-secondary font-sans max-w-2xl mx-auto">
-            Before writing a single line of production code, here is how AutoMLens solves the two biggest dilemmas in machine learning:{" "}
-            <span className="font-bold text-text-primary">Data Leakage</span> and{" "}
-            <span className="font-bold text-text-primary">Black-Box Opacity</span>.
+            You don&apos;t need coding experience or a statistics degree. Here is how AutoMLens empowers anyone to turn raw numbers into{" "}
+            <span className="font-bold text-text-primary">high-accuracy predictions</span> with{" "}
+            <span className="font-bold text-text-primary">human-first explainability</span>.
           </p>
 
           <div className="w-44 mx-auto mt-2 text-accent">
@@ -133,7 +135,7 @@ export function SketchbookSection() {
             {/* Left Column: 3 Interactive Sticky Notes */}
             <div className="lg:col-span-5 flex flex-col gap-5">
               <div className="flex items-center justify-between text-xs font-mono font-bold text-text-muted mb-1">
-                <span>TAP A STICKY NOTE TO INSPECT:</span>
+                <span>TAP A STICKY NOTE TO EXPLORE:</span>
                 <span className="text-[10px] text-accent animate-pulse">● Interactive</span>
               </div>
 
@@ -201,7 +203,7 @@ export function SketchbookSection() {
                   <div className="flex flex-wrap items-center justify-between gap-2 border-b-2 border-border pb-3">
                     <div>
                       <span className="text-[10px] font-mono uppercase tracking-widest text-accent font-bold block">
-                        {"// BLUEPRINT BREAKDOWN"}
+                        {"// NO-CODE WORKFLOW PREVIEW"}
                       </span>
                       <h4 className="font-marker font-bold text-2xl sm:text-3xl text-text-primary">
                         {current.title}
@@ -216,15 +218,15 @@ export function SketchbookSection() {
                     {current.summary}
                   </p>
 
-                  {/* Code Snippet Sketch */}
+                  {/* Interactive Flow Preview */}
                   <div className="rounded-lg border-2 border-border bg-slate-900 text-slate-100 p-4 font-mono text-xs shadow-neo-sm relative overflow-x-auto">
                     <div className="flex items-center justify-between text-[10px] text-slate-400 mb-2 border-b border-slate-700 pb-1.5">
                       <span className="flex items-center gap-1.5">
                         <FileCode2 className="w-3.5 h-3.5 text-accent" />
-                        pipeline_architecture.py
+                        interactive_pipeline_preview.log
                       </span>
                       <span className="text-[11px] font-marker font-bold uppercase tracking-wider text-amber-400">
-                        ★ Academic Standard
+                        ★ Fully Automated
                       </span>
                     </div>
                     <pre className="text-slate-200 leading-relaxed font-mono">
@@ -237,10 +239,9 @@ export function SketchbookSection() {
                     <Lightbulb className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
                     <div>
                       <strong className="block font-marker text-base sm:text-lg text-text-primary mb-0.5">
-                        Viva Defense Guarantee:
+                        No Technical Background Needed:
                       </strong>
-                      Whenever examiners ask how you ensured valid out-of-fold generalization, AutoMLens provides the exact timestamped scikit-learn Pipeline graph in your project audit ledger.
-                      Whenever examiners ask how you ensured valid out-of-fold generalization, AutoMLens provides the exact timestamped scikit-learn Pipeline graph in your project audit ledger.
+                      You don&apos;t have to write Python code, configure neural networks, or debug package installations. AutoMLens provides the rigorous engineering under the hood while giving you an intuitive, visual playground.
                     </div>
                   </div>
                 </motion.div>

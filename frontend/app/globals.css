@@ -122,6 +122,28 @@ body {
   transition: background-color var(--motion-standard) var(--ease-enter), color var(--motion-standard) var(--ease-enter);
 }
 
+/* Lenis Smooth Scrolling Core Baseline */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+
+.lenis.lenis-stopped {
+  overflow: clip;
+}
+
+.lenis.lenis-scrolling iframe {
+  pointer-events: none;
+}
+
 /* Custom Telemetry Scrollbar (Standard CSS Baseline) */
 * {
   --scrollbar-thumb: var(--border-strong);

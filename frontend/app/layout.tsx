@@ -4,6 +4,7 @@ import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
 import { Caveat } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
+import { SmoothScrollProvider } from "@/components/providers/smooth-scroll-provider";
 import "./globals.css";
 
 const caveat = Caveat({
@@ -51,7 +52,9 @@ export default function RootLayout({
         </head>
         <body className="bg-canvas text-text-primary min-h-screen font-sans antialiased selection:bg-cyan-500/25 selection:text-cyan-200">
           <ThemeProvider>
-            {children}
+            <SmoothScrollProvider>
+              {children}
+            </SmoothScrollProvider>
           </ThemeProvider>
         </body>
       </html>
