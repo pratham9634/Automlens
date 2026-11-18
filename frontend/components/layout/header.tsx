@@ -60,7 +60,7 @@ export function Header() {
       {/* Dynamic Navigation Breadcrumbs */}
       <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-xs font-sans">
         <Link
-          href="/"
+          href="/dashboard"
           className="text-text-muted hover:text-text-primary transition-colors font-bold flex items-center gap-1"
         >
           <AutoMLensIcon size={20} />
@@ -71,7 +71,7 @@ export function Header() {
         {isProjectPage ? (
           <>
             <Link
-              href="/"
+              href="/dashboard"
               className="text-text-muted hover:text-text-primary transition-colors font-medium"
             >
               Projects

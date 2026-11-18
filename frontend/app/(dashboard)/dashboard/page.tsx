@@ -70,7 +70,9 @@ export default function DashboardPage() {
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b-2 border-border">
         <div className="space-y-1">
-          <h1 className="font-display font-semibold tracking-tight text-xl sm:text-2xl text-text-primary">Workspace Overview</h1>
+          <h1 className="font-display font-semibold tracking-tight text-xl sm:text-2xl text-text-primary">
+            Workspace Overview
+          </h1>
           <p className="text-xs text-text-muted font-medium">
             Human-assisted tabular AutoML with fold-safe preprocessing, parallel CV, and SHAP explainability.
           </p>

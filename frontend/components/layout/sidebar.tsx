@@ -65,7 +65,7 @@ export function Sidebar() {
         {/* Brand Header */}
         <div className="h-[60px] flex items-center justify-between px-3.5 border-b-2 border-border">
           <Link
-            href="/"
+            href="/dashboard"
             className="flex items-center gap-2.5 min-w-0 group"
             title="AutoMLens Workspace"
           >
@@ -105,11 +105,11 @@ export function Sidebar() {
         {/* Global Navigation */}
         <nav className="p-2.5 space-y-1.5">
           <Link
-            href="/"
+            href="/dashboard"
             title="Workspace Overview"
             className={cn(
               "flex items-center gap-2.5 px-3 py-2 text-xs rounded-md transition-all duration-100 font-sans cursor-pointer",
-              pathname === "/"
+              pathname === "/dashboard"
                 ? "bg-accent text-white border-2 border-border font-bold shadow-neo-sm"
                 : "text-text-secondary hover:text-text-primary hover:bg-surface-hover border-2 border-transparent hover:border-border hover:shadow-neo-sm"
             )}
