@@ -4,7 +4,8 @@ import Link from "next/link";
 import { motion, type Variants } from "framer-motion";
 import { ArrowRight, Sparkles, ShieldCheck, Cpu, Terminal, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { DoodleUnderline, TapeSticker, SketchStamp } from "./doodle-elements";
+import { DoodleUnderline, TapeSticker, SketchStamp, MarkerBadge, DoodleArrow } from "./doodle-elements";
+import { HeroGridBackground } from "./hero-grid-background";
 
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
@@ -28,9 +29,9 @@ const itemVariants: Variants = {
 
 export function HeroSection() {
   return (
-    <section className="relative pt-14 pb-20 sm:pt-24 sm:pb-32 border-b-2 border-border overflow-hidden">
-      {/* Background Accent Grid / Decors */}
-      <div className="absolute inset-0 bg-[radial-gradient(var(--neo-shadow-color)_1px,transparent_1px)] [background-size:24px_24px] opacity-15 pointer-events-none" />
+    <section id="hero-section" className="relative isolate pt-14 pb-20 sm:pt-24 sm:pb-32 border-b-2 border-border overflow-hidden bg-canvas">
+      {/* Precision Grid with Lighting Animation (Light & Dark Mode) */}
+      <HeroGridBackground />
 
       {/* Floating decorative sketch stickers in margins */}
       <div className="hidden xl:block absolute left-10 top-24 pointer-events-none">
@@ -60,10 +61,10 @@ export function HeroSection() {
         variants={containerVariants}
         initial="hidden"
         animate="visible"
-        className="relative max-w-7xl mx-auto px-4 sm:px-8 text-center flex flex-col items-center"
+        className="relative z-10 max-w-7xl mx-auto px-4 sm:px-8 text-center flex flex-col items-center"
       >
-        {/* Top Feature Pill */}
-        <motion.div variants={itemVariants} className="mb-6">
+        {/* Top Feature Pill with Playful Marker Callout */}
+        <motion.div variants={itemVariants} className="mb-6 flex flex-wrap items-center justify-center gap-2">
           <motion.div
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.97 }}
@@ -73,15 +74,18 @@ export function HeroSection() {
             <span>CHAPTER 01 // HUMAN-IN-THE-LOOP AUTOML</span>
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
           </motion.div>
+          <MarkerBadge className="text-sm sm:text-base text-amber-500 dark:text-amber-400 font-bold ml-1" rotation="-rotate-3">
+            ★ Human + AI in the loop!
+          </MarkerBadge>
         </motion.div>
 
-        {/* Main Headline */}
+        {/* Main Headline with Marker Contrast */}
         <motion.h1
           variants={itemVariants}
           className="font-display text-3xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-text-primary max-w-4xl leading-[1.12] mb-6 relative"
         >
           Transparent, Leakage-Safe Machine Learning for{" "}
-          <span className="relative inline-block text-accent">
+          <span className="relative inline-block text-accent font-marker font-bold text-4xl sm:text-6xl lg:text-7xl -rotate-1 px-1">
             Tabular Data
             <span className="absolute -bottom-2 sm:-bottom-3 left-0 w-full text-accent pointer-events-none">
               <DoodleUnderline />
@@ -92,15 +96,18 @@ export function HeroSection() {
         {/* Subtitle */}
         <motion.p
           variants={itemVariants}
-          className="text-sm sm:text-base lg:text-lg text-text-secondary max-w-2xl font-sans font-medium mb-10 leading-relaxed"
+          className="text-sm sm:text-base lg:text-lg text-text-secondary max-w-2xl font-sans font-medium mb-8 leading-relaxed"
         >
           The human-assisted AutoML platform designed for scientific credibility. Strict 5-fold cross-validation inside each fold pipeline, Google Gemini 2.0 Flash reasoning, and Tree SHAP explainability.
+          <span className="block font-marker text-lg sm:text-xl text-emerald-600 dark:text-emerald-400 font-bold mt-2">
+            ✏️ Built for viva defense with zero synthetic fluff.
+          </span>
         </motion.p>
 
         {/* Bouncy Action CTAs */}
         <motion.div
           variants={itemVariants}
-          className="flex flex-wrap items-center justify-center gap-4 mb-12"
+          className="flex flex-wrap items-center justify-center gap-4 mb-10 relative"
         >
           <motion.div
             whileHover={{ scale: 1.04, y: -2 }}

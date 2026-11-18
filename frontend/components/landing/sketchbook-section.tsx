@@ -92,13 +92,17 @@ export function SketchbookSection() {
       <div className="relative max-w-7xl mx-auto px-4 sm:px-8">
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto mb-16">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border-2 border-border bg-white dark:bg-surface shadow-neo-sm text-xs font-mono font-bold text-accent mb-3">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border-2 border-border bg-white dark:bg-surface shadow-neo-sm text-xs font-mono font-bold text-accent mb-3">
             <Bookmark className="w-3.5 h-3.5" />
             <span>CHAPTER 02 // ARCHITECT&apos;S LAB SKETCHBOOK</span>
+            <span className="font-marker text-sm font-bold text-amber-500 dark:text-amber-400 -rotate-3 ml-1">★ Field Notes</span>
           </div>
 
           <h2 className="font-display text-3xl sm:text-5xl font-bold tracking-tight text-text-primary mb-3">
-            Inside the Engineer&apos;s Field Notes
+            Inside the Engineer&apos;s{" "}
+            <span className="font-marker font-bold text-4xl sm:text-6xl text-accent -rotate-2 inline-block px-1">
+              Field Notes
+            </span>
           </h2>
 
           <p className="text-sm sm:text-base text-text-secondary font-sans max-w-2xl mx-auto">
@@ -161,16 +165,16 @@ export function SketchbookSection() {
                     </div>
 
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-[10px] font-mono font-black uppercase tracking-wider px-2 py-0.5 rounded border border-current/30">
+                      <span className="text-[11px] font-marker font-bold uppercase tracking-wider px-2 py-0.5 rounded border border-current/30">
                         {note.badge}
                       </span>
                       <SketchStamp label={note.stamp} color={note.stampColor} />
                     </div>
 
-                    <h3 className="font-display font-bold text-base sm:text-lg mb-1">
+                    <h3 className="font-marker font-bold text-xl sm:text-2xl mb-1 text-text-primary">
                       {note.title}
                     </h3>
-                    <p className="text-xs font-mono leading-relaxed opacity-90">
+                    <p className="text-base sm:text-lg font-marker font-bold leading-snug opacity-95 tracking-wide">
                       {note.annotation}
                     </p>
                   </motion.div>
@@ -199,7 +203,7 @@ export function SketchbookSection() {
                       <span className="text-[10px] font-mono uppercase tracking-widest text-accent font-bold block">
                         {"// BLUEPRINT BREAKDOWN"}
                       </span>
-                      <h4 className="font-display font-bold text-xl text-text-primary">
+                      <h4 className="font-marker font-bold text-2xl sm:text-3xl text-text-primary">
                         {current.title}
                       </h4>
                     </div>
@@ -219,8 +223,8 @@ export function SketchbookSection() {
                         <FileCode2 className="w-3.5 h-3.5 text-accent" />
                         pipeline_architecture.py
                       </span>
-                      <span className="text-[9px] uppercase tracking-wider text-amber-400 font-bold">
-                        Academic Standard
+                      <span className="text-[11px] font-marker font-bold uppercase tracking-wider text-amber-400">
+                        ★ Academic Standard
                       </span>
                     </div>
                     <pre className="text-slate-200 leading-relaxed font-mono">
@@ -232,7 +236,10 @@ export function SketchbookSection() {
                   <div className="p-3.5 rounded-lg border-2 border-dashed border-border bg-amber-50/60 dark:bg-amber-950/20 text-amber-950 dark:text-amber-200 flex items-start gap-3 text-xs font-mono">
                     <Lightbulb className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
                     <div>
-                      <strong className="block text-text-primary mb-0.5">Viva Defense Guarantee:</strong>
+                      <strong className="block font-marker text-base sm:text-lg text-text-primary mb-0.5">
+                        Viva Defense Guarantee:
+                      </strong>
+                      Whenever examiners ask how you ensured valid out-of-fold generalization, AutoMLens provides the exact timestamped scikit-learn Pipeline graph in your project audit ledger.
                       Whenever examiners ask how you ensured valid out-of-fold generalization, AutoMLens provides the exact timestamped scikit-learn Pipeline graph in your project audit ledger.
                     </div>
                   </div>

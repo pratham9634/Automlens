@@ -14,7 +14,7 @@ import {
   Flame,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { SketchStamp } from "./doodle-elements";
+import { SketchStamp, MarkerBadge } from "./doodle-elements";
 
 export function InteractiveExampleSection() {
   const [activeTab, setActiveTab] = useState<"leaderboard" | "strategy" | "shap">("leaderboard");
@@ -30,17 +30,24 @@ export function InteractiveExampleSection() {
       <div className="max-w-7xl mx-auto px-4 sm:px-8">
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto mb-14">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border-2 border-border bg-white dark:bg-surface shadow-neo-sm text-xs font-mono font-bold text-accent mb-3">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border-2 border-border bg-white dark:bg-surface shadow-neo-sm text-xs font-mono font-bold text-accent mb-3">
             <Flame className="w-3.5 h-3.5 text-amber-500" />
             <span>CHAPTER 03 // THE TOURNAMENT ARENA</span>
+            <span className="font-marker text-sm font-bold text-amber-500 dark:text-amber-400 -rotate-2 ml-1">★ 5-Fold Battle</span>
           </div>
 
           <h2 className="font-display text-3xl sm:text-5xl font-bold tracking-tight text-text-primary mb-3">
-            Real Live Benchmark: Titanic Survival
+            Real Live Benchmark:{" "}
+            <span className="font-marker font-bold text-4xl sm:text-6xl text-accent -rotate-1 inline-block px-1">
+              Titanic Survival
+            </span>
           </h2>
 
           <p className="text-sm sm:text-base text-text-secondary font-sans max-w-2xl mx-auto">
             Witness how 5 models clash in strict 5-fold cross-validation. Every metric is real, reproducible, and verifiable.
+            <span className="block font-marker text-base sm:text-lg text-emerald-600 dark:text-emerald-400 font-bold mt-1">
+              ✏️ Zero data leakage between train and validation folds.
+            </span>
           </p>
         </div>
 
@@ -104,8 +111,8 @@ export function InteractiveExampleSection() {
                 >
                   <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-mono text-text-muted mb-2">
                     <span className="font-bold">5-FOLD STRATIFIED CV RESULTS (OPTIMIZED FOR F1 MACRO)</span>
-                    <span className="text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded border border-border">
-                      +22.6% over Dummy Baseline
+                    <span className="font-marker font-bold text-sm text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2.5 py-0.5 rounded border border-border">
+                      🔥 +22.6% over Dummy Baseline!
                     </span>
                   </div>
 
@@ -124,8 +131,8 @@ export function InteractiveExampleSection() {
                           <span className="font-display font-bold text-base text-text-primary">
                             LightGBM Classifier
                           </span>
-                          <span className="text-[10px] font-mono font-black px-2 py-0.5 rounded border border-border bg-emerald-300 text-slate-950 shadow-[1px_1px_0px_0px_var(--neo-shadow-color)]">
-                            CHAMPION
+                          <span className="text-[11px] font-marker font-bold px-2 py-0.5 rounded border border-border bg-emerald-300 text-slate-950 shadow-[1px_1px_0px_0px_var(--neo-shadow-color)]">
+                            ★ CHAMPION
                           </span>
                         </div>
                         <span className="text-[11px] font-mono text-text-muted">
@@ -230,6 +237,7 @@ export function InteractiveExampleSection() {
                     <div className="flex items-center gap-2 text-accent font-bold">
                       <Sparkles className="w-4 h-4 text-amber-500 animate-spin" />
                       <span>Google Gemini 2.0 Flash Reasoning Formulation:</span>
+                      <span className="font-marker font-bold text-sm text-amber-500 dark:text-amber-400 hidden sm:inline -rotate-2">★ Live Engineering Rationale</span>
                     </div>
                     <SketchStamp label="STREAMED SSE" color="border-cyan-500 text-cyan-600 dark:text-cyan-400" />
                   </div>
@@ -268,9 +276,9 @@ export function InteractiveExampleSection() {
                   transition={{ type: "spring", stiffness: 400, damping: 25 }}
                   className="space-y-4 font-mono text-xs"
                 >
-                  <div className="flex items-center justify-between text-text-muted text-[11px]">
+                  <div className="flex flex-wrap items-center justify-between text-text-muted text-[11px] gap-2">
                     <span className="font-bold">GLOBAL TREE SHAP FEATURE IMPORTANCE (MEAN |SHAP VALUE|):</span>
-                    <span className="text-accent font-bold">TreeExplainer (Exact Shuffled Coalitions)</span>
+                    <span className="font-marker font-bold text-sm text-accent">★ Explains model behavior, not causation</span>
                   </div>
 
                   {/* Feature 1 */}

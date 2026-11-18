@@ -107,8 +107,31 @@ export function SketchStamp({
       className={`inline-flex flex-col items-center justify-center px-2.5 py-1 rounded-sm border-2 border-dashed uppercase font-mono font-black tracking-widest text-[9px] sm:text-[10px] select-none ${color} ${rotation} shadow-sm`}
     >
       <span>{label}</span>
-      {sublabel && <span className="text-[7px] tracking-normal font-sans opacity-80">{sublabel}</span>}
+      {sublabel && <span className="text-[11px] font-marker font-bold tracking-normal opacity-90">{sublabel}</span>}
     </div>
+  );
+}
+
+/**
+ * Handwritten marker annotation with casual rotation and vibrant marker ink
+ */
+export function MarkerBadge({
+  children,
+  className = "",
+  rotation = "-rotate-2",
+  color = "text-amber-500 dark:text-amber-400",
+}: {
+  children: React.ReactNode;
+  className?: string;
+  rotation?: string;
+  color?: string;
+}) {
+  return (
+    <span
+      className={`inline-block font-marker font-bold tracking-wide select-none ${rotation} ${color} ${className}`}
+    >
+      {children}
+    </span>
   );
 }
 

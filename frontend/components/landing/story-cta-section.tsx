@@ -33,11 +33,12 @@ export function StoryCtaSection() {
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border-2 border-border bg-white dark:bg-surface text-xs font-mono font-bold shadow-neo-sm mb-6">
             <Sparkles className="w-3.5 h-3.5 text-amber-500 animate-bounce" />
             <span>START YOUR BENCHMARK</span>
+            <span className="font-marker text-sm font-bold text-amber-500 dark:text-amber-400 -rotate-2 ml-1">★ Zero Setup</span>
           </div>
 
           <h2 className="font-display text-3xl sm:text-5xl font-bold tracking-tight text-text-primary mb-4 leading-tight">
             Stop Guessing. Build{" "}
-            <span className="relative inline-block text-accent">
+            <span className="relative inline-block text-accent font-marker font-bold text-4xl sm:text-6xl -rotate-1 px-1">
               Defensible
               <span className="absolute -bottom-2 left-0 w-full text-accent pointer-events-none">
                 <DoodleUnderline />
@@ -48,6 +49,9 @@ export function StoryCtaSection() {
 
           <p className="text-sm sm:text-base text-text-secondary max-w-xl mx-auto font-sans mb-10 leading-relaxed">
             Drop in your CSV or Excel tabular file. Get instant data health audits, AI-assisted strategies with Gemini 2.0 Flash, and strict 5-fold cross-validation.
+            <span className="block font-marker text-base sm:text-lg text-emerald-600 dark:text-emerald-400 font-bold mt-2">
+              ✏️ Free forever for students, researchers, and engineers.
+            </span>
           </p>
 
           <div className="flex flex-wrap items-center justify-center gap-4">

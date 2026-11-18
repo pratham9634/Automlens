@@ -53,17 +53,24 @@ export function FeaturesSection() {
       <div className="max-w-7xl mx-auto px-4 sm:px-8">
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto mb-16">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border-2 border-border bg-white dark:bg-surface shadow-neo-sm text-xs font-mono font-bold text-accent mb-3">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border-2 border-border bg-white dark:bg-surface shadow-neo-sm text-xs font-mono font-bold text-accent mb-3">
             <Layers className="w-3.5 h-3.5" />
             <span>CHAPTER 04 // THE ARCHITECTURAL PILLARS</span>
+            <span className="font-marker text-sm font-bold text-amber-500 dark:text-amber-400 -rotate-2 ml-1">★ 4 Pillars</span>
           </div>
 
           <h2 className="font-display text-3xl sm:text-5xl font-bold tracking-tight text-text-primary mb-3">
-            Engineered for Scientific Rigor
+            Engineered for{" "}
+            <span className="font-marker font-bold text-4xl sm:text-6xl text-accent -rotate-1 inline-block px-1">
+              Scientific Rigor
+            </span>
           </h2>
 
           <p className="text-sm sm:text-base text-text-secondary font-sans max-w-2xl mx-auto">
             Unlike black-box commercial AutoML tools, AutoMLens makes every preprocessing decision, model choice, and evaluation metric verifiable and explainable.
+            <span className="block font-marker text-base sm:text-lg text-emerald-600 dark:text-emerald-400 font-bold mt-1">
+              ✏️ Transparent code beats proprietary black-box promises every time.
+            </span>
           </p>
         </div>
 
@@ -100,16 +107,16 @@ export function FeaturesSection() {
                       <Icon className="w-6 h-6 text-accent" />
                     </motion.div>
                     <span
-                      className={`text-[10px] font-mono font-bold px-2.5 py-1 rounded-md border ${f.accent} shadow-sm`}
+                      className={`text-[12px] font-marker font-bold px-2.5 py-0.5 rounded-md border ${f.accent} shadow-sm`}
                     >
                       {f.badge}
                     </span>
                   </div>
 
-                  <h3 className="font-display text-xl font-bold text-text-primary mb-1.5">
+                  <h3 className="font-display text-xl font-bold text-text-primary mb-1">
                     {f.title}
                   </h3>
-                  <div className="text-xs font-mono font-bold text-accent mb-3">
+                  <div className="text-sm font-marker font-bold text-accent mb-2.5">
                     {f.subtitle}
                   </div>
                   <p className="text-xs sm:text-sm text-text-secondary leading-relaxed font-sans">
