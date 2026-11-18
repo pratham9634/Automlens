@@ -131,7 +131,7 @@ export function ModelLeaderboard({
 
   const comparisonChartData = useMemo(() => {
     if (!latestRun) return [];
-    const byScore = [...latestRun.model_runs].sort((a, b) => {
+    const byScore = latestRun.model_runs.toSorted((a, b) => {
       const sA = a.primary_metric_score ?? -Infinity;
       const sB = b.primary_metric_score ?? -Infinity;
       return sB - sA;
@@ -147,7 +147,7 @@ export function ModelLeaderboard({
         isWinner: idx === 0,
         rank: idx + 1,
       }))
-      .reverse();
+      .toReversed();
   }, [latestRun]);
 
   if (loading) {

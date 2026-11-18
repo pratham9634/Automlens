@@ -5,7 +5,12 @@ export const Table = React.forwardRef<
   HTMLTableElement,
   React.HTMLAttributes<HTMLTableElement>
 >(({ className, ...props }, ref) => (
-  <div className="relative w-full overflow-auto rounded-card border-2 border-border bg-surface shadow-neo">
+  <div
+    role="region"
+    aria-label="Scrollable data table"
+    tabIndex={0}
+    className="relative w-full overflow-auto rounded-card border-2 border-border bg-surface shadow-neo focus:outline-none focus:ring-1 focus:ring-accent"
+  >
     <table
       ref={ref}
       className={cn("w-full caption-bottom text-xs font-sans", className)}
@@ -76,9 +81,10 @@ TableRow.displayName = "TableRow";
 export const TableHead = React.forwardRef<
   HTMLTableCellElement,
   React.ThHTMLAttributes<HTMLTableCellElement>
->(({ className, ...props }, ref) => (
+>(({ className, scope = "col", ...props }, ref) => (
   <th
     ref={ref}
+    scope={scope}
     className={cn(
       "h-10 px-3 text-left align-middle font-semibold text-text-muted text-[11px] font-mono tracking-wider [&:has([role=checkbox])]:pr-0 select-none",
       className

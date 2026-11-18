@@ -122,23 +122,37 @@ body {
   transition: background-color var(--motion-standard) var(--ease-enter), color var(--motion-standard) var(--ease-enter);
 }
 
-/* Custom Telemetry Scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+/* Custom Telemetry Scrollbar (Standard CSS Baseline) */
+* {
+  --scrollbar-thumb: var(--border-strong);
+  --scrollbar-track: var(--canvas);
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
 }
 
-::-webkit-scrollbar-track {
-  background: var(--canvas);
-}
+/* Legacy fallback for WebKit/Blink browsers without standard scrollbar-color support */
+@supports not (scrollbar-color: auto) {
+  * {
+    scrollbar-width: auto;
+  }
 
-::-webkit-scrollbar-thumb {
-  background: var(--border-strong);
-  border-radius: 9999px;
-}
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
 
-::-webkit-scrollbar-thumb:hover {
-  background: var(--secondary);
+  ::-webkit-scrollbar-track {
+    background: var(--canvas);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--border-strong);
+    border-radius: 9999px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--secondary);
+  }
 }
 
 /* Icy Luminescence & Glow Presets */

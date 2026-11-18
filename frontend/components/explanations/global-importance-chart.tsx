@@ -45,7 +45,7 @@ export function GlobalImportanceChart({ data }: GlobalImportanceChartProps) {
     rank: f.rank,
   }));
 
-  const chartData = [...topFeatures].reverse();
+  const chartData = topFeatures.toReversed();
 
   return (
     <div className="space-y-6">

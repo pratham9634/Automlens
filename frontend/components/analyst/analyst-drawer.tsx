@@ -383,6 +383,9 @@ export function AnalystDrawer({ projectId, isOpen, onClose }: AnalystDrawerProps
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !e.shiftKey) {
+                    if (e.nativeEvent.isComposing || (e as unknown as { keyCode?: number }).keyCode === 229) {
+                      return;
+                    }
                     e.preventDefault();
                     handleSend();
                   }
