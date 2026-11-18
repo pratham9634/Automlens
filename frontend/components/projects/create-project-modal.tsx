@@ -77,7 +77,10 @@ export function CreateProjectModal({
             <div className="w-8 h-8 rounded-md bg-sky-100 dark:bg-sky-950/80 border-2 border-border shadow-neo-sm flex items-center justify-center text-accent">
               <Sparkles className="w-4 h-4" />
             </div>
-            <DialogTitle>Create New Project</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <span>Create New Project</span>
+              <span className="font-marker font-bold text-sm text-accent -rotate-1">★ Step 1</span>
+            </DialogTitle>
           </div>
           <DialogDescription>
             Initialize a dedicated AutoML workspace with isolated dataset and model artifacts.
@@ -129,6 +132,12 @@ export function CreateProjectModal({
               value={description}
               onChange={(e) => setDescription(e.target.value)}
             />
+          </div>
+
+          <div className="p-2.5 rounded-lg border-2 border-dashed border-border bg-amber-50/60 dark:bg-amber-950/20 text-text-secondary">
+            <p className="font-marker font-bold text-xs text-amber-700 dark:text-amber-300">
+              ✏️ Tip: Every project maintains an immutable PostgreSQL audit ledger and isolated CV pipeline.
+            </p>
           </div>
 
           <DialogFooter>

@@ -170,8 +170,8 @@ export function ExplanationView({
               <h2 className="text-base font-semibold text-text-primary tracking-tight">
                 Model Interpretability &amp; SHAP Attribution
               </h2>
-              <Badge variant="accent" size="sm" className="font-mono">
-                Rule 9 &amp; 10 Compliant
+              <Badge variant="accent" size="sm" className="font-marker font-bold text-xs -rotate-1">
+                ★ Explains Model Behavior, Not Causation
               </Badge>
             </div>
             <p className="text-xs text-text-muted">

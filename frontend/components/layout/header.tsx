@@ -82,8 +82,8 @@ export function Header() {
             </span>
           </>
         ) : (
-          <span className="font-mono text-xs font-bold uppercase tracking-wider text-text-primary">
-            Workspace Canvas
+          <span className="font-marker text-sm font-bold text-text-primary px-1">
+            ★ Workspace Canvas
           </span>
         )}
       </nav>
@@ -103,7 +103,9 @@ export function Header() {
         >
           <Sparkles className="w-3.5 h-3.5 text-cyan-500" />
           <span className="hidden lg:inline">Gemini AI:</span>
-          <span>{hasGeminiKey ? "Active" : "Set Key"}</span>
+          <span className={hasGeminiKey ? "font-marker text-xs font-bold" : ""}>
+            {hasGeminiKey ? "Active" : "Set Key"}
+          </span>
         </button>
 
         {/* Backend & DB Status Pill */}
@@ -141,7 +143,9 @@ export function Header() {
         >
           <Sparkles className={`w-3.5 h-3.5 ${isELI5 ? "text-amber-500" : "text-text-muted"}`} />
           <span className="hidden sm:inline">ELI5:</span>
-          <span className="font-bold">{isELI5 ? "ON" : "OFF"}</span>
+          <span className={isELI5 ? "font-marker text-xs font-bold text-amber-800 dark:text-amber-200" : "font-bold"}>
+            {isELI5 ? "ON" : "OFF"}
+          </span>
         </button>
 
         {/* 3-State Theme Toggle */}

@@ -24,7 +24,7 @@ export function ELI5Badge({ termKey, fallbackText, className = "" }: ELI5BadgePr
       className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-medium bg-amber-500/10 text-amber-300 border border-amber-500/20 cursor-help transition-all ${className}`}
     >
       <Sparkles className="w-2.5 h-2.5 text-amber-400" />
-      <span>{def.simple}</span>
+      <span className="font-marker font-bold text-xs tracking-wide">{def.simple}</span>
       <HelpCircle className="w-2.5 h-2.5 text-amber-400/70" />
     </span>
   );

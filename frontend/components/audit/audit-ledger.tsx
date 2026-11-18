@@ -145,28 +145,28 @@ export function AuditLedger({ projectId }: AuditLedgerProps) {
     switch (result) {
       case "success":
         return (
-          <Badge variant="success" size="sm" className="font-mono">
+          <Badge variant="success" size="sm" className="font-marker font-bold text-xs">
             <CheckCircle2 className="w-3 h-3 mr-1" />
-            Success
+            Verified
           </Badge>
         );
       case "warning":
         return (
-          <Badge variant="warning" size="sm" className="font-mono">
+          <Badge variant="warning" size="sm" className="font-marker font-bold text-xs">
             <AlertTriangle className="w-3 h-3 mr-1" />
             Warning
           </Badge>
         );
       case "failure":
         return (
-          <Badge variant="danger" size="sm" className="font-mono">
+          <Badge variant="danger" size="sm" className="font-marker font-bold text-xs">
             <AlertCircle className="w-3 h-3 mr-1" />
             Failed
           </Badge>
         );
       default:
         return (
-          <Badge variant="neutral" size="sm" className="font-mono">
+          <Badge variant="neutral" size="sm" className="font-marker font-bold text-xs">
             {result}
           </Badge>
         );
@@ -191,8 +191,8 @@ export function AuditLedger({ projectId }: AuditLedgerProps) {
               <h2 className="text-base font-semibold text-text-primary tracking-tight">
                 Deterministic Audit Ledger &amp; Reproducibility Timeline
               </h2>
-              <Badge variant="accent" size="sm" className="font-mono">
-                Rule 5 &amp; 10 Verified
+              <Badge variant="accent" size="sm" className="font-marker font-bold text-xs -rotate-1">
+                ★ 100% Viva Verified
               </Badge>
             </div>
             <p className="text-xs text-text-muted max-w-2xl leading-relaxed">

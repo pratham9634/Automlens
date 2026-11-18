@@ -287,9 +287,9 @@ export function TrainingDashboard({
               <Cpu className="w-5 h-5 text-accent" />
               <span>Parallel Multi-Model Training Engine</span>
             </h2>
-            <Badge variant="success" size="sm" className="gap-1 font-mono">
+            <Badge variant="success" size="sm" className="gap-1 font-marker font-bold text-xs -rotate-1">
               <ShieldCheck className="w-3 h-3" />
-              Rule 1 &amp; Rule 3 Compliant (5-Fold CV)
+              ★ Zero-Leakage Fold Isolated
             </Badge>
           </div>
 
@@ -310,7 +310,7 @@ export function TrainingDashboard({
             className="gap-2 font-mono text-xs"
           >
             {!starting && !isTrainingActive && <Play className="w-4 h-4 fill-current" />}
-            <span>
+            <span className="font-marker font-bold text-sm tracking-wide">
               {isTrainingActive
                 ? "Training In Progress..."
                 : activeRun

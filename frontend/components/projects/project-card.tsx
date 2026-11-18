@@ -47,15 +47,15 @@ export function ProjectCard({ project, onDeleted }: ProjectCardProps) {
   const renderStatusBadge = (status: string) => {
     switch (status) {
       case "created":
-        return <Badge variant="neutral">Ready for Data</Badge>;
+        return <Badge variant="neutral" className="font-marker text-xs font-bold">Ready for Data</Badge>;
       case "dataset_uploaded":
-        return <Badge variant="streaming" withBeacon>Dataset Active</Badge>;
+        return <Badge variant="streaming" withBeacon className="font-marker text-xs font-bold">Dataset Active</Badge>;
       case "profiled":
-        return <Badge variant="optimal">Profiled</Badge>;
+        return <Badge variant="optimal" className="font-marker text-xs font-bold">Profiled</Badge>;
       case "trained":
-        return <Badge variant="success">Trained & Evaluated</Badge>;
+        return <Badge variant="success" className="font-marker text-xs font-bold">★ Trained</Badge>;
       default:
-        return <Badge variant="neutral">{status}</Badge>;
+        return <Badge variant="neutral" className="font-marker text-xs font-bold">{status}</Badge>;
     }
   };
 
@@ -103,7 +103,7 @@ export function ProjectCard({ project, onDeleted }: ProjectCardProps) {
             {/* Open Project Workspace */}
             <Link href={`/projects/${project.id}`}>
               <Button variant="secondary" size="sm" className="gap-1.5 font-bold">
-                <span>Open</span>
+                <span className="font-marker text-sm">Open Track</span>
                 <ArrowRight className="w-3 h-3 text-text-muted" />
               </Button>
             </Link>

@@ -200,8 +200,8 @@ export function ModelLeaderboard({
               <div className="text-sm font-bold text-text-primary flex items-center gap-2 flex-wrap">
                 <span>Top by {latestRun.primary_metric}:</span>
                 <span className="text-emerald-700 dark:text-emerald-300 font-mono font-black">{winnerModel.model_name}</span>
-                <Badge variant="optimal" size="sm">
-                  Rank #1 Champion
+                <Badge variant="optimal" size="sm" className="font-marker font-bold text-xs">
+                  ★ Rank #1 Champion
                 </Badge>
               </div>
               <p className="text-xs text-text-muted leading-relaxed font-medium">

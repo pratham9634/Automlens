@@ -70,11 +70,19 @@ export default function DashboardPage() {
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b-2 border-border">
         <div className="space-y-1">
-          <h1 className="font-display font-semibold tracking-tight text-xl sm:text-2xl text-text-primary">
-            Workspace Overview
-          </h1>
+          <div className="flex items-center gap-2.5">
+            <h1 className="font-display font-semibold tracking-tight text-xl sm:text-2xl text-text-primary">
+              Workspace Overview
+            </h1>
+            <span className="font-marker font-bold text-sm sm:text-base text-amber-500 dark:text-amber-400 -rotate-2">
+              ★ Active Telemetry
+            </span>
+          </div>
           <p className="text-xs text-text-muted font-medium">
             Human-assisted tabular AutoML with fold-safe preprocessing, parallel CV, and SHAP explainability.
+            <span className="font-marker font-bold text-sm text-accent ml-1">
+              ✏️ 100% reproducible for viva defense.
+            </span>
           </p>
         </div>
 
@@ -111,6 +119,9 @@ export default function DashboardPage() {
             <Badge variant="neutral" size="sm" className="tabular-nums">
               {projects.length}
             </Badge>
+            <span className="font-marker font-bold text-xs text-text-muted hidden sm:inline -rotate-1 ml-1">
+              ★ Click any project to open ML tracks
+            </span>
           </div>
 
           {projects.length > 0 && (

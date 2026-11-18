@@ -33,12 +33,12 @@ export function QualityScoreGauge({ profile }: QualityScoreGaugeProps) {
             </span>
             <span className="text-xs font-mono text-text-muted">/ 100</span>
           </div>
-          <p className="text-[11px] text-text-muted">
+          <p className="font-marker font-bold text-xs text-accent">
             {quality_score >= 80
-              ? "High data fidelity, ready for ML"
+              ? "★ High data fidelity, ready for 5-fold ML"
               : quality_score >= 50
-              ? "Moderate data quality findings"
-              : "Severe data quality anomalies"}
+              ? "★ Moderate data quality findings"
+              : "★ Severe data quality anomalies"}
           </p>
         </div>
 

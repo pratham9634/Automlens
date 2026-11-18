@@ -329,8 +329,8 @@ export default function ProjectWorkspacePage() {
             <h1 className="text-lg md:text-xl font-semibold font-display text-text-primary tracking-tight">
               {project.name}
             </h1>
-            <span className="px-2.5 py-0.5 rounded-md text-[10px] font-mono font-bold uppercase bg-sky-100 dark:bg-sky-950/80 text-sky-800 dark:text-sky-300 border-2 border-border shadow-[2px_2px_0px_0px_var(--neo-shadow-color)]">
-              {project.status}
+            <span className="px-2.5 py-0.5 rounded-md text-[11px] font-marker font-bold uppercase bg-sky-100 dark:bg-sky-950/80 text-sky-800 dark:text-sky-300 border-2 border-border shadow-[2px_2px_0px_0px_var(--neo-shadow-color)]">
+              ★ {project.status}
             </span>
           </div>
           <p className="text-xs text-text-secondary max-w-2xl leading-relaxed font-medium">

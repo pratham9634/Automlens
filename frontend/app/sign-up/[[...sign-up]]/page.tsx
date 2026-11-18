@@ -19,9 +19,12 @@ export default function SignUpPage() {
             </span>
           </div>
         </Link>
-        <p className="text-xs font-mono text-text-secondary mt-1">
-          Create an account to begin training reproducible ML pipelines
+        <p className="text-sm font-marker font-bold text-accent mt-1">
+          ★ Create an account to begin training reproducible ML pipelines
         </p>
+        <span className="font-marker font-bold text-xs text-emerald-600 dark:text-emerald-400 -rotate-1">
+          ✏️ Free forever for students, researchers & engineers
+        </span>
       </div>
 
       <div className="w-full max-w-md flex justify-center">

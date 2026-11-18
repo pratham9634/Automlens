@@ -96,8 +96,8 @@ export function AiReasoningTerminal({
           <span className="text-xs font-mono uppercase tracking-wider font-bold text-gray-200">
             AutoMLens AI Terminal
           </span>
-          <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-cyan-950/80 text-cyan-300 border-2 border-border shadow-[2px_2px_0px_0px_#000]">
-            {provider === "gemini" ? "Gemini: 2.0 Flash" : provider === "ollama" ? "Ollama: qwen2.5:3b" : provider.toUpperCase()}
+          <span className="text-[11px] font-marker font-bold px-2.5 py-0.5 rounded-md bg-cyan-950/80 text-cyan-300 border-2 border-border shadow-[2px_2px_0px_0px_#000]">
+            ★ {provider === "gemini" ? "Gemini 2.0 Flash Copilot" : provider === "ollama" ? "Ollama: qwen2.5:3b" : provider.toUpperCase()}
           </span>
         </div>
 
@@ -109,12 +109,12 @@ export function AiReasoningTerminal({
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75" />
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500" />
               </span>
-              <span>Streaming Reasoning...</span>
+              <span className="font-marker font-bold text-sm">Streaming Reasoning...</span>
             </div>
           ) : (
             <div className="flex items-center gap-1.5 text-xs text-emerald-400 font-mono font-bold">
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Reasoning Formulated</span>
+              <span className="font-marker font-bold text-sm">★ Reasoning Formulated</span>
             </div>
           )}
         </div>

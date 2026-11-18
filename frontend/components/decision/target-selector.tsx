@@ -43,8 +43,8 @@ export function TargetSelector({
         <div>
           <h3 className="card-title text-text-primary flex items-center gap-2">
             <span>Target Feature &amp; Task Confirmation</span>
-            <Badge variant="accent" size="sm">
-              Rule 2 Compliant
+            <Badge variant="accent" size="sm" className="font-marker font-bold text-xs -rotate-1">
+              ★ Human Confirmation Required
             </Badge>
           </h3>
           <p className="text-xs text-text-muted mt-0.5">

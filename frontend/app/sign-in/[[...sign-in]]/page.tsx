@@ -19,9 +19,12 @@ export default function SignInPage() {
             </span>
           </div>
         </Link>
-        <p className="text-xs font-mono text-text-secondary mt-1">
-          Sign in to access your protected machine learning workspace
+        <p className="text-sm font-marker font-bold text-accent mt-1">
+          ★ Sign in to access your protected machine learning workspace
         </p>
+        <span className="font-marker font-bold text-xs text-amber-500 dark:text-amber-400 -rotate-2">
+          ✏️ 100% Viva Ready • Zero Synthetic Data Leakage
+        </span>
       </div>
 
       <div className="w-full max-w-md flex justify-center">
