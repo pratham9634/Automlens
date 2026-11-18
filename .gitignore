@@ -3,6 +3,8 @@
 *.docx
 synopsis*.txt
 *.txt
+!requirements.txt
+!backend/requirements.txt
 
 # Dependencies & Environments
 node_modules/

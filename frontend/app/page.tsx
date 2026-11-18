@@ -66,12 +66,12 @@ export default function DashboardPage() {
   const isDbConnected = health?.database.status === "connected";
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8">
+    <div className="max-w-7xl mx-auto space-y-6">
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-border">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b-2 border-border">
         <div className="space-y-1">
-          <h1 className="font-display tracking-wide text-2xl uppercase text-text-primary">Workspace Overview</h1>
-          <p className="text-xs text-text-muted">
+          <h1 className="font-display font-semibold tracking-tight text-xl sm:text-2xl text-text-primary">Workspace Overview</h1>
+          <p className="text-xs text-text-muted font-medium">
             Human-assisted tabular AutoML with fold-safe preprocessing, parallel CV, and SHAP explainability.
           </p>
         </div>
@@ -99,11 +99,11 @@ export default function DashboardPage() {
       </div>
 
       {/* Projects Section */}
-      <section className="space-y-4">
+      <section className="space-y-3.5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <FolderOpen className="w-4 h-4 text-accent" />
-            <h2 className="font-display tracking-wider text-base uppercase text-text-primary">
+            <h2 className="font-display font-semibold tracking-tight text-base text-text-primary">
               Active Projects
             </h2>
             <Badge variant="neutral" size="sm" className="tabular-nums">
@@ -113,10 +113,10 @@ export default function DashboardPage() {
 
           {projects.length > 0 && (
             <Button
-              variant="ghost"
+              variant="outline"
               size="sm"
               onClick={() => setIsModalOpen(true)}
-              className="text-accent hover:text-accent font-medium gap-1"
+              className="font-bold gap-1"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>Create Project</span>
@@ -163,12 +163,12 @@ export default function DashboardPage() {
       </section>
 
       {/* System Infrastructure Grid */}
-      <section className="space-y-3 pt-6 border-t border-border">
+      <section className="space-y-3 pt-6 border-t-2 border-border">
         <div className="flex items-center justify-between">
-          <h3 className="text-xs font-mono uppercase tracking-wider text-text-muted">
+          <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-text-muted">
             System &amp; Infrastructure Status
           </h3>
-          <span className="text-[11px] font-mono text-text-subtle">
+          <span className="text-[11px] font-mono font-bold text-text-subtle">
             Single-Node Parallel Architecture
           </span>
         </div>
@@ -177,36 +177,36 @@ export default function DashboardPage() {
           {/* API Gateway Card */}
           <Card accentTop="azure" className="p-4 space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-text-primary">API Gateway</span>
+              <span className="text-xs font-bold text-text-primary">API Gateway</span>
               <Server className="w-3.5 h-3.5 text-accent" />
             </div>
             <div>
-              <p className="text-[11px] text-text-muted">FastAPI / Pydantic v2</p>
+              <p className="text-[11px] text-text-muted font-medium">FastAPI / Pydantic v2</p>
             </div>
-            <div className="pt-2 border-t border-border flex items-center justify-between text-[11px] font-mono">
+            <div className="pt-2 border-t-2 border-border flex items-center justify-between text-[11px] font-mono">
               <span className="text-text-subtle">Port:</span>
-              <span className="text-text-primary tabular-nums">8000</span>
+              <span className="text-text-primary font-bold tabular-nums">8000</span>
             </div>
           </Card>
 
           {/* Database Card */}
           <Card accentTop="cyan" className="p-4 space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-text-primary">Metadata Storage</span>
+              <span className="text-xs font-bold text-text-primary">Metadata Storage</span>
               <Database className="w-3.5 h-3.5 text-success" />
             </div>
             <div>
-              <p className="text-[11px] text-text-muted">PostgreSQL 16 / SQLAlchemy</p>
+              <p className="text-[11px] text-text-muted font-medium">PostgreSQL 16 / SQLAlchemy</p>
             </div>
-            <div className="pt-2 border-t border-border flex items-center justify-between text-[11px] font-mono">
+            <div className="pt-2 border-t-2 border-border flex items-center justify-between text-[11px] font-mono">
               <span className="text-text-subtle">Status:</span>
               {isDbConnected ? (
-                <span className="text-success flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-success inline-block" />
+                <span className="text-emerald-700 dark:text-emerald-300 font-bold flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
                   Connected
                 </span>
               ) : (
-                <span className="text-danger flex items-center gap-1">
+                <span className="text-danger font-bold flex items-center gap-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-danger inline-block" />
                   Disconnected
                 </span>
@@ -217,15 +217,15 @@ export default function DashboardPage() {
           {/* Concurrency Card */}
           <Card accentTop="cyan" className="p-4 space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-text-primary">Parallel Workers</span>
+              <span className="text-xs font-bold text-text-primary">Parallel Workers</span>
               <Cpu className="w-3.5 h-3.5 text-info" />
             </div>
             <div>
-              <p className="text-[11px] text-text-muted">ProcessPoolExecutor</p>
+              <p className="text-[11px] text-text-muted font-medium">ProcessPoolExecutor</p>
             </div>
-            <div className="pt-2 border-t border-border flex items-center justify-between text-[11px] font-mono">
+            <div className="pt-2 border-t-2 border-border flex items-center justify-between text-[11px] font-mono">
               <span className="text-text-subtle">Concurrency:</span>
-              <span className="text-text-primary tabular-nums">
+              <span className="text-text-primary font-bold tabular-nums">
                 {health?.workers ?? 4} CPU Cores
               </span>
             </div>
@@ -234,15 +234,15 @@ export default function DashboardPage() {
           {/* Hybrid Decision Engine Card */}
           <Card accentTop="indigo" className="p-4 space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-text-primary">AI Decision Engine</span>
+              <span className="text-xs font-bold text-text-primary">AI Decision Engine</span>
               <BrainCircuit className="w-3.5 h-3.5 text-accent" />
             </div>
             <div>
-              <p className="text-[11px] text-text-muted">Deterministic + LLM Rationale</p>
+              <p className="text-[11px] text-text-muted font-medium">Deterministic + LLM Rationale</p>
             </div>
-            <div className="pt-2 border-t border-border flex items-center justify-between text-[11px] font-mono">
+            <div className="pt-2 border-t-2 border-border flex items-center justify-between text-[11px] font-mono">
               <span className="text-text-subtle">Mode:</span>
-              <span className="text-accent">Hybrid AI</span>
+              <span className="text-accent font-bold">Hybrid AI</span>
             </div>
           </Card>
         </div>

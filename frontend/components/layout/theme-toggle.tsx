@@ -35,7 +35,7 @@ export function ThemeToggle({ className = "" }: { className?: string }) {
     <div
       role="radiogroup"
       aria-label="Theme selection"
-      className={`inline-flex items-center p-0.5 rounded-[8px] border border-border bg-surface-subtle text-text-muted transition-colors ${className}`}
+      className={`inline-flex items-center p-1 rounded-lg border-2 border-border bg-surface-subtle shadow-neo-sm text-text-primary transition-colors ${className}`}
     >
       {options.map((opt) => {
         const Icon = opt.icon;
@@ -48,10 +48,10 @@ export function ThemeToggle({ className = "" }: { className?: string }) {
             aria-label={`${opt.label} theme`}
             title={`${opt.label} theme`}
             onClick={() => setTheme(opt.value)}
-            className={`flex items-center justify-center w-7 h-7 rounded-[6px] transition-all duration-150 ${
+            className={`flex items-center justify-center w-7 h-7 rounded-[6px] transition-all duration-100 cursor-pointer ${
               isActive
-                ? "bg-surface text-text-primary shadow-sm border border-border/80 font-medium"
-                : "text-text-muted hover:text-text-secondary hover:bg-surface-hover/50"
+                ? "bg-surface text-text-primary border-2 border-border shadow-[2px_2px_0px_0px_var(--neo-shadow-color)] font-bold"
+                : "text-text-muted hover:text-text-primary hover:bg-surface-hover border-2 border-transparent"
             }`}
           >
             <Icon className="w-3.5 h-3.5" />

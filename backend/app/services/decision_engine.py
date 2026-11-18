@@ -617,6 +617,7 @@ class DecisionEngineService:
         target_column: str,
         override_task_type: TaskType | None = None,
         user_objective: str | None = None,
+        gemini_api_key: str | None = None,
     ) -> AsyncGenerator[str, None]:
         """Stream real-time AI reasoning and final pipeline formulation via Server-Sent Events."""
         try:
@@ -647,15 +648,97 @@ class DecisionEngineService:
                 engineered_features=eng_features,
             )
 
-            # Signal beginning of streaming
-            provider = settings.AI_PROVIDER.lower()
+            # Determine AI Provider (prioritizing Gemini when valid key is available)
+            effective_gemini_key = gemini_api_key
+            if (
+                not effective_gemini_key
+                and settings.GEMINI_API_KEY
+                and settings.GEMINI_API_KEY.strip().startswith("AIzaSy")
+            ):
+                effective_gemini_key = settings.GEMINI_API_KEY
+
+            use_gemini = bool(effective_gemini_key and effective_gemini_key.strip())
+            provider = "gemini" if use_gemini else settings.AI_PROVIDER.lower()
             yield _format_sse("status", {"status": "reasoning_started", "provider": provider})
 
             full_rationale = ""
             is_llm = False
             active_provider = "offline"
 
-            if provider == "ollama":
+            if use_gemini and effective_gemini_key:
+                try:
+                    sys_prompt, usr_prompt = self._build_ai_prompt(
+                        task_type=task_type,
+                        target_column=target_column,
+                        features_summary=features_summary,
+                        models=models,
+                        engineered_features=eng_features,
+                        user_objective=user_objective,
+                    )
+                    key = effective_gemini_key.strip()
+                    url = (
+                        f"https://generativelanguage.googleapis.com/v1beta/models/"
+                        f"{settings.GEMINI_MODEL}:streamGenerateContent?alt=sse&key={key}"
+                    )
+                    combined_prompt = f"{sys_prompt}\n\nTask Specifics:\n{usr_prompt}"
+                    payload = {
+                        "contents": [
+                            {"role": "user", "parts": [{"text": combined_prompt}]}
+                        ],
+                        "generationConfig": {
+                            "temperature": 0.2,
+                            "maxOutputTokens": 800,
+                        },
+                    }
+                    async with httpx.AsyncClient(timeout=30.0) as client:
+                        async with client.stream("POST", url, json=payload) as response:
+                            if response.status_code == 200:
+                                async for line in response.aiter_lines():
+                                    if line.startswith("data: "):
+                                        raw = line[6:].strip()
+                                        if raw == "[DONE]":
+                                            break
+                                        try:
+                                            chunk = json.loads(raw)
+                                            candidates = chunk.get("candidates", [])
+                                            if candidates:
+                                                parts = (
+                                                    candidates[0]
+                                                    .get("content", {})
+                                                    .get("parts", [])
+                                                )
+                                                for p in parts:
+                                                    text = p.get("text", "")
+                                                    if text:
+                                                        full_rationale += text
+                                                        yield _format_sse("token", {"token": text})
+                                        except Exception:
+                                            pass
+                                is_llm = True
+                                active_provider = "gemini"
+                            else:
+                                msg = f"Gemini API returned HTTP {response.status_code}"
+                                raise RuntimeError(msg)
+                except Exception as exc:
+                    logger.warning(
+                        "Gemini stream failed (%s), falling back to offline heuristics.", exc
+                    )
+                    notice_data = json.dumps(
+                        {
+                            "message": (
+                                f"Google Gemini ({settings.GEMINI_MODEL}) stream error ({exc}). "
+                                "Falling back to deterministic rule engine."
+                            )
+                        }
+                    )
+                    yield _format_sse("notice", notice_data)
+                    for line in deterministic_rationale.split("\n"):
+                        yield _format_sse("token", {"token": line + "\n"})
+                        await asyncio.sleep(0.015)
+                    full_rationale = deterministic_rationale
+                    active_provider = "offline"
+
+            elif provider == "ollama":
                 try:
                     sys_prompt, usr_prompt = self._build_ai_prompt(
                         task_type=task_type,
@@ -784,6 +867,7 @@ class DecisionEngineService:
         target_column: str,
         override_task_type: TaskType | None = None,
         user_objective: str | None = None,
+        gemini_api_key: str | None = None,
     ) -> DecisionEngineResponse:
         """Formulate preprocessing steps, candidate models, and AI rationale synchronously."""
         df, _ = self._load_dataframe(project_id)
@@ -804,7 +888,45 @@ class DecisionEngineService:
         is_llm_enriched = False
         active_provider = "offline"
 
-        if settings.AI_PROVIDER.lower() == "ollama":
+        effective_gemini_key = gemini_api_key
+        if (
+            not effective_gemini_key
+            and settings.GEMINI_API_KEY
+            and settings.GEMINI_API_KEY.strip().startswith("AIzaSy")
+        ):
+            effective_gemini_key = settings.GEMINI_API_KEY
+        if effective_gemini_key and effective_gemini_key.strip():
+            try:
+                sys_prompt, usr_prompt = self._build_ai_prompt(
+                    task_type,
+                    target_column,
+                    features_summary,
+                    models,
+                    eng_features,
+                    user_objective,
+                )
+                key = effective_gemini_key.strip()
+                url = f"https://generativelanguage.googleapis.com/v1beta/models/{settings.GEMINI_MODEL}:generateContent?key={key}"
+                combined_prompt = f"{sys_prompt}\n\nTask Specifics:\n{usr_prompt}"
+                payload = {
+                    "contents": [{"role": "user", "parts": [{"text": combined_prompt}]}],
+                    "generationConfig": {"temperature": 0.2, "maxOutputTokens": 800},
+                }
+                with httpx.Client(timeout=15.0) as client:
+                    res = client.post(url, json=payload)
+                    if res.status_code == 200:
+                        data = res.json()
+                        candidates = data.get("candidates", [])
+                        if candidates:
+                            parts = candidates[0].get("content", {}).get("parts", [])
+                            if parts:
+                                llm_rationale = "".join(p.get("text", "") for p in parts)
+                                is_llm_enriched = True
+                                active_provider = "gemini"
+            except Exception as exc:
+                logger.warning("Gemini synchronous call unavailable (%s), using heuristics.", exc)
+
+        elif settings.AI_PROVIDER.lower() == "ollama":
             try:
                 sys_prompt, usr_prompt = self._build_ai_prompt(
                     task_type,

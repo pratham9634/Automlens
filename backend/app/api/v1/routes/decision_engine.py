@@ -14,6 +14,7 @@ from app.api.v1.schemas.decision_engine import (
     TargetAnalysisDetailResponse,
     TargetSuggestResponse,
 )
+from app.core.auth import get_gemini_api_key
 from app.db.session import get_db
 from app.services.decision_engine import DecisionEngineService
 
@@ -73,14 +74,16 @@ def formulate_decisions(
     project_id: str,
     payload: FormulateDecisionsRequest,
     db: Session = Depends(get_db),
+    gemini_key: str | None = Depends(get_gemini_api_key),
 ) -> DecisionEngineResponse:
-    """Execute Hybrid Decision Engine (deterministic heuristics + Ollama/OpenRouter AI)."""
+    """Execute Hybrid Decision Engine (deterministic heuristics + Gemini/Ollama/OpenRouter AI)."""
     service = DecisionEngineService(db)
     return service.formulate_decisions(
         project_id=project_id,
         target_column=payload.target_column,
         override_task_type=payload.override_task_type,
         user_objective=payload.user_objective,
+        gemini_api_key=gemini_key,
     )
 
 
@@ -93,6 +96,7 @@ async def stream_decisions(
     project_id: str,
     payload: FormulateDecisionsRequest,
     db: Session = Depends(get_db),
+    gemini_key: str | None = Depends(get_gemini_api_key),
 ) -> StreamingResponse:
     """Stream live token-by-token AI thought process via Server-Sent Events."""
     service = DecisionEngineService(db)
@@ -102,6 +106,7 @@ async def stream_decisions(
             target_column=payload.target_column,
             override_task_type=payload.override_task_type,
             user_objective=payload.user_objective,
+            gemini_api_key=gemini_key,
         ),
         media_type="text/event-stream",
         headers={

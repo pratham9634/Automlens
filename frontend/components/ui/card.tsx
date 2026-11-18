@@ -3,22 +3,24 @@ import { cn } from "@/lib/utils";
 
 export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   accentTop?: "azure" | "cyan" | "indigo" | "none";
+  interactive?: boolean;
 }
 
 export const Card = React.forwardRef<HTMLDivElement, CardProps>(
-  ({ className, accentTop = "none", children, ...props }, ref) => {
+  ({ className, accentTop = "none", interactive = false, children, ...props }, ref) => {
     const accentStyles = {
       none: "",
-      azure: "border-t-2 border-t-accent",
-      cyan: "border-t-2 border-t-secondary",
-      indigo: "border-t-2 border-t-tertiary",
+      azure: "border-t-4 border-t-accent",
+      cyan: "border-t-4 border-t-secondary",
+      indigo: "border-t-4 border-t-tertiary",
     };
 
     return (
       <div
         ref={ref}
         className={cn(
-          "rounded-card border border-border/80 bg-surface text-text-primary transition-all duration-160 shadow-sm",
+          "rounded-card border-2 border-border bg-surface text-text-primary transition-all duration-150 shadow-neo",
+          interactive && "hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-neo-lg cursor-pointer",
           accentStyles[accentTop],
           className
         )}
@@ -37,7 +39,7 @@ export const CardHeader = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn("flex flex-col space-y-1.5 p-4 sm:p-5 border-b border-border/60", className)}
+    className={cn("flex flex-col space-y-1.5 p-4 sm:p-5 border-b-2 border-border bg-surface-subtle/30 rounded-t-[calc(var(--radius-card)-2px)]", className)}
     {...props}
   />
 ));
@@ -49,7 +51,7 @@ export const CardTitle = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <h3
     ref={ref}
-    className={cn("text-sm sm:text-base font-semibold tracking-tight text-text-primary font-sans", className)}
+    className={cn("text-sm sm:text-base font-bold tracking-tight text-text-primary font-sans", className)}
     {...props}
   />
 ));
@@ -82,7 +84,7 @@ export const CardFooter = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      "flex items-center p-4 sm:p-5 pt-0 border-t border-border/60 mt-4",
+      "flex items-center p-4 sm:p-5 pt-0 border-t-2 border-border mt-4",
       className
     )}
     {...props}

@@ -225,11 +225,19 @@ export const apiClient = {
     }
   ): Promise<void> => {
     try {
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+      if (typeof window !== "undefined") {
+        const key = localStorage.getItem("automlens_gemini_api_key");
+        if (key && key.trim()) {
+          headers["X-Gemini-API-Key"] = key.trim();
+        }
+      }
+
       const response = await fetch(`${API_BASE_URL}/projects/${projectId}/decision/stream`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers,
         body: JSON.stringify(data),
       });
 

@@ -87,13 +87,13 @@ export function DialogContent({
         role="dialog"
         aria-modal="true"
         className={cn(
-          "relative z-50 w-full max-w-lg rounded-dialog border border-border bg-surface p-6 shadow-2xl transition-all duration-150 animate-in fade-in-0 zoom-in-95",
+          "relative z-50 w-full max-w-lg rounded-dialog border-2 border-border bg-surface p-6 shadow-neo-lg transition-all duration-150 animate-in fade-in-0 zoom-in-95",
           className
         )}
       >
         <button
           onClick={() => context.onOpenChange(false)}
-          className="absolute right-4 top-4 rounded-button p-1 text-text-muted hover:text-text-primary hover:bg-surface-hover transition-colors focus:outline-none focus:ring-1 focus:ring-accent"
+          className="absolute right-4 top-4 rounded-md border-2 border-border p-1 text-text-primary hover:bg-surface-hover shadow-neo-sm active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all focus:outline-none"
           aria-label="Close dialog"
         >
           <X className="w-4 h-4" />

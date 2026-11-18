@@ -26,28 +26,28 @@ export function Badge({
 }: BadgeProps) {
   const variantStyles = {
     neutral: "bg-surface-subtle border-border text-text-secondary",
-    accent: "bg-accent/12 border-accent/30 text-accent font-medium",
-    success: "bg-success/12 border-success/30 text-success font-medium",
-    warning: "bg-warning/12 border-warning/30 text-warning font-medium",
-    danger: "bg-danger/12 border-danger/30 text-danger font-medium",
-    info: "bg-info/12 border-info/30 text-info font-medium",
+    accent: "bg-sky-100 dark:bg-sky-950/80 border-border text-sky-800 dark:text-sky-300 font-bold",
+    success: "bg-emerald-100 dark:bg-emerald-950/80 border-border text-emerald-800 dark:text-emerald-300 font-bold",
+    warning: "bg-amber-100 dark:bg-amber-950/80 border-border text-amber-900 dark:text-amber-300 font-bold",
+    danger: "bg-rose-100 dark:bg-rose-950/80 border-border text-rose-800 dark:text-rose-300 font-bold",
+    info: "bg-blue-100 dark:bg-blue-950/80 border-border text-blue-800 dark:text-blue-300 font-bold",
     streaming:
-      "bg-cyan-500/12 border-cyan-500/35 text-cyan-400 font-medium shadow-[0_0_8px_rgba(6,182,212,0.25)]",
+      "bg-cyan-100 dark:bg-cyan-950/80 border-border text-cyan-800 dark:text-cyan-300 font-bold",
     optimal:
-      "bg-sky-500/12 border-sky-500/35 text-sky-400 font-medium shadow-[0_0_8px_rgba(14,165,233,0.25)]",
+      "bg-yellow-200 dark:bg-yellow-900/60 border-border text-yellow-950 dark:text-yellow-300 font-bold",
     custom:
-      "bg-indigo-500/12 border-indigo-500/35 text-indigo-400 font-medium shadow-[0_0_8px_rgba(99,102,241,0.25)]",
+      "bg-purple-100 dark:bg-purple-950/80 border-border text-purple-800 dark:text-purple-300 font-bold",
   };
 
   const sizeStyles = {
-    sm: "px-1.5 py-0.5 text-[10px] tracking-wide",
-    md: "px-2 py-0.5 text-[11px] tracking-wider",
+    sm: "px-2 py-0.5 text-[10px] tracking-wider",
+    md: "px-2.5 py-0.5 text-[11px] tracking-wider",
   };
 
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-pill border font-mono uppercase select-none",
+        "inline-flex items-center gap-1.5 rounded-md border-2 border-border shadow-[2px_2px_0px_0px_var(--neo-shadow-color)] font-mono uppercase select-none",
         variantStyles[variant],
         sizeStyles[size],
         className

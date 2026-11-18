@@ -15,11 +15,11 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
           ref={ref}
           disabled={disabled}
           className={cn(
-            "flex h-9 w-full appearance-none rounded-input border bg-surface px-3 py-1 pr-8 text-xs text-text-primary transition-colors cursor-pointer",
-            "focus-visible:outline-none focus-visible:ring-1",
+            "flex h-9 w-full appearance-none rounded-input border-2 bg-surface px-3 py-1 pr-8 text-xs font-medium text-text-primary shadow-neo-sm transition-all duration-100 cursor-pointer",
+            "focus-visible:outline-none",
             error
-              ? "border-danger focus-visible:border-danger focus-visible:ring-danger"
-              : "border-border focus-visible:border-accent focus-visible:ring-accent",
+              ? "border-danger focus-visible:border-danger focus-visible:shadow-neo"
+              : "border-border focus-visible:border-accent focus-visible:shadow-neo focus-visible:-translate-x-0.5 focus-visible:-translate-y-0.5",
             "disabled:cursor-not-allowed disabled:opacity-50",
             className
           )}

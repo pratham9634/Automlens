@@ -56,14 +56,14 @@ export function Sidebar() {
   return (
     <aside
       className={cn(
-        "border-r border-border/80 bg-surface flex flex-col justify-between h-screen sticky top-0 z-30 transition-[width] duration-160 ease-enter select-none shrink-0 shadow-sm",
-        collapsed ? "w-[64px]" : "w-[232px]"
+        "border-r-2 border-border bg-surface flex flex-col justify-between h-screen sticky top-0 z-30 transition-[width] duration-150 select-none shrink-0",
+        collapsed ? "w-[64px]" : "w-[236px]"
       )}
     >
       {/* Top Section */}
       <div className="flex flex-col min-w-0">
         {/* Brand Header */}
-        <div className="h-[60px] flex items-center justify-between px-3.5 border-b border-border/70">
+        <div className="h-[60px] flex items-center justify-between px-3.5 border-b-2 border-border">
           <Link
             href="/"
             className="flex items-center gap-2.5 min-w-0 group"
@@ -74,13 +74,13 @@ export function Sidebar() {
             </div>
             {!collapsed && (
               <div className="flex flex-col min-w-0">
-                <span className="font-display text-sm tracking-wide text-text-primary uppercase flex items-center gap-1.5 truncate">
-                  AutoM<span className="bg-gradient-to-r from-cyan-400 to-sky-400 bg-clip-text text-transparent">Lens</span>
-                  <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/25">
+                <span className="font-display text-sm tracking-wide text-text-primary uppercase flex items-center gap-1.5 truncate font-bold">
+                  AutoM<span className="text-accent">Lens</span>
+                  <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded border border-border bg-yellow-200 dark:bg-yellow-900/60 text-slate-950 dark:text-yellow-300 shadow-[1px_1px_0px_0px_var(--neo-shadow-color)]">
                     v1.0
                   </span>
                 </span>
-                <span className="text-[9px] font-mono uppercase tracking-wider text-text-muted truncate">
+                <span className="text-[9px] font-mono uppercase tracking-wider text-text-muted truncate font-bold">
                   Human-Assisted AutoML
                 </span>
               </div>
@@ -92,7 +92,7 @@ export function Sidebar() {
             onClick={toggleCollapsed}
             aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
             title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-            className="p-1 rounded-button text-text-muted hover:text-text-primary hover:bg-surface-hover transition-colors"
+            className="p-1 rounded-md border-2 border-border text-text-primary hover:bg-surface-hover shadow-neo-sm active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all cursor-pointer"
           >
             {collapsed ? (
               <ChevronRight className="w-4 h-4" />
@@ -103,30 +103,30 @@ export function Sidebar() {
         </div>
 
         {/* Global Navigation */}
-        <nav className="p-2.5 space-y-1">
+        <nav className="p-2.5 space-y-1.5">
           <Link
             href="/"
             title="Workspace Overview"
             className={cn(
-              "flex items-center gap-2.5 px-2.5 py-2 text-xs rounded-button transition-all duration-160 font-sans",
+              "flex items-center gap-2.5 px-3 py-2 text-xs rounded-md transition-all duration-100 font-sans cursor-pointer",
               pathname === "/"
-                ? "bg-accent/15 text-accent border border-accent/30 font-semibold shadow-[0_0_10px_rgba(14,165,233,0.2)]"
-                : "text-text-secondary hover:text-text-primary hover:bg-surface-hover border border-transparent"
+                ? "bg-accent text-white border-2 border-border font-bold shadow-neo-sm"
+                : "text-text-secondary hover:text-text-primary hover:bg-surface-hover border-2 border-transparent hover:border-border hover:shadow-neo-sm"
             )}
           >
-            <Layers className="w-4 h-4 shrink-0 text-accent" />
+            <Layers className="w-4 h-4 shrink-0" />
             {!collapsed && <span>Workspace</span>}
           </Link>
 
           {/* Project Context Navigation */}
           {isProjectRoute && (
-            <div className="pt-3 mt-2 border-t border-border/60">
+            <div className="pt-3 mt-2 border-t-2 border-border">
               {!collapsed && (
-                <div className="px-2.5 pb-1.5 flex items-center justify-between text-[11px] font-mono uppercase tracking-wider text-text-muted">
+                <div className="px-2.5 pb-2 flex items-center justify-between text-[11px] font-mono font-bold uppercase tracking-wider text-text-muted">
                   <span>Pipeline Tracks</span>
                   <Link
                     href="/"
-                    className="text-[10px] text-accent hover:underline flex items-center gap-0.5 lowercase font-mono"
+                    className="text-[10px] text-accent hover:underline flex items-center gap-0.5 lowercase font-mono font-bold"
                     title="Return to projects list"
                   >
                     <ArrowLeft className="w-2.5 h-2.5" />
@@ -135,7 +135,7 @@ export function Sidebar() {
                 </div>
               )}
 
-              <div className="space-y-0.5">
+              <div className="space-y-1">
                 {projectPipelineNav.map((item) => {
                   const Icon = item.icon;
                   return (
@@ -144,7 +144,7 @@ export function Sidebar() {
                       href={`/projects/${projectId}?tab=${item.id}`}
                       title={item.label}
                       className={cn(
-                        "flex items-center gap-2.5 px-2.5 py-1.5 text-xs rounded-button transition-colors font-sans text-text-secondary hover:text-text-primary hover:bg-surface-hover hover:border-l-2 hover:border-l-secondary"
+                        "flex items-center gap-2.5 px-2.5 py-1.5 text-xs rounded-md transition-all duration-100 font-sans border-2 border-transparent hover:border-border hover:bg-surface-hover hover:shadow-neo-sm font-medium text-text-primary"
                       )}
                     >
                       <Icon className="w-3.5 h-3.5 shrink-0 text-text-muted" />
@@ -159,36 +159,36 @@ export function Sidebar() {
       </div>
 
       {/* Engine Status / Telemetry Footer */}
-      <div className="p-2.5 border-t border-border/70">
+      <div className="p-2.5 border-t-2 border-border">
         {collapsed ? (
           <div
-            className="flex items-center justify-center p-2 rounded-button bg-surface-subtle border border-border text-text-muted"
+            className="flex items-center justify-center p-2 rounded-md bg-surface-subtle border-2 border-border shadow-neo-sm text-text-muted"
             title="System: Online | 4 Cores CPU"
           >
             <div className="relative flex items-center justify-center">
-              <span className="w-2 h-2 rounded-full bg-cyan-400 inline-block animate-pulse shadow-[0_0_8px_rgba(6,182,212,0.8)]" />
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block animate-pulse" />
             </div>
           </div>
         ) : (
-          <div className="p-3 rounded-card border border-border/80 bg-surface-subtle shadow-sm">
+          <div className="p-3 rounded-card border-2 border-border bg-surface-subtle shadow-neo-sm">
             <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-1.5 text-xs font-medium text-text-primary font-sans">
+              <div className="flex items-center gap-1.5 text-xs font-bold text-text-primary font-sans">
                 <Activity className="w-3.5 h-3.5 text-secondary animate-pulse" />
                 <span className="font-mono text-[11px] uppercase tracking-wider">System Status</span>
               </div>
-              <span className="flex items-center gap-1.5 text-[10px] font-mono text-cyan-400 bg-cyan-500/10 px-1.5 py-0.5 rounded border border-cyan-500/25">
-                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 inline-block animate-ping" />
+              <span className="flex items-center gap-1 text-[10px] font-mono font-bold text-emerald-800 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950/80 px-1.5 py-0.5 rounded border border-border shadow-[1px_1px_0px_0px_var(--neo-shadow-color)]">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-ping" />
                 Ready
               </span>
             </div>
             <div className="text-[11px] text-text-muted space-y-1 font-mono">
               <div className="flex justify-between">
                 <span className="text-text-subtle">Engine:</span>
-                <span className="text-text-secondary">Hybrid AI</span>
+                <span className="text-text-secondary font-bold">Hybrid AI</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-text-subtle">Workers:</span>
-                <span className="text-cyan-400 tabular-nums">4 Cores CPU</span>
+                <span className="text-accent font-bold tabular-nums">4 Cores CPU</span>
               </div>
             </div>
           </div>

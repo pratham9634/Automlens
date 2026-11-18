@@ -55,7 +55,7 @@ export function TargetDecisionView({
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamingTokens, setStreamingTokens] = useState("");
   const [streamNotice, setStreamNotice] = useState<string | null>(null);
-  const [activeProvider, setActiveProvider] = useState<string>("ollama");
+  const [activeProvider, setActiveProvider] = useState<string>("gemini");
 
   const [confirmedTarget, setConfirmedTarget] = useState<ConfirmedTargetResponse | null>(null);
 
@@ -350,7 +350,7 @@ export function TargetDecisionView({
         <AiReasoningTerminal
           tokens={streamingTokens}
           isStreaming={isStreaming}
-          statusMessage="Local Ollama (qwen2.5:3b) analyzing dataset schema..."
+          statusMessage="Google Gemini (2.0 Flash) formulating strategy..."
           provider={activeProvider}
           notice={streamNotice}
           engineeredFeatures={decision?.engineered_features || []}

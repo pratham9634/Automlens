@@ -76,6 +76,16 @@ const config: Config = {
         danger: "var(--danger)",
         info: "var(--info)",
 
+        // Neo-Brutalist High-Contrast & Pastel Accents
+        neo: {
+          yellow: "#FEF08A",
+          cyan: "#BAE6FD",
+          green: "#BBF7D0",
+          pink: "#FBCFE8",
+          amber: "#FDE68A",
+          purple: "#E9D5FF",
+        },
+
         // Legacy Aliases for seamless component compatibility
         brand: {
           lavender: "var(--accent)",
@@ -100,9 +110,9 @@ const config: Config = {
       borderRadius: {
         sm: "0.25rem",        // 4px
         DEFAULT: "0.5rem",    // 8px
-        md: "0.75rem",        // 12px
-        lg: "1rem",           // 16px
-        xl: "1.5rem",         // 24px
+        md: "0.5rem",         // 8px
+        lg: "0.75rem",        // 12px
+        xl: "1rem",           // 16px
         full: "9999px",
         input: "var(--radius-input)",
         button: "var(--radius-button)",
@@ -111,8 +121,25 @@ const config: Config = {
         popover: "var(--radius-popover)",
         pill: "var(--radius-pill)",
       },
+      boxShadow: {
+        "neo-sm": "var(--neo-shadow-sm, 2px 2px 0px 0px #0F172A)",
+        "neo": "var(--neo-shadow, 4px 4px 0px 0px #0F172A)",
+        "neo-lg": "var(--neo-shadow-lg, 6px 6px 0px 0px #0F172A)",
+        "neo-cyan": "4px 4px 0px 0px #06B6D4",
+        "neo-azure": "4px 4px 0px 0px #0EA5E9",
+        "neo-amber": "4px 4px 0px 0px #F59E0B",
+        "neo-emerald": "4px 4px 0px 0px #10B981",
+        "neo-dark": "4px 4px 0px 0px #000000",
+      },
+      borderWidth: {
+        DEFAULT: "1px",
+        "0": "0",
+        "2": "2px",
+        "3": "3px",
+        "4": "4px",
+      },
       fontFamily: {
-        display: ["var(--font-display)", "Anton", "Impact", "sans-serif"],
+        display: ["var(--font-display)", "'Space Grotesk'", "Arimo", "sans-serif"],
         sans: ["var(--font-sans)", "Arimo", "system-ui", "sans-serif"],
         body: ["var(--font-sans)", "Arimo", "system-ui", "sans-serif"],
         mono: ["var(--font-mono)", "'Be Vietnam Pro'", "ui-monospace", "monospace"],
