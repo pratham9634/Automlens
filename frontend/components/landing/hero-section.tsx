@@ -1,79 +1,171 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, Sparkles, ShieldCheck, Cpu, Terminal, CheckCircle2 } from "lucide-react";
+import { motion, type Variants } from "framer-motion";
+import { ArrowRight, Sparkles, ShieldCheck, Cpu, Terminal, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { DoodleUnderline, TapeSticker, SketchStamp } from "./doodle-elements";
+
+const containerVariants: Variants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.12,
+      delayChildren: 0.1,
+    },
+  },
+};
+
+const itemVariants: Variants = {
+  hidden: { opacity: 0, y: 16 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { type: "spring" as const, stiffness: 350, damping: 20 },
+  },
+};
 
 export function HeroSection() {
   return (
-    <section className="relative pt-12 pb-16 sm:pt-20 sm:pb-24 border-b-2 border-border overflow-hidden">
+    <section className="relative pt-14 pb-20 sm:pt-24 sm:pb-32 border-b-2 border-border overflow-hidden">
       {/* Background Accent Grid / Decors */}
       <div className="absolute inset-0 bg-[radial-gradient(var(--neo-shadow-color)_1px,transparent_1px)] [background-size:24px_24px] opacity-15 pointer-events-none" />
 
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-8 text-center flex flex-col items-center">
+      {/* Floating decorative sketch stickers in margins */}
+      <div className="hidden xl:block absolute left-10 top-24 pointer-events-none">
+        <motion.div
+          animate={{ y: [0, -8, 0], rotate: [-4, -2, -4] }}
+          transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+        >
+          <SketchStamp label="NO DATA LEAKAGE" sublabel="Guaranteed Fold Isolation" rotation="-rotate-6" />
+        </motion.div>
+      </div>
+
+      <div className="hidden xl:block absolute right-12 top-28 pointer-events-none">
+        <motion.div
+          animate={{ y: [0, 8, 0], rotate: [3, 5, 3] }}
+          transition={{ duration: 6, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+        >
+          <SketchStamp
+            label="GEMINI 2.0 FLASH"
+            sublabel="Live Reasoning Copilot"
+            color="border-purple-500 text-purple-600 dark:border-purple-400 dark:text-purple-300"
+            rotation="rotate-6"
+          />
+        </motion.div>
+      </div>
+
+      <motion.div
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+        className="relative max-w-7xl mx-auto px-4 sm:px-8 text-center flex flex-col items-center"
+      >
         {/* Top Feature Pill */}
-        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border-2 border-border bg-pastel-cyan dark:bg-cyan-950/70 text-slate-900 dark:text-cyan-200 text-xs font-mono font-bold shadow-neo-sm mb-6 animate-fade-in">
-          <Sparkles className="w-3.5 h-3.5 text-accent animate-pulse" />
-          <span>HYBRID AI DECISION ENGINE + LEAKAGE-SAFE AUTOML</span>
-        </div>
+        <motion.div variants={itemVariants} className="mb-6">
+          <motion.div
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.97 }}
+            className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border-2 border-border bg-pastel-cyan dark:bg-cyan-950/70 text-slate-900 dark:text-cyan-200 text-xs font-mono font-bold shadow-neo-sm cursor-default"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-accent animate-pulse" />
+            <span>CHAPTER 01 // HUMAN-IN-THE-LOOP AUTOML</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+          </motion.div>
+        </motion.div>
 
         {/* Main Headline */}
-        <h1 className="font-display text-3xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-text-primary max-w-4xl leading-[1.15] mb-6">
+        <motion.h1
+          variants={itemVariants}
+          className="font-display text-3xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-text-primary max-w-4xl leading-[1.12] mb-6 relative"
+        >
           Transparent, Leakage-Safe Machine Learning for{" "}
-          <span className="text-accent underline decoration-4 decoration-border underline-offset-4">
+          <span className="relative inline-block text-accent">
             Tabular Data
+            <span className="absolute -bottom-2 sm:-bottom-3 left-0 w-full text-accent pointer-events-none">
+              <DoodleUnderline />
+            </span>
           </span>
-        </h1>
+        </motion.h1>
 
         {/* Subtitle */}
-        <p className="text-sm sm:text-base lg:text-lg text-text-secondary max-w-2xl font-sans font-medium mb-8 leading-relaxed">
-          Engineered for academic credibility and enterprise reproducibility. Features strict 5-fold cross-validation inside each fold pipeline, Google Gemini 2.0 Flash reasoning, and Tree SHAP explainability.
-        </p>
+        <motion.p
+          variants={itemVariants}
+          className="text-sm sm:text-base lg:text-lg text-text-secondary max-w-2xl font-sans font-medium mb-10 leading-relaxed"
+        >
+          The human-assisted AutoML platform designed for scientific credibility. Strict 5-fold cross-validation inside each fold pipeline, Google Gemini 2.0 Flash reasoning, and Tree SHAP explainability.
+        </motion.p>
 
-        {/* Action CTAs */}
-        <div className="flex flex-wrap items-center justify-center gap-4 mb-10">
-          <Link href="/dashboard">
-            <Button
-              size="lg"
-              className="h-11 px-6 text-sm font-mono font-bold bg-accent text-white shadow-neo hover:shadow-neo-lg hover:-translate-x-0.5 hover:-translate-y-0.5 transition-all"
-            >
-              <span>Launch Workspace</span>
-              <ArrowRight className="w-4 h-4 ml-2" />
-            </Button>
-          </Link>
+        {/* Bouncy Action CTAs */}
+        <motion.div
+          variants={itemVariants}
+          className="flex flex-wrap items-center justify-center gap-4 mb-12"
+        >
+          <motion.div
+            whileHover={{ scale: 1.04, y: -2 }}
+            whileTap={{ scale: 0.96 }}
+            transition={{ type: "spring", stiffness: 450, damping: 15 }}
+          >
+            <Link href="/dashboard">
+              <Button
+                size="lg"
+                className="h-12 px-7 text-sm font-mono font-bold bg-accent text-white shadow-neo hover:shadow-neo-lg transition-all rounded-xl"
+              >
+                <span>Launch Workspace</span>
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            </Link>
+          </motion.div>
 
-          <a href="#example">
-            <Button
-              variant="outline"
-              size="lg"
-              className="h-11 px-6 text-sm font-mono font-bold shadow-neo hover:shadow-neo-lg hover:-translate-x-0.5 hover:-translate-y-0.5 transition-all"
-            >
-              <span>Explore Benchmark Demo</span>
-            </Button>
-          </a>
-        </div>
+          <motion.div
+            whileHover={{ scale: 1.04, y: -2 }}
+            whileTap={{ scale: 0.96 }}
+            transition={{ type: "spring", stiffness: 450, damping: 15 }}
+          >
+            <a href="#example">
+              <Button
+                variant="outline"
+                size="lg"
+                className="h-12 px-7 text-sm font-mono font-bold shadow-neo hover:shadow-neo-lg transition-all rounded-xl bg-surface"
+              >
+                <span>Explore Benchmark Arena</span>
+                <ChevronRight className="w-4 h-4 ml-1 opacity-70" />
+              </Button>
+            </a>
+          </motion.div>
+        </motion.div>
 
-        {/* Trust Badges */}
-        <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-4 text-xs font-mono font-bold text-text-muted">
-          <div className="flex items-center gap-1.5 px-3 py-1 rounded-md border-2 border-border bg-surface shadow-neo-sm">
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-            <span>Zero-Leakage Pipelines</span>
-          </div>
-          <div className="flex items-center gap-1.5 px-3 py-1 rounded-md border-2 border-border bg-surface shadow-neo-sm">
-            <Cpu className="w-3.5 h-3.5 text-accent" />
-            <span>5-Fold Parallel CV</span>
-          </div>
-          <div className="flex items-center gap-1.5 px-3 py-1 rounded-md border-2 border-border bg-surface shadow-neo-sm">
-            <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-            <span>Gemini 2.0 Flash Copilot</span>
-          </div>
-          <div className="flex items-center gap-1.5 px-3 py-1 rounded-md border-2 border-border bg-surface shadow-neo-sm">
-            <Terminal className="w-3.5 h-3.5 text-cyan-500" />
-            <span>PostgreSQL Audit Ledger</span>
-          </div>
-        </div>
-      </div>
+        {/* Interactive Trust Badges with Bouncy Hover */}
+        <motion.div
+          variants={itemVariants}
+          className="flex flex-wrap items-center justify-center gap-2.5 sm:gap-4 text-xs font-mono font-bold text-text-muted"
+        >
+          {[
+            { icon: ShieldCheck, label: "Zero-Leakage Pipelines", color: "text-emerald-500" },
+            { icon: Cpu, label: "5-Fold Parallel CV", color: "text-accent" },
+            { icon: Sparkles, label: "Gemini 2.0 Flash Copilot", color: "text-amber-500" },
+            { icon: Terminal, label: "PostgreSQL Audit Ledger", color: "text-cyan-500" },
+          ].map((item, idx) => {
+            const Icon = item.icon;
+            return (
+              <motion.div
+                key={idx}
+                whileHover={{
+                  scale: 1.06,
+                  y: -2,
+                  rotate: idx % 2 === 0 ? -1 : 1,
+                  transition: { type: "spring", stiffness: 500, damping: 14 },
+                }}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border-2 border-border bg-surface shadow-neo-sm select-none cursor-default"
+              >
+                <Icon className={`w-3.5 h-3.5 ${item.color}`} />
+                <span className="text-text-primary">{item.label}</span>
+              </motion.div>
+            );
+          })}
+        </motion.div>
+      </motion.div>
     </section>
   );
 }

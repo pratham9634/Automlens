@@ -33,11 +33,14 @@ export function LandingNavbar() {
 
         {/* Navigation Anchors */}
         <nav className="hidden md:flex items-center gap-6 text-xs font-mono font-bold text-text-secondary">
-          <a href="#features" className="hover:text-text-primary transition-colors cursor-pointer">
-            {"//"} Features
+          <a href="#sketchbook" className="hover:text-text-primary transition-colors cursor-pointer">
+            {"//"} Sketchbook
           </a>
           <a href="#example" className="hover:text-text-primary transition-colors cursor-pointer">
             {"//"} Live Demo
+          </a>
+          <a href="#features" className="hover:text-text-primary transition-colors cursor-pointer">
+            {"//"} Features
           </a>
           <a href="#pipeline" className="hover:text-text-primary transition-colors cursor-pointer">
             {"//"} Pipeline
