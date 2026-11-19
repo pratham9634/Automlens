@@ -41,6 +41,9 @@ def test_generate_profile_success(client: TestClient) -> None:
     assert profile["total_columns"] == 5
     assert profile["duplicate_rows_count"] == 1
     assert profile["quality_score"] > 0
+    assert profile["score_breakdown"] is not None
+    assert "missing_penalty" in profile["score_breakdown"]
+    assert profile["score_breakdown"]["base_score"] == 100.0
 
     # 2. Verify Numeric Columns
     num_names = [col["name"] for col in profile["numeric_columns"]]

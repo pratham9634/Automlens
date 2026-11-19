@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   FileSpreadsheet,
   Hash,
@@ -12,6 +12,8 @@ import {
   AlertTriangle,
   Table as TableIcon,
   CheckCircle2,
+  Search,
+  ArrowUpDown,
 } from "lucide-react";
 import { DatasetPreviewResponse } from "@/lib/types";
 import { formatBytes } from "@/lib/utils";
@@ -53,6 +55,21 @@ export function DatasetPreviewTable({
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [searchColQuery, setSearchColQuery] = useState("");
+  const [colSortOrder, setColSortOrder] = useState<"default" | "nulls_desc" | "name_asc">("default");
+
+  const filteredAndSortedColumns = useMemo(() => {
+    const q = searchColQuery.trim().toLowerCase();
+    let list = dataset.columns.filter((c) =>
+      q ? c.name.toLowerCase().includes(q) || c.dtype.toLowerCase().includes(q) : true
+    );
+    if (colSortOrder === "nulls_desc") {
+      list = [...list].sort((a, b) => b.null_percentage - a.null_percentage);
+    } else if (colSortOrder === "name_asc") {
+      list = [...list].sort((a, b) => a.name.localeCompare(b.name));
+    }
+    return list;
+  }, [dataset.columns, searchColQuery, colSortOrder]);
 
   const copyHash = async () => {
     try {
@@ -191,62 +208,123 @@ export function DatasetPreviewTable({
             </p>
           </div>
 
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowDeleteDialog(true)}
-            className="text-danger hover:text-danger hover:bg-danger/10 gap-1.5 self-start sm:self-auto"
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-            <span>Replace / Delete Dataset</span>
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowDeleteDialog(true)}
+              className="text-danger hover:text-danger hover:bg-danger/10 gap-1.5 self-start sm:self-auto"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Replace / Delete Dataset</span>
+            </Button>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5 max-h-56 overflow-y-auto pr-1">
-          {dataset.columns.map((col) => {
-            const hasNulls = col.null_percentage > 0;
-            return (
-              <div
-                key={col.name}
-                className="p-2.5 rounded-card border border-border bg-surface-subtle flex items-center justify-between gap-2 text-xs"
-              >
-                <div className="space-y-0.5 min-w-0">
-                  <div className="font-mono text-text-primary font-medium truncate" title={col.name}>
-                    {col.name}
-                  </div>
-                  <div className="flex items-center gap-1.5 text-[10px] font-mono text-text-muted">
-                    <Badge
-                      variant={
-                        col.dtype === "numeric"
-                          ? "success"
-                          : col.dtype === "categorical"
-                          ? "info"
-                          : "neutral"
-                      }
-                      size="sm"
-                    >
-                      {col.dtype}
-                    </Badge>
-                    <span className="tabular-nums">• {col.non_null_count.toLocaleString()} valid</span>
-                  </div>
-                </div>
+        {/* Column Filter and Sorting Bar */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pt-1">
+          <div className="relative flex-1 max-w-sm">
+            <Search className="w-3.5 h-3.5 text-text-muted absolute left-2.5 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              placeholder="Search column name or dtype..."
+              value={searchColQuery}
+              onChange={(e) => setSearchColQuery(e.target.value)}
+              className="w-full pl-8 pr-3 py-1.5 rounded-button border border-border bg-surface-subtle text-xs font-mono text-text-primary focus:outline-none focus:border-accent"
+            />
+          </div>
 
-                <div className="text-right shrink-0">
-                  {hasNulls ? (
-                    <span className="inline-flex items-center gap-1 text-[11px] font-mono text-warning font-medium tabular-nums">
-                      <AlertTriangle className="w-3 h-3" />
-                      {col.null_percentage.toFixed(1)}% null
-                    </span>
-                  ) : (
-                    <span className="text-[10px] font-mono text-text-muted">
-                      0% null
-                    </span>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+          <div className="flex items-center gap-1.5 text-xs font-mono">
+            <span className="text-text-muted text-[11px] flex items-center gap-1">
+              <ArrowUpDown className="w-3 h-3 text-text-subtle" /> Sort:
+            </span>
+            <button
+              type="button"
+              onClick={() => setColSortOrder("default")}
+              className={`px-2 py-1 rounded text-[11px] transition-colors cursor-pointer ${
+                colSortOrder === "default"
+                  ? "bg-surface border border-border text-text-primary font-semibold"
+                  : "text-text-muted hover:text-text-primary"
+              }`}
+            >
+              Default
+            </button>
+            <button
+              type="button"
+              onClick={() => setColSortOrder("nulls_desc")}
+              className={`px-2 py-1 rounded text-[11px] transition-colors cursor-pointer ${
+                colSortOrder === "nulls_desc"
+                  ? "bg-surface border border-border text-warning font-semibold"
+                  : "text-text-muted hover:text-text-primary"
+              }`}
+            >
+              Null % ↓
+            </button>
+            <button
+              type="button"
+              onClick={() => setColSortOrder("name_asc")}
+              className={`px-2 py-1 rounded text-[11px] transition-colors cursor-pointer ${
+                colSortOrder === "name_asc"
+                  ? "bg-surface border border-border text-text-primary font-semibold"
+                  : "text-text-muted hover:text-text-primary"
+              }`}
+            >
+              Name A-Z
+            </button>
+          </div>
         </div>
+
+        {filteredAndSortedColumns.length === 0 ? (
+          <div className="p-6 rounded-card border border-dashed border-border bg-surface-subtle text-center text-xs font-mono text-text-muted">
+            No columns match query &quot;{searchColQuery}&quot;.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5 max-h-56 overflow-y-auto pr-1">
+            {filteredAndSortedColumns.map((col) => {
+              const hasNulls = col.null_percentage > 0;
+              return (
+                <div
+                  key={col.name}
+                  className="p-2.5 rounded-card border border-border bg-surface-subtle flex items-center justify-between gap-2 text-xs"
+                >
+                  <div className="space-y-0.5 min-w-0">
+                    <div className="font-mono text-text-primary font-medium truncate" title={col.name}>
+                      {col.name}
+                    </div>
+                    <div className="flex items-center gap-1.5 text-[10px] font-mono text-text-muted">
+                      <Badge
+                        variant={
+                          col.dtype === "numeric"
+                            ? "success"
+                            : col.dtype === "categorical"
+                            ? "info"
+                            : "neutral"
+                        }
+                        size="sm"
+                      >
+                        {col.dtype}
+                      </Badge>
+                      <span className="tabular-nums">• {col.non_null_count.toLocaleString()} valid</span>
+                    </div>
+                  </div>
+
+                  <div className="text-right shrink-0">
+                    {hasNulls ? (
+                      <span className="inline-flex items-center gap-1 text-[11px] font-mono text-warning font-medium tabular-nums">
+                        <AlertTriangle className="w-3 h-3" />
+                        {col.null_percentage.toFixed(1)}% null
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-mono text-text-muted">
+                        0% null
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </Card>
 
       {/* 10-Row Data Table Preview */}

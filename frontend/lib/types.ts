@@ -119,6 +119,15 @@ export interface CorrelationMatrix {
   high_correlations: HighCorrelationPair[];
 }
 
+export interface QualityScoreBreakdown {
+  base_score: number;
+  missing_penalty: number;
+  duplicate_penalty: number;
+  constant_penalty: number;
+  outlier_penalty: number;
+  net_score: number;
+}
+
 export interface DatasetProfileResponse {
   project_id: string;
   dataset_id: string;
@@ -127,6 +136,7 @@ export interface DatasetProfileResponse {
   duplicate_rows_count: number;
   duplicate_rows_percentage: number;
   quality_score: number;
+  score_breakdown?: QualityScoreBreakdown | null;
   warnings: DataQualityWarning[];
   numeric_columns: NumericColumnProfile[];
   categorical_columns: CategoricalColumnProfile[];

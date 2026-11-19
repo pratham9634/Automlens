@@ -82,6 +82,25 @@ class CorrelationMatrix(BaseModel):
     high_correlations: list[HighCorrelationPair] = Field(default_factory=list)
 
 
+class QualityScoreBreakdown(BaseModel):
+    """Mathematical deduction breakdown for overall dataset quality health score."""
+
+    base_score: float = 100.0
+    missing_penalty: float = Field(
+        ..., description="Penalty for missing cell ratio (max 30.0)"
+    )
+    duplicate_penalty: float = Field(
+        ..., description="Penalty for duplicate row ratio (max 15.0)"
+    )
+    constant_penalty: float = Field(
+        ..., description="Penalty for constant feature count (max 25.0)"
+    )
+    outlier_penalty: float = Field(
+        ..., description="Penalty for high IQR outlier features (max 15.0)"
+    )
+    net_score: float = Field(..., description="Final bounded score (0.0 to 100.0)")
+
+
 class DatasetProfileResponse(BaseModel):
     """Comprehensive dataset statistical profile and data quality assessment."""
 
@@ -94,6 +113,7 @@ class DatasetProfileResponse(BaseModel):
     duplicate_rows_count: int
     duplicate_rows_percentage: float
     quality_score: float = Field(..., description="Normalized health score between 0.0 and 100.0")
+    score_breakdown: QualityScoreBreakdown | None = None
     warnings: list[DataQualityWarning] = Field(default_factory=list)
     numeric_columns: list[NumericColumnProfile] = Field(default_factory=list)
     categorical_columns: list[CategoricalColumnProfile] = Field(default_factory=list)

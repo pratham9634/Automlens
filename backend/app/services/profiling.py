@@ -23,6 +23,7 @@ from app.api.v1.schemas.profiling import (
     HighCorrelationPair,
     HistogramBin,
     NumericColumnProfile,
+    QualityScoreBreakdown,
 )
 from app.core.errors import (
     DatasetNotFoundError,
@@ -69,16 +70,43 @@ class ProfilingService:
         self.dataset_repo = DatasetRepository(db)
 
     def _load_dataframe(self, project_id: str, filename: str, raw_bytes: bytes) -> pd.DataFrame:
-        """Parse raw file bytes into a Pandas DataFrame using robust encodings."""
+        """Parse raw file bytes into a Pandas DataFrame using robust encodings and delimiters."""
         lower_name = filename.lower()
+        common_null_sentinels = ["?", "NA", "N/A", "null", "None", "-999", ""]
         try:
             if lower_name.endswith(".csv"):
+                sep = ","
                 try:
-                    return pd.read_csv(io.BytesIO(raw_bytes), encoding="utf-8")
+                    import csv
+
+                    sample_text = raw_bytes[:4096].decode("utf-8", errors="ignore")
+                    if sample_text:
+                        sep = csv.Sniffer().sniff(sample_text, delimiters=",;\t|").delimiter
+                except Exception:
+                    sep = ","
+
+                try:
+                    return pd.read_csv(
+                        io.BytesIO(raw_bytes),
+                        sep=sep,
+                        encoding="utf-8",
+                        na_values=common_null_sentinels,
+                        keep_default_na=True,
+                    )
                 except UnicodeDecodeError:
-                    return pd.read_csv(io.BytesIO(raw_bytes), encoding="latin1")
+                    return pd.read_csv(
+                        io.BytesIO(raw_bytes),
+                        sep=sep,
+                        encoding="latin1",
+                        na_values=common_null_sentinels,
+                        keep_default_na=True,
+                    )
             elif lower_name.endswith((".xlsx", ".xls")):
-                return pd.read_excel(io.BytesIO(raw_bytes))
+                return pd.read_excel(
+                    io.BytesIO(raw_bytes),
+                    na_values=common_null_sentinels,
+                    keep_default_na=True,
+                )
             else:
                 raise DatasetValidationError(f"Cannot parse unsupported file format: {filename}")
         except Exception as exc:
@@ -387,16 +415,25 @@ class ProfilingService:
                 high_correlations=high_corr_pairs,
             )
 
-        # 4. Overall Data Quality Health Score (0.0 to 100.0)
+        # 4. Overall Data Quality Health Score (0.0 to 100.0) with Transparent Penalties
         total_cells = max(total_rows * total_columns, 1)
-        missing_penalty = min((total_null_cells / total_cells) * 100.0 * 0.5, 30.0)
-        dup_penalty = min(duplicate_rows_pct * 0.3, 15.0)
-        constant_penalty = min(constant_columns_count * 10.0, 25.0)
-        outlier_penalty = min(columns_with_high_outliers * 4.0, 15.0)
+        missing_penalty = round(min((total_null_cells / total_cells) * 100.0 * 0.5, 30.0), 2)
+        dup_penalty = round(min(duplicate_rows_pct * 0.3, 15.0), 2)
+        constant_penalty = round(min(constant_columns_count * 10.0, 25.0), 2)
+        outlier_penalty = round(min(columns_with_high_outliers * 4.0, 15.0), 2)
 
         quality_score = max(
             0.0,
             round(100.0 - (missing_penalty + dup_penalty + constant_penalty + outlier_penalty), 1),
+        )
+
+        score_breakdown = QualityScoreBreakdown(
+            base_score=100.0,
+            missing_penalty=missing_penalty,
+            duplicate_penalty=dup_penalty,
+            constant_penalty=constant_penalty,
+            outlier_penalty=outlier_penalty,
+            net_score=quality_score,
         )
 
         profile_response = DatasetProfileResponse(
@@ -407,6 +444,7 @@ class ProfilingService:
             duplicate_rows_count=duplicate_rows_count,
             duplicate_rows_percentage=duplicate_rows_pct,
             quality_score=quality_score,
+            score_breakdown=score_breakdown,
             warnings=warnings,
             numeric_columns=numeric_profiles,
             categorical_columns=categorical_profiles,

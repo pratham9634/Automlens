@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, ShieldAlert, Sparkles, Wrench } from "lucide-react";
 import { DataQualityWarning } from "@/lib/types";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { useELI5 } from "@/components/eli5/eli5-context";
+import { ELI5Badge } from "@/components/eli5/eli5-badge";
 
 interface QualityWarningsListProps {
   warnings: DataQualityWarning[];
@@ -12,6 +14,7 @@ interface QualityWarningsListProps {
 
 export function QualityWarningsList({ warnings }: QualityWarningsListProps) {
   const [filter, setFilter] = useState<"all" | "high" | "medium" | "low">("all");
+  const { isELI5 } = useELI5();
 
   const filteredWarnings =
     filter === "all" ? warnings : warnings.filter((w) => w.severity === filter);
@@ -27,15 +30,58 @@ export function QualityWarningsList({ warnings }: QualityWarningsListProps) {
     }
   };
 
+  const getActionPlan = (code: string) => {
+    switch (code) {
+      case "CONSTANT_COLUMN":
+        return "AutoMLens Pipeline: Column will be dropped inside sklearn Pipeline (zero predictive signal).";
+      case "HIGH_MISSINGNESS":
+        return "AutoMLens Pipeline: Automatically imputed inside CV folds (Median for numeric, Mode for categorical) with zero test leakage.";
+      case "DUPLICATE_ROWS":
+        return "AutoMLens Rule: Retained in dataset to avoid altering true distribution; cross-validation folds will evaluate real sample density.";
+      case "OUTLIERS_DETECTED":
+        return "AutoMLens Rule 6: Preserved without auto-removal. Tree models (RandomForest, LightGBM) are naturally robust to extreme values.";
+      case "HIGH_CARDINALITY":
+        return "AutoMLens Pipeline: Grouped or encoded using one-hot/ordinal encoding to prevent feature matrix dimension explosion.";
+      case "HIGH_MULTICOLLINEARITY":
+        return "AutoMLens Strategy: Highlighted in Step 2; tree-based algorithms or L2 regularization will be favored over plain linear models.";
+      default:
+        return "AutoMLens Preprocessing: Handled safely within fold-isolated preprocessing.";
+    }
+  };
+
+  const getELI5TermKey = (code: string) => {
+    switch (code) {
+      case "CONSTANT_COLUMN":
+        return "constant_columns";
+      case "HIGH_MISSINGNESS":
+        return "high_missingness";
+      case "OUTLIERS_DETECTED":
+        return "iqr_outliers";
+      case "HIGH_CARDINALITY":
+        return "high_cardinality";
+      case "HIGH_MULTICOLLINEARITY":
+        return "multicollinearity";
+      default:
+        return "";
+    }
+  };
+
   return (
     <Card className="p-4 sm:p-5 space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h3 className="card-title text-text-primary">
-            Data Quality &amp; Preprocessing Advisories
+          <h3 className="card-title text-text-primary flex items-center gap-2">
+            <ShieldAlert className="w-4 h-4 text-warning" />
+            <span>
+              {isELI5
+                ? "Data Quality Notes & Action Plans"
+                : "Data Quality & Preprocessing Advisories"}
+            </span>
           </h3>
           <p className="text-xs text-text-muted">
-            Deterministic rule engine findings to guide missing value imputation, outlier handling, and column filtering.
+            {isELI5
+              ? "Things AutoMLens spotted in your data, and how the machine learning system will safely fix them."
+              : "Deterministic rule engine findings to guide missing value imputation, outlier handling, and column filtering."}
           </p>
         </div>
 
@@ -67,30 +113,40 @@ export function QualityWarningsList({ warnings }: QualityWarningsListProps) {
           </p>
         </div>
       ) : (
-        <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
-          {filteredWarnings.map((w, idx) => (
-            <div
-              key={idx}
-              className="p-3 rounded-card border border-border bg-surface-subtle flex flex-col sm:flex-row sm:items-start justify-between gap-2.5 text-xs"
-            >
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  {getSeverityBadge(w.severity)}
-                  {w.column && (
-                    <span className="font-mono text-text-primary font-medium bg-surface px-1.5 py-0.5 rounded-button text-[11px] border border-border">
-                      {w.column}
+        <div className="space-y-2.5 max-h-80 overflow-y-auto pr-1">
+          {filteredWarnings.map((w, idx) => {
+            const termKey = getELI5TermKey(w.code);
+            return (
+              <div
+                key={idx}
+                className="p-3 rounded-card border border-border bg-surface-subtle flex flex-col justify-between gap-2 text-xs"
+              >
+                <div className="space-y-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    {getSeverityBadge(w.severity)}
+                    {w.column && (
+                      <span className="font-mono text-text-primary font-medium bg-surface px-1.5 py-0.5 rounded-button text-[11px] border border-border">
+                        {w.column}
+                      </span>
+                    )}
+                    <span className="text-[10px] font-mono text-text-muted">
+                      [{w.code}]
                     </span>
-                  )}
-                  <span className="text-[10px] font-mono text-text-muted">
-                    [{w.code}]
-                  </span>
+                    {termKey && <ELI5Badge termKey={termKey} fallbackText="" />}
+                  </div>
+                  <p className="text-text-secondary leading-relaxed text-[11.5px]">
+                    {w.message}
+                  </p>
                 </div>
-                <p className="text-text-secondary leading-relaxed text-[11.5px]">
-                  {w.message}
-                </p>
+
+                {/* Automated Remediation Action Plan */}
+                <div className="flex items-center gap-1.5 text-[10.5px] font-mono bg-surface border border-border/80 rounded-button px-2.5 py-1 text-accent">
+                  <Wrench className="w-3 h-3 text-accent shrink-0" />
+                  <span className="truncate">{getActionPlan(w.code)}</span>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </Card>

@@ -531,31 +531,31 @@ export default function ProjectWorkspacePage() {
           {datasetPreview ? (
             <div className="space-y-6">
               {/* Dataset Sub-Tab Bar */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-hairline pb-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b-2 border-border pb-3">
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setDatasetSubTab("preview")}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-mono transition-colors ${
+                    className={`px-3 py-1.5 rounded-md text-xs font-mono font-bold transition-all cursor-pointer ${
                       datasetSubTab === "preview"
-                        ? "bg-surface-2 text-ink font-semibold border border-hairline"
-                        : "text-ink-muted hover:text-ink"
+                        ? "bg-surface text-text-primary border-2 border-border shadow-neo-sm"
+                        : "text-text-muted hover:text-text-primary"
                     }`}
                   >
                     Raw Data Preview
                   </button>
                   <button
                     onClick={() => setDatasetSubTab("profile")}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono transition-colors ${
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-mono font-bold transition-all cursor-pointer ${
                       datasetSubTab === "profile"
-                        ? "bg-surface-2 text-ink font-semibold border border-hairline"
-                        : "text-ink-muted hover:text-ink"
+                        ? "bg-surface text-text-primary border-2 border-border shadow-neo-sm"
+                        : "text-text-muted hover:text-text-primary"
                     }`}
                   >
                     <span>Statistical Profile</span>
                     {profile ? (
-                      <span className="w-2 h-2 rounded-full bg-telemetry-emerald" />
+                      <span className="w-2 h-2 rounded-full bg-success" />
                     ) : (
-                      <span className="text-[10px] px-1 py-0.2 rounded bg-surface-3 text-brand-hover">
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-surface-subtle text-accent font-semibold border border-border">
                         New
                       </span>
                     )}
@@ -566,7 +566,7 @@ export default function ProjectWorkspacePage() {
                   <button
                     onClick={handleGenerateProfile}
                     disabled={profilingLoading}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-brand-lavender hover:bg-brand-hover text-ink text-xs font-mono font-medium transition-colors shadow-sm disabled:opacity-50"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border-2 border-border bg-sky-200 dark:bg-sky-900/60 hover:bg-sky-300 dark:hover:bg-sky-800 text-slate-950 dark:text-sky-200 text-xs font-mono font-bold shadow-neo-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-neo active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all disabled:opacity-50 cursor-pointer"
                   >
                     {profilingLoading ? (
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -603,23 +603,23 @@ export default function ProjectWorkspacePage() {
                       onProfileUpdated={(p) => setProfile(p)}
                     />
                   ) : (
-                    <div className="p-12 rounded-xl border border-dashed border-hairline-strong bg-surface-1/60 text-center flex flex-col items-center justify-center space-y-4">
-                      <div className="w-14 h-14 rounded-2xl bg-surface-2 border border-brand-lavender/30 flex items-center justify-center text-brand-hover">
+                    <div className="p-10 rounded-card border-2 border-dashed border-border bg-surface text-center flex flex-col items-center justify-center space-y-4">
+                      <div className="w-14 h-14 rounded-card border-2 border-border bg-sky-100 dark:bg-sky-950/60 flex items-center justify-center text-accent shadow-neo-sm">
                         <Sparkles className="w-7 h-7" />
                       </div>
                       <div className="space-y-1.5 max-w-md">
-                        <h3 className="text-sm font-semibold text-ink">
+                        <h3 className="text-sm font-bold text-text-primary">
                           Compute Statistical Profile &amp; Quality Engine
                         </h3>
-                        <p className="text-xs text-ink-muted leading-relaxed">
+                        <p className="text-xs text-text-muted leading-relaxed">
                           Analyze univariate distributions, IQR outlier boundaries,
-                          missing value distributions, and pairwise Pearson correlations across all continuous features.
+                          missing value distributions, and pairwise Pearson correlations across continuous features.
                         </p>
                       </div>
                       <button
                         onClick={handleGenerateProfile}
                         disabled={profilingLoading}
-                        className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-brand-lavender hover:bg-brand-hover text-ink text-xs font-mono font-medium transition-colors shadow-md disabled:opacity-50"
+                        className="inline-flex items-center gap-2 px-4 py-2 rounded-md border-2 border-border bg-sky-200 dark:bg-sky-900/60 hover:bg-sky-300 dark:hover:bg-sky-800 text-slate-950 dark:text-sky-200 text-xs font-mono font-bold shadow-neo-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-neo active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all disabled:opacity-50 cursor-pointer"
                       >
                         {profilingLoading ? (
                           <Loader2 className="w-4 h-4 animate-spin" />
@@ -636,6 +636,31 @@ export default function ProjectWorkspacePage() {
                   )}
                 </div>
               )}
+
+              {/* Bottom Workflow Progression Banner */}
+              <div className="p-4 sm:p-5 rounded-card border-2 border-border bg-surface shadow-neo flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-success animate-pulse" />
+                    <h4 className="text-sm font-bold font-display text-text-primary">
+                      Step 1 Complete: Dataset &amp; Health Verified
+                    </h4>
+                  </div>
+                  <p className="text-xs text-text-muted">
+                    {profile
+                      ? `Data Quality Score: ${profile.quality_score.toFixed(1)}/100 • Ready to select target column and configure zero-leakage strategy.`
+                      : `Raw tabular dataset loaded (${datasetPreview.dataset.row_count.toLocaleString()} rows × ${datasetPreview.dataset.column_count} features). Proceed to Step 2.`}
+                  </p>
+                </div>
+
+                <button
+                  onClick={() => setActiveTab("target")}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-md border-2 border-border bg-sky-200 dark:bg-sky-900/80 hover:bg-sky-300 dark:hover:bg-sky-800 text-slate-950 dark:text-sky-200 text-xs font-mono font-bold shadow-neo-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-neo active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all cursor-pointer shrink-0"
+                >
+                  <span>Proceed to Step 2: AI Strategy &amp; Target</span>
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
             </div>
           ) : (
             <DatasetUploadZone
