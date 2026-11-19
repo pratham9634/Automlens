@@ -23,7 +23,7 @@ export default function SignInPage() {
           ★ Sign in to access your protected machine learning workspace
         </p>
         <span className="font-marker font-bold text-xs text-amber-500 dark:text-amber-400 -rotate-2">
-          ✏️ 100% Viva Ready • Zero Synthetic Data Leakage
+          ✏️ Production Ready • Zero Synthetic Data Leakage
         </span>
       </div>
 

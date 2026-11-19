@@ -87,7 +87,7 @@ export const GEMINI_MODELS: GeminiModelOption[] = [
     tier: "paid",
     tierLabel: "Paid Tier",
     badge: "Paid / Frontier",
-    description: "Flagship deep reasoning model for complex statistical decisions and viva defense.",
+    description: "Flagship deep reasoning model for complex statistical decisions and executive reporting.",
     contextWindow: "2M tokens",
     rateLimit: "Pay-as-you-go",
   },
@@ -197,7 +197,7 @@ export function BYOKModal({ isOpen, onClose, onKeyUpdated }: BYOKModalProps) {
           </div>
           <DialogDescription className="text-xs text-text-muted leading-relaxed">
             AutoMLens utilizes Google Gemini to deliver real-time data quality analysis, pipeline
-            formulations, and viva defense explanations. The free model is enabled by default.
+            formulations, and model audit explanations. The free model is enabled by default.
           </DialogDescription>
         </DialogHeader>
 

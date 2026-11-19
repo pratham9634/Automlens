@@ -192,11 +192,11 @@ export function AuditLedger({ projectId }: AuditLedgerProps) {
                 Deterministic Audit Ledger &amp; Reproducibility Timeline
               </h2>
               <Badge variant="accent" size="sm" className="font-marker font-bold text-xs -rotate-1">
-                ★ 100% Viva Verified
+                ★ 100% Audit Verified
               </Badge>
             </div>
             <p className="text-xs text-text-muted max-w-2xl leading-relaxed">
-              Chronological ledger of every dataset ingestion, quality profiling check, fold-safe transformation, training run, and model inference with evidence payloads for academic defense.
+              Chronological ledger of every dataset ingestion, quality profiling check, fold-safe transformation, training run, and model inference with evidence payloads for compliance and model governance.
             </p>
           </div>
 

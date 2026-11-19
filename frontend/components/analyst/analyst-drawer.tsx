@@ -254,7 +254,7 @@ export function AnalystDrawer({ projectId, isOpen, onClose }: AnalystDrawerProps
                   {hasCustomKey ? `${activeModel} (BYOK)` : "Hybrid AI"}
                 </span>
               </div>
-              <p className="text-[11px] text-text-muted">Dataset insights, leaderboard analysis & viva copilot</p>
+              <p className="text-[11px] text-text-muted">Dataset insights, leaderboard analysis &amp; AutoML copilot</p>
             </div>
           </div>
 

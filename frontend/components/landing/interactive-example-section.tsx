@@ -356,7 +356,7 @@ export function InteractiveExampleSection() {
                         Zero-Intelligence Baseline (Most Frequent)
                       </span>
                       <span className="text-[10px] font-mono text-text-muted">
-                        Academic proof that real algorithms beat naive guesswork
+                        Benchmark verification: real algorithms beating naive baselines
                       </span>
                     </div>
                   </div>

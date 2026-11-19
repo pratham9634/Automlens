@@ -102,6 +102,6 @@ def test_analyst_deterministic_rules_coverage() -> None:
         assert "Predictive Features" in ans_f
         assert "Fare" in ans_f
 
-        # Viva summary question
-        ans_v = service._generate_deterministic_response("Give me a viva summary", mock_ctx)
-        assert "AutoMLens Project Summary" in ans_v
+        # Executive summary question
+        ans_v = service._generate_deterministic_response("Give me an executive summary", mock_ctx)
+        assert "AutoMLens Executive Summary" in ans_v

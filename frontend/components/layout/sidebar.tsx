@@ -175,7 +175,7 @@ export function Sidebar() {
                   AutoMLens
                 </span>
                 <span className="text-[10px] text-text-muted font-mono truncate">
-                  B.Tech Minor
+                  Enterprise AutoML
                 </span>
               </div>
             </div>
@@ -314,7 +314,7 @@ export function MobileSidebarDrawer({
               </span>
             </div>
             <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded border border-border bg-yellow-200 dark:bg-yellow-900/60 text-slate-950 dark:text-yellow-300">
-              Academic Minor
+              Automated ML
             </span>
           </div>
         </div>

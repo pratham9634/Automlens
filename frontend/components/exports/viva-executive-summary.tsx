@@ -153,11 +153,11 @@ export function VivaExecutiveSummary({
 
             <div className="sm:text-right font-mono text-xs text-text-muted print-text-muted space-y-0.5 shrink-0">
               <div className="font-semibold text-text-primary print-text-dark">
-                Author / Engineer: Pratham Petwal
+                Lead Engineer: Pratham Petwal
               </div>
-              <div>Dept. of Computer Science &amp; Engineering</div>
-              <div>Shivalik College of Engineering, Dehradun</div>
-              <div className="text-[11px] text-text-muted">Affiliated with UTU, Dehradun</div>
+              <div>AutoMLens Core Intelligence Group</div>
+              <div>Automated Tabular Pipeline Architecture</div>
+              <div className="text-[11px] text-text-muted">Enterprise Production Platform</div>
             </div>
           </div>
 
@@ -193,7 +193,7 @@ export function VivaExecutiveSummary({
         <div className="space-y-3">
           <h2 className="text-xs font-mono font-bold uppercase tracking-wider text-text-primary print-text-dark flex items-center gap-2">
             <CheckCircle2 className="w-3.5 h-3.5 text-success" />
-            <span>1. Alignment with Approved College Synopsis Objectives</span>
+            <span>1. End-to-End AutoML Pipeline &amp; Architectural Specifications</span>
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
             {[
@@ -340,7 +340,7 @@ export function VivaExecutiveSummary({
           </div>
         </div>
 
-        {/* Section 3: Academic Integrity & Non-Causality Disclosure */}
+        {/* Section 3: Regulatory Compliance & Non-Causality Disclosure */}
         <div className="p-4 rounded-md border border-border bg-surface-subtle/50 print-card space-y-1.5 text-xs">
           <h3 className="font-semibold text-text-primary print-text-dark flex items-center gap-1.5">
             <ShieldCheck className="w-4 h-4 text-accent" />

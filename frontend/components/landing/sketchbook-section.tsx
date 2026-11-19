@@ -49,7 +49,7 @@ const sketchNotes: SketchNote[] = [
     rotation: 1.8,
     annotation: "Inspect the engineering rationale behind task and algorithm selections.",
     summary:
-      "No black boxes. AutoMLens combines a deterministic rule engine (100% offline reproducible for viva defense) with optional LLM reasoning to explain why specific candidate algorithms, encodings, and metrics were chosen for your data scale.",
+      "No black boxes. AutoMLens combines a deterministic rule engine (100% offline reproducible and fully auditable) with optional LLM reasoning to explain why specific candidate algorithms, encodings, and metrics were chosen for your data scale.",
     codeSnippet: "// 💡 Decision Engine Reasoning\n→ Target: 'Renewed' (Binary)\n→ Selected: Classification (Macro F1)\n→ Rationale: Class distribution is 73/27; tree ensembles with balanced scoring recommended.",
     stamp: "AI RATIONALE",
     stampColor: "border-purple-600 text-purple-700 dark:border-purple-400 dark:text-purple-300",

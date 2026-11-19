@@ -169,8 +169,8 @@ class AnalystService:
             )
             suggestions.append(
                 ChatSuggestion(
-                    title="Academic Viva Summary",
-                    prompt="Summarize this project's dataset characteristics, model leaderboard, and key findings for a viva defense.",
+                    title="Executive Model Summary",
+                    prompt="Summarize this project's dataset characteristics, model leaderboard, and key findings for an executive report.",
                     category="executive",
                 )
             )
@@ -278,10 +278,10 @@ class AnalystService:
             lines.append("3. **Nonlinear Log Scaling:** Apply `np.log1p()` on heavy-tailed positive monetary or count features to reduce gradient saturation.")
             return "\n".join(lines)
 
-        # 5. Executive / Viva Summary
+        # 5. Executive / Model Summary
         if any(w in q_lower for w in ("viva", "summary", "report", "executive", "pitch", "overview")):
             lines = [
-                f"### 🎓 AutoMLens Project Summary: `{ctx.get('project_name')}`",
+                f"### 📊 AutoMLens Executive Summary: `{ctx.get('project_name')}`",
                 "",
                 f"- **Data:** {ds.get('total_rows', 'N/A')} samples across {ds.get('total_columns', 'N/A')} features with data quality health rating of **{ds.get('quality_score', 'N/A')}/100**.",
                 f"- **Target Task:** `{lb.get('task_type', 'Tabular ML')}` evaluated via 5-fold cross-validation.",

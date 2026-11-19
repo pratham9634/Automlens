@@ -321,8 +321,8 @@ export function ExportView({ projectId, projectName }: ExportViewProps) {
             </div>
           )}
 
-          {/* Academic Compliance Callout */}
-          <AlertRow variant="info" title="Academic Integrity Notice">
+          {/* Model Governance Compliance Callout */}
+          <AlertRow variant="info" title="Model Governance &amp; Compliance Notice">
             All exported artifacts are compiled strictly without data leakage, include 5-fold cross-validation fold scores, and conform with Rule 5 &amp; 10 reproducibility standards.
           </AlertRow>
         </>

@@ -66,7 +66,7 @@ export function Scene07Outcome() {
             </div>
           </div>
           <div className="text-[10px] font-mono text-[var(--story-text-secondary)]">
-            Every heuristic and seed stored for viva defense.
+            Every heuristic and seed stored for complete model reproducibility.
           </div>
         </div>
 

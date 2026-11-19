@@ -80,7 +80,7 @@ export default function DashboardPage() {
           <p className="text-xs text-text-muted font-medium">
             Human-assisted tabular AutoML with fold-safe preprocessing, parallel CV, and SHAP explainability.
             <span className="font-marker font-bold text-xs sm:text-sm text-accent block sm:inline sm:ml-1">
-              ✏️ 100% reproducible for viva defense.
+              ✏️ 100% reproducible, auditable &amp; fold-safe.
             </span>
           </p>
         </div>
