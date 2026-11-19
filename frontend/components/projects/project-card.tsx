@@ -32,14 +32,20 @@ interface ProjectCardProps {
 export function ProjectCard({ project, onDeleted }: ProjectCardProps) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const handleDelete = async () => {
     setDeleting(true);
+    setDeleteError(null);
     try {
       await apiClient.deleteProject(project.id);
       setShowDeleteDialog(false);
       onDeleted(project.id);
-    } catch {
+    } catch (err) {
+      setDeleteError(
+        err instanceof Error ? err.message : "Failed to delete project. Please try again."
+      );
+    } finally {
       setDeleting(false);
     }
   };
@@ -130,11 +136,20 @@ export function ProjectCard({ project, onDeleted }: ProjectCardProps) {
             This action will permanently delete all associated dataset files, statistical profiles, model pipelines, training runs, and audit ledger logs. This action cannot be reversed.
           </div>
 
+          {deleteError && (
+            <div className="text-xs text-danger bg-danger/10 border border-danger/20 p-2.5 rounded-md font-medium my-1">
+              {deleteError}
+            </div>
+          )}
+
           <DialogFooter>
             <Button
               type="button"
               variant="secondary"
-              onClick={() => setShowDeleteDialog(false)}
+              onClick={() => {
+                setShowDeleteDialog(false);
+                setDeleteError(null);
+              }}
               disabled={deleting}
             >
               Cancel

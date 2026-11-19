@@ -4,7 +4,8 @@ import os
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request, status
+from fastapi import FastAPI, HTTPException, Request, status
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, RedirectResponse
 
@@ -12,6 +13,7 @@ from app.api.v1.router import api_router
 from app.core.config import get_settings
 from app.core.errors import (
     AutoMLensError,
+    DatabaseUnavailableError,
     DatasetNotFoundError,
     FileSizeExceededError,
     ProfileNotFoundError,
@@ -74,6 +76,8 @@ async def automlens_exception_handler(_: Request, exc: AutoMLensError) -> JSONRe
         status_code = status.HTTP_409_CONFLICT
     elif isinstance(exc, FileSizeExceededError):
         status_code = status.HTTP_413_REQUEST_ENTITY_TOO_LARGE
+    elif isinstance(exc, DatabaseUnavailableError):
+        status_code = status.HTTP_503_SERVICE_UNAVAILABLE
 
     return JSONResponse(
         status_code=status_code,
@@ -86,16 +90,81 @@ async def automlens_exception_handler(_: Request, exc: AutoMLensError) -> JSONRe
     )
 
 
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(_: Request, exc: RequestValidationError) -> JSONResponse:
+    """Format FastAPI request validation errors into standard error schema."""
+    errors: list[str] = []
+    for err in exc.errors():
+        loc = " -> ".join(str(item) for item in err.get("loc", []) if item != "body")
+        msg = err.get("msg", "Invalid value")
+        errors.append(f"{loc}: {msg}" if loc else msg)
+    message = "; ".join(errors) if errors else "Request validation failed."
+    return JSONResponse(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        content={
+            "error": {
+                "code": "VALIDATION_ERROR",
+                "message": message,
+            }
+        },
+    )
+
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(_: Request, exc: HTTPException) -> JSONResponse:
+    """Standardize HTTPException format to prevent schema divergence."""
+    if isinstance(exc.detail, dict) and "error" in exc.detail:
+        content = exc.detail
+    else:
+        code = "HTTP_ERROR"
+        if exc.status_code == 401:
+            code = "UNAUTHORIZED"
+        elif exc.status_code == 403:
+            code = "FORBIDDEN"
+        elif exc.status_code == 404:
+            code = "NOT_FOUND"
+        elif exc.status_code == 409:
+            code = "CONFLICT"
+        content = {
+            "error": {
+                "code": code,
+                "message": str(exc.detail) if exc.detail else "An HTTP error occurred.",
+            }
+        }
+    return JSONResponse(status_code=exc.status_code, content=content)
+
+
 @app.exception_handler(Exception)
 async def generic_exception_handler(_: Request, exc: Exception) -> JSONResponse:
-    """Format any unhandled exceptions to prevent dropped connections and CORS errors."""
+    """Securely format unhandled exceptions without leaking credentials, SQL, or traces."""
     logger.exception("Unhandled internal server error: %s", exc)
+
+    exc_type = type(exc).__name__.lower()
+    exc_str = str(exc).lower()
+
+    if "operationalerror" in exc_type or ("connection" in exc_str and "database" in exc_str):
+        return JSONResponse(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            content={
+                "error": {
+                    "code": "DATABASE_UNAVAILABLE",
+                    "message": (
+                        "Metadata database is currently unreachable. "
+                        "Please check database connectivity."
+                    ),
+                }
+            },
+        )
+
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         content={
             "error": {
                 "code": "INTERNAL_SERVER_ERROR",
-                "message": f"Internal server error: {str(exc)}",
+                "message": (
+                    "An unexpected server error occurred. "
+                    "Please try again or check the system logs."
+                ),
             }
         },
     )

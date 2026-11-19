@@ -88,6 +88,22 @@ class ProfileNotFoundError(AutoMLensError):
         )
 
 
+class DatabaseUnavailableError(AutoMLensError):
+    """Raised when metadata database connection fails."""
+
+    def __init__(
+        self,
+        message: str = (
+            "Metadata database is currently unreachable. "
+            "Please check database connectivity."
+        ),
+    ):
+        super().__init__(
+            message=message,
+            code="DATABASE_UNAVAILABLE",
+        )
+
+
 def raise_http_error(exc: AutoMLensError, status_code: int = status.HTTP_400_BAD_REQUEST) -> None:
     """Helper to convert domain exception to structured HTTPException."""
     raise HTTPException(

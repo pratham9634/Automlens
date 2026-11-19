@@ -31,14 +31,17 @@ export function AnalystDrawer({ projectId, isOpen, onClose }: AnalystDrawerProps
   const [isStreaming, setIsStreaming] = useState(false);
   const [suggestions, setSuggestions] = useState<ChatSuggestion[]>([]);
   const [hasCustomKey, setHasCustomKey] = useState(false);
+  const [activeModel, setActiveModel] = useState<string>("gemini-2.0-flash");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<(() => void) | null>(null);
 
-  // Check for local Gemini Key
+  // Check for local Gemini Key & Model
   useEffect(() => {
     if (typeof window !== "undefined") {
       const key = localStorage.getItem("automlens_gemini_key");
+      const model = localStorage.getItem("automlens_gemini_model") || "gemini-2.0-flash";
       setHasCustomKey(Boolean(key && key.trim()));
+      setActiveModel(model);
     }
   }, [isOpen]);
 
@@ -248,7 +251,7 @@ export function AnalystDrawer({ projectId, isOpen, onClose }: AnalystDrawerProps
                 <span className="font-semibold text-sm text-text-primary">Tabular AI Analyst</span>
                 <span className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
                   <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
-                  {hasCustomKey ? "BYOK Active" : "Hybrid AI"}
+                  {hasCustomKey ? `${activeModel} (BYOK)` : "Hybrid AI"}
                 </span>
               </div>
               <p className="text-[11px] text-text-muted">Dataset insights, leaderboard analysis & viva copilot</p>

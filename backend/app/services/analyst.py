@@ -303,16 +303,21 @@ class AnalystService:
         question: str,
         history: list[ChatMessage],
         gemini_api_key: str | None = None,
+        gemini_model: str | None = None,
     ) -> AsyncGenerator[str, None]:
         """Stream conversational response chunk by chunk as SSE events."""
         ctx = self.build_context(project_id)
         effective_key = gemini_api_key or settings.GEMINI_API_KEY
+        chosen_gemini_model = (
+            gemini_model.strip()
+            if (gemini_model and gemini_model.strip())
+            else settings.GEMINI_MODEL
+        )
 
         # Check if valid Gemini API key is available (starts with AIzaSy)
         if effective_key and effective_key.strip().startswith("AIzaSy"):
             key = effective_key.strip()
-            # Try Gemini 2.5 Flash / Flash latest
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/{settings.GEMINI_MODEL}:streamGenerateContent?alt=sse&key={key}"
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{chosen_gemini_model}:streamGenerateContent?alt=sse&key={key}"
             system_prompt = (
                 "You are AutoMLens Tabular AI Analyst, an expert data scientist. "
                 "Here is the user's dataset and model context:\n"

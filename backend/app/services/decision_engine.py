@@ -618,6 +618,7 @@ class DecisionEngineService:
         override_task_type: TaskType | None = None,
         user_objective: str | None = None,
         gemini_api_key: str | None = None,
+        gemini_model: str | None = None,
     ) -> AsyncGenerator[str, None]:
         """Stream real-time AI reasoning and final pipeline formulation via Server-Sent Events."""
         try:
@@ -657,6 +658,12 @@ class DecisionEngineService:
             ):
                 effective_gemini_key = settings.GEMINI_API_KEY
 
+            chosen_gemini_model = (
+                gemini_model.strip()
+                if (gemini_model and gemini_model.strip())
+                else settings.GEMINI_MODEL
+            )
+
             use_gemini = bool(effective_gemini_key and effective_gemini_key.strip())
             provider = "gemini" if use_gemini else settings.AI_PROVIDER.lower()
             yield _format_sse("status", {"status": "reasoning_started", "provider": provider})
@@ -678,7 +685,7 @@ class DecisionEngineService:
                     key = effective_gemini_key.strip()
                     url = (
                         f"https://generativelanguage.googleapis.com/v1beta/models/"
-                        f"{settings.GEMINI_MODEL}:streamGenerateContent?alt=sse&key={key}"
+                        f"{chosen_gemini_model}:streamGenerateContent?alt=sse&key={key}"
                     )
                     combined_prompt = f"{sys_prompt}\n\nTask Specifics:\n{usr_prompt}"
                     payload = {
@@ -726,7 +733,7 @@ class DecisionEngineService:
                     notice_data = json.dumps(
                         {
                             "message": (
-                                f"Google Gemini ({settings.GEMINI_MODEL}) stream error ({exc}). "
+                                f"Google Gemini ({chosen_gemini_model}) stream error ({exc}). "
                                 "Falling back to deterministic rule engine."
                             )
                         }
@@ -868,6 +875,7 @@ class DecisionEngineService:
         override_task_type: TaskType | None = None,
         user_objective: str | None = None,
         gemini_api_key: str | None = None,
+        gemini_model: str | None = None,
     ) -> DecisionEngineResponse:
         """Formulate preprocessing steps, candidate models, and AI rationale synchronously."""
         df, _ = self._load_dataframe(project_id)
@@ -895,6 +903,13 @@ class DecisionEngineService:
             and settings.GEMINI_API_KEY.strip().startswith("AIzaSy")
         ):
             effective_gemini_key = settings.GEMINI_API_KEY
+
+        chosen_gemini_model = (
+            gemini_model.strip()
+            if (gemini_model and gemini_model.strip())
+            else settings.GEMINI_MODEL
+        )
+
         if effective_gemini_key and effective_gemini_key.strip():
             try:
                 sys_prompt, usr_prompt = self._build_ai_prompt(
@@ -906,7 +921,7 @@ class DecisionEngineService:
                     user_objective,
                 )
                 key = effective_gemini_key.strip()
-                url = f"https://generativelanguage.googleapis.com/v1beta/models/{settings.GEMINI_MODEL}:generateContent?key={key}"
+                url = f"https://generativelanguage.googleapis.com/v1beta/models/{chosen_gemini_model}:generateContent?key={key}"
                 combined_prompt = f"{sys_prompt}\n\nTask Specifics:\n{usr_prompt}"
                 payload = {
                     "contents": [{"role": "user", "parts": [{"text": combined_prompt}]}],

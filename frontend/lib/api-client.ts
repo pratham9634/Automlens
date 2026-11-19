@@ -54,12 +54,14 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
     headers["Content-Type"] = "application/json";
   }
 
-  // Attach client-side BYOK Gemini API key if present in storage
+  // Attach client-side BYOK Gemini API key and Model if present in storage
   if (typeof window !== "undefined") {
     const geminiKey = localStorage.getItem("automlens_gemini_key");
     if (geminiKey) {
       headers["X-Gemini-API-Key"] = geminiKey;
     }
+    const geminiModel = localStorage.getItem("automlens_gemini_model") || "gemini-2.0-flash";
+    headers["X-Gemini-Model"] = geminiModel;
   }
 
   // Attach Clerk Auth Bearer token if session exists
@@ -82,17 +84,40 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
     const response = await fetch(url, { ...options, headers });
 
     if (!response.ok) {
-      let errorData;
+      let errorData: Record<string, any> | null = null;
       try {
         errorData = await response.json();
       } catch {
-        errorData = { error: { message: response.statusText, code: "HTTP_ERROR" } };
+        errorData = {
+          error: {
+            message: response.statusText || `Request failed with status ${response.status}`,
+            code: "HTTP_ERROR",
+          },
+        };
       }
-      throw new ApiClientError(
-        errorData.error?.message || "An unexpected error occurred",
-        errorData.error?.code || "HTTP_ERROR",
-        response.status
-      );
+
+      let errorMessage = "An unexpected error occurred";
+      let errorCode = "HTTP_ERROR";
+
+      if (errorData?.error?.message) {
+        errorMessage = errorData.error.message;
+        errorCode = errorData.error.code || errorCode;
+      } else if (typeof errorData?.detail === "string") {
+        errorMessage = errorData.detail;
+      } else if (Array.isArray(errorData?.detail)) {
+        errorMessage = errorData.detail
+          .map((d: any) =>
+            d.msg
+              ? `${(d.loc || []).filter((l: any) => l !== "body").join(".") || "field"}: ${d.msg}`
+              : JSON.stringify(d)
+          )
+          .join("; ");
+        errorCode = "VALIDATION_ERROR";
+      } else if (errorData?.message) {
+        errorMessage = String(errorData.message);
+      }
+
+      throw new ApiClientError(errorMessage, errorCode, response.status);
     }
 
     if (response.status === 204) {
@@ -104,11 +129,18 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
     if (error instanceof ApiClientError) {
       throw error;
     }
-    throw new ApiClientError(
-      error instanceof Error ? error.message : "Network failure connecting to backend",
-      "NETWORK_ERROR",
-      0
-    );
+    const rawMsg = error instanceof Error ? error.message : "";
+    const isNetwork =
+      rawMsg.includes("Failed to fetch") ||
+      rawMsg.includes("NetworkError") ||
+      rawMsg.includes("network") ||
+      rawMsg.includes("ECONNREFUSED");
+
+    const userFriendlyMessage = isNetwork
+      ? "Unable to reach the AutoMLens backend at http://localhost:8000. Please verify the FastAPI service is running."
+      : rawMsg || "Network failure connecting to backend";
+
+    throw new ApiClientError(userFriendlyMessage, "NETWORK_ERROR", 0);
   }
 }
 
@@ -229,10 +261,12 @@ export const apiClient = {
         "Content-Type": "application/json",
       };
       if (typeof window !== "undefined") {
-        const key = localStorage.getItem("automlens_gemini_api_key");
+        const key = localStorage.getItem("automlens_gemini_key");
         if (key && key.trim()) {
           headers["X-Gemini-API-Key"] = key.trim();
         }
+        const model = localStorage.getItem("automlens_gemini_model") || "gemini-2.0-flash";
+        headers["X-Gemini-Model"] = model;
       }
 
       const response = await fetch(`${API_BASE_URL}/projects/${projectId}/decision/stream`, {
@@ -448,6 +482,8 @@ export const apiClient = {
         if (geminiKey && geminiKey.trim()) {
           headers["X-Gemini-API-Key"] = geminiKey.trim();
         }
+        const geminiModel = localStorage.getItem("automlens_gemini_model") || "gemini-2.0-flash";
+        headers["X-Gemini-Model"] = geminiModel;
       }
 
       const response = await fetch(`${API_BASE_URL}/projects/${projectId}/chat`, {

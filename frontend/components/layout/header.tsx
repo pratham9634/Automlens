@@ -9,7 +9,13 @@ import { apiClient } from "@/lib/api-client";
 import { SystemHealth } from "@/lib/types";
 import { ThemeToggle } from "./theme-toggle";
 import { AutoMLensIcon } from "@/components/ui/logo";
-import { BYOKModal, GEMINI_KEY_STORAGE_NAME } from "@/components/modals/byok-modal";
+import {
+  BYOKModal,
+  GEMINI_KEY_STORAGE_NAME,
+  GEMINI_MODEL_STORAGE_NAME,
+  DEFAULT_GEMINI_MODEL,
+  GEMINI_MODELS,
+} from "@/components/modals/byok-modal";
 import { Button } from "@/components/ui/button";
 import { useELI5 } from "@/components/eli5/eli5-context";
 
@@ -20,11 +26,14 @@ export function Header() {
   const [loading, setLoading] = useState(true);
   const [isByokOpen, setIsByokOpen] = useState(false);
   const [hasGeminiKey, setHasGeminiKey] = useState(false);
+  const [activeModel, setActiveModel] = useState<string>(DEFAULT_GEMINI_MODEL);
 
   const checkGeminiKey = () => {
     if (typeof window !== "undefined") {
       const key = localStorage.getItem(GEMINI_KEY_STORAGE_NAME);
       setHasGeminiKey(Boolean(key && key.trim()));
+      const model = localStorage.getItem(GEMINI_MODEL_STORAGE_NAME) || DEFAULT_GEMINI_MODEL;
+      setActiveModel(model);
     }
   };
 
@@ -91,41 +100,78 @@ export function Header() {
       {/* System Status Bar & Controls */}
       <div className="flex items-center gap-2 sm:gap-2.5">
         {/* BYOK Gemini Key Button */}
-        <button
-          type="button"
-          onClick={() => setIsByokOpen(true)}
-          title="Configure your free Google Gemini API Key"
-          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md border-2 border-border text-[11px] font-mono font-bold shadow-neo-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-neo active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all cursor-pointer ${
-            hasGeminiKey
-              ? "bg-cyan-200 dark:bg-cyan-950/80 text-cyan-950 dark:text-cyan-300"
-              : "bg-surface-subtle text-text-muted hover:text-text-primary"
+        {(() => {
+          const modelMeta =
+            GEMINI_MODELS.find((m) => m.id === activeModel) || GEMINI_MODELS[0];
+          return (
+            <button
+              type="button"
+              onClick={() => setIsByokOpen(true)}
+              title={
+                hasGeminiKey
+                  ? `Active Model: ${modelMeta.name} (${modelMeta.tierLabel}). Click to switch model or update key.`
+                  : `Configure Google Gemini API Key and Model (Default: ${DEFAULT_GEMINI_MODEL})`
+              }
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md border-2 border-border text-[11px] font-mono font-bold shadow-neo-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-neo active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all cursor-pointer ${
+                hasGeminiKey
+                  ? "bg-cyan-200 dark:bg-cyan-950/80 text-cyan-950 dark:text-cyan-300"
+                  : "bg-surface-subtle text-text-muted hover:text-text-primary"
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5 text-cyan-500" />
+              <span className="hidden lg:inline">
+                {hasGeminiKey ? modelMeta.name : "Gemini AI"}:
+              </span>
+              <span className={hasGeminiKey ? "font-marker text-xs font-bold text-accent" : ""}>
+                {hasGeminiKey ? (modelMeta.tier === "free" ? "Free" : "Pro") : "Set Key"}
+              </span>
+            </button>
+          );
+        })()}
+
+        {/* Animated Database Connection Status Indicator */}
+        <div
+          title={
+            loading
+              ? "Checking PostgreSQL database connectivity..."
+              : isConnected
+              ? "PostgreSQL database connected and healthy"
+              : "PostgreSQL database offline or connection unreachable"
+          }
+          className={`flex items-center gap-2 px-2.5 py-1 rounded-md border-2 border-border text-[11px] font-mono font-bold shadow-neo-sm transition-all duration-300 ${
+            isConnected
+              ? "bg-emerald-50/80 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300"
+              : loading
+              ? "bg-surface-subtle text-text-muted"
+              : "bg-rose-50/80 dark:bg-rose-950/40 text-rose-800 dark:text-rose-300"
           }`}
         >
-          <Sparkles className="w-3.5 h-3.5 text-cyan-500" />
-          <span className="hidden lg:inline">Gemini AI:</span>
-          <span className={hasGeminiKey ? "font-marker text-xs font-bold" : ""}>
-            {hasGeminiKey ? "Active" : "Set Key"}
-          </span>
-        </button>
-
-        {/* Backend & DB Status Pill */}
-        <div
-          title={isConnected ? "PostgreSQL database connected" : "Database connection unavailable"}
-          className="flex items-center gap-1.5 px-2.5 py-1 rounded-md border-2 border-border bg-surface-subtle text-[11px] font-mono font-bold shadow-neo-sm"
-        >
-          <Database className="w-3 h-3 text-text-muted" />
-          <span className="text-text-secondary hidden md:inline">PostgreSQL:</span>
+          <Database
+            className={`w-3.5 h-3.5 ${
+              isConnected ? "text-emerald-600 dark:text-emerald-400" : "text-text-muted"
+            }`}
+          />
+          <span className="text-text-secondary hidden sm:inline">Database:</span>
           {loading ? (
-            <RefreshCw className="w-3 h-3 text-secondary animate-spin" />
+            <span className="flex items-center gap-1.5 text-text-muted">
+              <RefreshCw className="w-3 h-3 text-secondary animate-spin" />
+              <span>Checking</span>
+            </span>
           ) : isConnected ? (
-            <span className="flex items-center gap-1 text-emerald-700 dark:text-emerald-300">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
-              Connected
+            <span className="flex items-center gap-1.5 font-bold text-emerald-700 dark:text-emerald-300">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75 duration-1000" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+              </span>
+              <span>Connected</span>
             </span>
           ) : (
-            <span className="flex items-center gap-1 text-danger">
-              <span className="w-1.5 h-1.5 rounded-full bg-danger inline-block" />
-              Offline
+            <span className="flex items-center gap-1.5 font-bold text-rose-700 dark:text-rose-400">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-pulse absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75 duration-1000" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500" />
+              </span>
+              <span>Offline</span>
             </span>
           )}
         </div>

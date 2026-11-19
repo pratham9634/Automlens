@@ -2,10 +2,6 @@
 
 import { useEffect, useState } from "react";
 import {
-  Server,
-  Database,
-  Cpu,
-  BrainCircuit,
   Plus,
   RefreshCw,
   FolderOpen,
@@ -16,19 +12,21 @@ import { Project, SystemHealth } from "@/lib/types";
 import { CreateProjectModal } from "@/components/projects/create-project-modal";
 import { ProjectCard } from "@/components/projects/project-card";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
+import { AlertRow } from "@/components/ui/alert-row";
 
 export default function DashboardPage() {
   const [health, setHealth] = useState<SystemHealth | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
+    setErrorMessage(null);
     try {
       const [healthRes, projectsRes] = await Promise.allSettled([
         apiClient.getHealth(),
@@ -45,6 +43,12 @@ export default function DashboardPage() {
         setProjects(projectsRes.value.items);
       } else {
         setProjects([]);
+        const reason = projectsRes.reason;
+        setErrorMessage(
+          reason instanceof Error
+            ? reason.message
+            : "Failed to connect to backend service. Please check that FastAPI and PostgreSQL are running."
+        );
       }
     } finally {
       setLoading(false);
@@ -63,8 +67,6 @@ export default function DashboardPage() {
     setProjects((prev) => prev.filter((p) => p.id !== deletedId));
   };
 
-  const isDbConnected = health?.database.status === "connected";
-
   return (
     <div className="max-w-7xl mx-auto space-y-6">
       {/* Page Header */}
@@ -74,9 +76,6 @@ export default function DashboardPage() {
             <h1 className="font-display font-semibold tracking-tight text-xl sm:text-2xl text-text-primary">
               Workspace Overview
             </h1>
-            <span className="font-marker font-bold text-sm sm:text-base text-amber-500 dark:text-amber-400 -rotate-2">
-              ★ Active Telemetry
-            </span>
           </div>
           <p className="text-xs text-text-muted font-medium">
             Human-assisted tabular AutoML with fold-safe preprocessing, parallel CV, and SHAP explainability.
@@ -107,6 +106,29 @@ export default function DashboardPage() {
           </Button>
         </div>
       </div>
+
+      {/* Connection & Error Notice */}
+      {errorMessage && (
+        <AlertRow
+          variant="danger"
+          title="Backend Connection Notice"
+          className="flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+        >
+          <div className="flex-1">
+            <p className="text-xs font-medium text-text-primary">{errorMessage}</p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={fetchData}
+            disabled={loading}
+            className="font-bold flex-shrink-0 gap-1.5"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
+            <span>Retry Connection</span>
+          </Button>
+        </AlertRow>
+      )}
 
       {/* Projects Section */}
       <section className="space-y-3.5">
@@ -144,7 +166,7 @@ export default function DashboardPage() {
               <Skeleton key={i} className="h-44 rounded-card" />
             ))}
           </div>
-        ) : projects.length === 0 ? (
+        ) : projects.length === 0 && !errorMessage ? (
           /* Empty State */
           <EmptyState
             icon={FolderPlus}
@@ -173,92 +195,6 @@ export default function DashboardPage() {
             ))}
           </div>
         )}
-      </section>
-
-      {/* System Infrastructure Grid */}
-      <section className="space-y-3 pt-6 border-t-2 border-border">
-        <div className="flex items-center justify-between">
-          <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-text-muted">
-            System &amp; Infrastructure Status
-          </h3>
-          <span className="text-[11px] font-mono font-bold text-text-subtle">
-            Single-Node Parallel Architecture
-          </span>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
-          {/* API Gateway Card */}
-          <Card accentTop="azure" className="p-4 space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-text-primary">API Gateway</span>
-              <Server className="w-3.5 h-3.5 text-accent" />
-            </div>
-            <div>
-              <p className="text-[11px] text-text-muted font-medium">FastAPI / Pydantic v2</p>
-            </div>
-            <div className="pt-2 border-t-2 border-border flex items-center justify-between text-[11px] font-mono">
-              <span className="text-text-subtle">Port:</span>
-              <span className="text-text-primary font-bold tabular-nums">8000</span>
-            </div>
-          </Card>
-
-          {/* Database Card */}
-          <Card accentTop="cyan" className="p-4 space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-text-primary">Metadata Storage</span>
-              <Database className="w-3.5 h-3.5 text-success" />
-            </div>
-            <div>
-              <p className="text-[11px] text-text-muted font-medium">PostgreSQL 16 / SQLAlchemy</p>
-            </div>
-            <div className="pt-2 border-t-2 border-border flex items-center justify-between text-[11px] font-mono">
-              <span className="text-text-subtle">Status:</span>
-              {isDbConnected ? (
-                <span className="text-emerald-700 dark:text-emerald-300 font-bold flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
-                  Connected
-                </span>
-              ) : (
-                <span className="text-danger font-bold flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-danger inline-block" />
-                  Disconnected
-                </span>
-              )}
-            </div>
-          </Card>
-
-          {/* Concurrency Card */}
-          <Card accentTop="cyan" className="p-4 space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-text-primary">Parallel Workers</span>
-              <Cpu className="w-3.5 h-3.5 text-info" />
-            </div>
-            <div>
-              <p className="text-[11px] text-text-muted font-medium">ProcessPoolExecutor</p>
-            </div>
-            <div className="pt-2 border-t-2 border-border flex items-center justify-between text-[11px] font-mono">
-              <span className="text-text-subtle">Concurrency:</span>
-              <span className="text-text-primary font-bold tabular-nums">
-                {health?.workers ?? 4} CPU Cores
-              </span>
-            </div>
-          </Card>
-
-          {/* Hybrid Decision Engine Card */}
-          <Card accentTop="indigo" className="p-4 space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-text-primary">AI Decision Engine</span>
-              <BrainCircuit className="w-3.5 h-3.5 text-accent" />
-            </div>
-            <div>
-              <p className="text-[11px] text-text-muted font-medium">Deterministic + LLM Rationale</p>
-            </div>
-            <div className="pt-2 border-t-2 border-border flex items-center justify-between text-[11px] font-mono">
-              <span className="text-text-subtle">Mode:</span>
-              <span className="text-accent font-bold">Hybrid AI</span>
-            </div>
-          </Card>
-        </div>
       </section>
 
       {/* Creation Modal */}

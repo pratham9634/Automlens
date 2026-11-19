@@ -39,6 +39,14 @@ export function AiReasoningTerminal({
   const terminalEndRef = useRef<HTMLDivElement>(null);
   const [activeTab, setActiveTab] = useState<"stream" | "features" | "cleaning">("stream");
   const [cleaningFilter, setCleaningFilter] = useState<string>("all");
+  const [activeModel, setActiveModel] = useState<string>("gemini-2.0-flash");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const model = localStorage.getItem("automlens_gemini_model") || "gemini-2.0-flash";
+      setActiveModel(model);
+    }
+  }, []);
 
   // Auto-scroll to bottom of reasoning stream
   useEffect(() => {
@@ -97,7 +105,7 @@ export function AiReasoningTerminal({
             AutoMLens AI Terminal
           </span>
           <span className="text-[11px] font-marker font-bold px-2.5 py-0.5 rounded-md bg-cyan-950/80 text-cyan-300 border-2 border-border shadow-[2px_2px_0px_0px_#000]">
-            ★ {provider === "gemini" ? "Gemini 2.0 Flash Copilot" : provider === "ollama" ? "Ollama: qwen2.5:3b" : provider.toUpperCase()}
+            ★ {provider === "gemini" ? `Gemini (${activeModel}) Copilot` : provider === "ollama" ? "Ollama: qwen2.5:3b" : provider.toUpperCase()}
           </span>
         </div>
 

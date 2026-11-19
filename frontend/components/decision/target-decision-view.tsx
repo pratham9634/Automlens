@@ -56,6 +56,14 @@ export function TargetDecisionView({
   const [streamingTokens, setStreamingTokens] = useState("");
   const [streamNotice, setStreamNotice] = useState<string | null>(null);
   const [activeProvider, setActiveProvider] = useState<string>("gemini");
+  const [activeGeminiModel, setActiveGeminiModel] = useState<string>("gemini-2.0-flash");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const model = localStorage.getItem("automlens_gemini_model") || "gemini-2.0-flash";
+      setActiveGeminiModel(model);
+    }
+  }, []);
 
   const [confirmedTarget, setConfirmedTarget] = useState<ConfirmedTargetResponse | null>(null);
 
@@ -350,7 +358,7 @@ export function TargetDecisionView({
         <AiReasoningTerminal
           tokens={streamingTokens}
           isStreaming={isStreaming}
-          statusMessage="Google Gemini (2.0 Flash) formulating strategy..."
+          statusMessage={`Google Gemini (${activeGeminiModel}) formulating strategy...`}
           provider={activeProvider}
           notice={streamNotice}
           engineeredFeatures={decision?.engineered_features || []}

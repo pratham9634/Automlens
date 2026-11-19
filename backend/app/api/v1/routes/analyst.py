@@ -1,11 +1,11 @@
 """FastAPI route handlers for the Tabular AI Analyst copilot."""
 
-from fastapi import APIRouter, Depends, Header, status
+from fastapi import APIRouter, Depends, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from app.api.v1.schemas.analyst import ChatRequest, ChatSuggestion
-from app.core.auth import get_current_user, get_gemini_api_key
+from app.core.auth import get_current_user, get_gemini_api_key, get_gemini_model
 from app.db.session import get_db
 from app.services.analyst import AnalystService
 
@@ -38,6 +38,7 @@ async def chat_with_analyst(
     db: Session = Depends(get_db),
     current_user: str = Depends(get_current_user),
     gemini_key: str | None = Depends(get_gemini_api_key),
+    gemini_model: str = Depends(get_gemini_model),
 ) -> StreamingResponse:
     """Stream token-by-token responses from Gemini 2.0 Flash or deterministic engine."""
     service = AnalystService(db)
@@ -46,6 +47,7 @@ async def chat_with_analyst(
         question=request.message,
         history=request.history,
         gemini_api_key=gemini_key,
+        gemini_model=gemini_model,
     )
     return StreamingResponse(
         stream_generator,
