@@ -87,7 +87,7 @@ export function DialogContent({
         role="dialog"
         aria-modal="true"
         className={cn(
-          "relative z-50 w-full max-w-lg rounded-dialog border-2 border-border bg-surface p-6 shadow-neo-lg transition-all duration-150 animate-in fade-in-0 zoom-in-95",
+          "relative z-50 w-[94vw] sm:w-full max-w-lg max-h-[88dvh] overflow-y-auto rounded-dialog border-2 border-border bg-surface p-4 sm:p-6 shadow-neo-lg transition-all duration-150 animate-in fade-in-0 zoom-in-95",
           className
         )}
       >

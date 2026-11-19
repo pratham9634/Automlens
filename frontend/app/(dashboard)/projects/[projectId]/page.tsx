@@ -23,10 +23,21 @@ import {
   CheckCircle2,
   ChevronRight,
   ShieldCheck,
+  AlertTriangle,
 } from "lucide-react";
 import { apiClient, ApiClientError } from "@/lib/api-client";
 import { DatasetPreviewResponse, DatasetProfileResponse, Project } from "@/lib/types";
 import { formatDate } from "@/lib/utils";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { DatasetUploadZone } from "@/components/dataset/dataset-upload-zone";
 import { DatasetPreviewTable } from "@/components/dataset/dataset-preview-table";
 import { StatisticalProfileView } from "@/components/dataset/statistical-profile-view";
@@ -101,6 +112,15 @@ export default function ProjectWorkspacePage() {
   const [cloning, setCloning] = useState(false);
   const [selectedPredictModelId, setSelectedPredictModelId] = useState<string | null>(null);
 
+  // Modal dialog states
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [resetError, setResetError] = useState<string | null>(null);
+  const [showCloneModal, setShowCloneModal] = useState(false);
+  const [cloneName, setCloneName] = useState("");
+  const [cloneError, setCloneError] = useState<string | null>(null);
+
   const fetchWorkspaceData = async () => {
     setLoading(true);
     setError(null);
@@ -152,69 +172,65 @@ export default function ProjectWorkspacePage() {
       setProject((prev) => (prev ? { ...prev, status: "profiled" } : null));
       setDatasetSubTab("profile");
     } catch (err) {
-      alert(
-        err instanceof Error
-          ? err.message
-          : "Failed to run statistical profiling."
-      );
+      console.error("Profiling error:", err);
     } finally {
       setProfilingLoading(false);
     }
   };
 
-  const handleResetRun = async () => {
+  const handleResetRunConfirm = async () => {
     if (!project) return;
-    if (
-      !window.confirm(
-        `Are you sure you want to reset training runs and target configuration for "${project.name}"?\n\nThe uploaded dataset will be preserved.`
-      )
-    ) {
-      return;
-    }
-
     setResetting(true);
+    setResetError(null);
     try {
       const updated = await apiClient.resetProject(project.id);
       setProject(updated);
       setActiveTab("dataset");
-      alert("Workspace training runs reset successfully.");
+      setShowResetModal(false);
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to reset workspace");
+      setResetError(err instanceof Error ? err.message : "Failed to reset workspace");
     } finally {
       setResetting(false);
     }
   };
 
-  const handleCloneProject = async () => {
+  const handleOpenCloneModal = () => {
     if (!project) return;
-    const newName = window.prompt(
-      `Enter name for the cloned workspace:`,
-      `${project.name} (Clone)`
-    );
-    if (!newName || !newName.trim()) return;
+    setCloneName(`${project.name} (Clone)`);
+    setCloneError(null);
+    setShowCloneModal(true);
+  };
+
+  const handleCloneConfirm = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!project || !cloneName.trim()) return;
 
     setCloning(true);
+    setCloneError(null);
     try {
-      const cloned = await apiClient.cloneProject(project.id, newName.trim());
+      const cloned = await apiClient.cloneProject(project.id, cloneName.trim());
+      setShowCloneModal(false);
       router.push(`/projects/${cloned.id}`);
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to clone workspace");
+      setCloneError(err instanceof Error ? err.message : "Failed to clone workspace");
+    } finally {
       setCloning(false);
     }
   };
 
-  const handleDelete = async () => {
+  const handleDeleteConfirm = async () => {
     if (!project) return;
-    if (!window.confirm(`Are you sure you want to delete workspace "${project.name}"?`)) {
-      return;
-    }
-
     setDeleting(true);
+    setDeleteError(null);
     try {
       await apiClient.deleteProject(project.id);
-      router.push("/");
-    } catch {
-      alert("Failed to delete project. Please check backend connection.");
+      setShowDeleteModal(false);
+      router.push("/dashboard");
+    } catch (err) {
+      setDeleteError(
+        err instanceof Error ? err.message : "Failed to delete project. Please check backend connection."
+      );
+    } finally {
       setDeleting(false);
     }
   };
@@ -239,7 +255,7 @@ export default function ProjectWorkspacePage() {
           <p className="text-xs text-ink-muted">{error || "The requested workspace does not exist."}</p>
         </div>
         <Link
-          href="/"
+          href="/dashboard"
           className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-surface-2 hover:bg-surface-3 border border-hairline text-xs font-medium text-ink transition-colors"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
@@ -259,7 +275,7 @@ export default function ProjectWorkspacePage() {
       {/* Top Navigation & Workspace Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <Link
-          href="/"
+          href="/dashboard"
           className="inline-flex items-center gap-2 text-xs font-bold text-text-muted hover:text-text-primary transition-colors"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
@@ -278,45 +294,40 @@ export default function ProjectWorkspacePage() {
           </button>
 
           <button
-            onClick={handleCloneProject}
+            onClick={handleOpenCloneModal}
             disabled={cloning}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border-2 border-border bg-surface hover:bg-surface-subtle text-xs font-mono font-bold text-text-primary shadow-neo-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-neo active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all cursor-pointer"
             title="Clone this workspace configuration and dataset"
           >
-            {cloning ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            ) : (
-              <Copy className="w-3.5 h-3.5 text-text-muted" />
-            )}
+            <Copy className="w-3.5 h-3.5 text-text-muted" />
             <span>Clone</span>
           </button>
 
           {isTrainingReady && (
             <button
-              onClick={handleResetRun}
+              onClick={() => {
+                setResetError(null);
+                setShowResetModal(true);
+              }}
               disabled={resetting}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border-2 border-border bg-amber-100 dark:bg-amber-950/60 hover:bg-amber-200 text-xs font-mono font-bold text-amber-900 dark:text-amber-200 shadow-neo-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-neo active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all cursor-pointer"
               title="Reset training models while keeping dataset"
             >
-              {resetting ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              ) : (
-                <RotateCcw className="w-3.5 h-3.5" />
-              )}
+              <RotateCcw className="w-3.5 h-3.5" />
               <span>Reset Run</span>
             </button>
           )}
 
           <button
-            onClick={handleDelete}
+            onClick={() => {
+              setDeleteError(null);
+              setShowDeleteModal(true);
+            }}
             disabled={deleting}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border-2 border-border bg-rose-100 dark:bg-rose-950/60 hover:bg-rose-200 text-xs font-mono font-bold text-rose-900 dark:text-rose-200 shadow-neo-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-neo active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all cursor-pointer"
+            title="Delete this workspace"
           >
-            {deleting ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            ) : (
-              <Trash2 className="w-3.5 h-3.5" />
-            )}
+            <Trash2 className="w-3.5 h-3.5" />
             <span>Delete</span>
           </button>
         </div>
@@ -349,7 +360,7 @@ export default function ProjectWorkspacePage() {
 
       {/* 5-Stage Guided Pipeline Progress Stepper */}
       <div className="space-y-3">
-        <div className="grid grid-cols-1 sm:grid-cols-5 gap-2.5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2.5">
           {pipelineSteps.map((step) => {
             const Icon = step.icon;
             const isCurrent =
@@ -717,6 +728,214 @@ export default function ProjectWorkspacePage() {
 
       {/* Floating Tabular AI Analyst Trigger & Drawer */}
       <AnalystTrigger projectId={project.id} />
+
+      {/* Explicit Delete Confirmation Dialog */}
+      <Dialog
+        open={showDeleteModal}
+        onOpenChange={(open) => {
+          if (!deleting) {
+            setShowDeleteModal(open);
+            if (!open) setDeleteError(null);
+          }
+        }}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <div className="flex items-center gap-2 text-danger mb-1">
+              <div className="w-8 h-8 rounded-md bg-rose-100 dark:bg-rose-950/80 border-2 border-border shadow-neo-sm flex items-center justify-center text-danger shrink-0">
+                <AlertTriangle className="w-4 h-4 text-rose-600 dark:text-rose-400" />
+              </div>
+              <DialogTitle className="text-base font-bold text-text-primary">
+                Delete Project Workspace
+              </DialogTitle>
+            </div>
+            <DialogDescription className="text-xs text-text-muted">
+              Are you sure you want to delete <span className="font-bold text-text-primary">&quot;{project.name}&quot;</span>?
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="text-xs text-text-secondary bg-surface-subtle border-2 border-border p-3.5 rounded-card leading-relaxed my-2 space-y-1.5">
+            <p className="font-bold text-rose-700 dark:text-rose-400 flex items-center gap-1.5">
+              <span>⚠️ Permanent Action</span>
+            </p>
+            <p>
+              This will permanently delete this workspace, including all uploaded dataset files, statistical profiles, model pipelines, 5-fold CV weights, predictions, and the immutable PostgreSQL audit ledger.
+            </p>
+          </div>
+
+          {deleteError && (
+            <div className="text-xs text-danger bg-danger/10 border-2 border-danger/30 p-2.5 rounded-md font-medium my-1">
+              {deleteError}
+            </div>
+          )}
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => {
+                setShowDeleteModal(false);
+                setDeleteError(null);
+              }}
+              disabled={deleting}
+              className="font-bold"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="danger"
+              onClick={handleDeleteConfirm}
+              isLoading={deleting}
+              className="gap-1.5 font-bold"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Delete Workspace</span>
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Explicit Reset Confirmation Dialog */}
+      <Dialog
+        open={showResetModal}
+        onOpenChange={(open) => {
+          if (!resetting) {
+            setShowResetModal(open);
+            if (!open) setResetError(null);
+          }
+        }}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 mb-1">
+              <div className="w-8 h-8 rounded-md bg-amber-100 dark:bg-amber-950/80 border-2 border-border shadow-neo-sm flex items-center justify-center text-amber-600 dark:text-amber-400 shrink-0">
+                <RotateCcw className="w-4 h-4" />
+              </div>
+              <DialogTitle className="text-base font-bold text-text-primary">
+                Reset Workspace Training Runs
+              </DialogTitle>
+            </div>
+            <DialogDescription className="text-xs text-text-muted">
+              Reset model training runs and target configuration for <span className="font-bold text-text-primary">&quot;{project.name}&quot;</span>.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="text-xs text-text-secondary bg-surface-subtle border-2 border-border p-3.5 rounded-card leading-relaxed my-2 space-y-1.5">
+            <p className="font-bold text-emerald-700 dark:text-emerald-400">
+              ✓ Ingested dataset &amp; profile will be preserved.
+            </p>
+            <p>
+              Trained models, 5-fold cross-validation metrics, predictions, and SHAP explainability caches will be cleared so you can re-configure targets or re-train fresh candidate models.
+            </p>
+          </div>
+
+          {resetError && (
+            <div className="text-xs text-danger bg-danger/10 border-2 border-danger/30 p-2.5 rounded-md font-medium my-1">
+              {resetError}
+            </div>
+          )}
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => {
+                setShowResetModal(false);
+                setResetError(null);
+              }}
+              disabled={resetting}
+              className="font-bold"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="primary"
+              onClick={handleResetRunConfirm}
+              isLoading={resetting}
+              className="gap-1.5 font-bold"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>Reset Runs</span>
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Explicit Clone Workspace Dialog */}
+      <Dialog
+        open={showCloneModal}
+        onOpenChange={(open) => {
+          if (!cloning) {
+            setShowCloneModal(open);
+            if (!open) setCloneError(null);
+          }
+        }}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <div className="flex items-center gap-2 mb-1">
+              <div className="w-8 h-8 rounded-md bg-sky-100 dark:bg-sky-950/80 border-2 border-border shadow-neo-sm flex items-center justify-center text-accent shrink-0">
+                <Copy className="w-4 h-4" />
+              </div>
+              <DialogTitle className="text-base font-bold text-text-primary">
+                Clone Workspace
+              </DialogTitle>
+            </div>
+            <DialogDescription className="text-xs text-text-muted">
+              Create a duplicate of <span className="font-bold text-text-primary">&quot;{project.name}&quot;</span> with the same dataset and configuration.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleCloneConfirm} className="space-y-4">
+            <div className="space-y-1.5">
+              <label htmlFor="clone-workspace-name" className="text-xs font-bold text-text-primary">
+                New Workspace Name
+              </label>
+              <Input
+                id="clone-workspace-name"
+                value={cloneName}
+                onChange={(e) => setCloneName(e.target.value)}
+                placeholder="Workspace name..."
+                required
+                className="text-xs"
+              />
+            </div>
+
+            {cloneError && (
+              <div className="text-xs text-danger bg-danger/10 border-2 border-danger/30 p-2.5 rounded-md font-medium my-1">
+                {cloneError}
+              </div>
+            )}
+
+            <DialogFooter className="gap-2 sm:gap-0">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => {
+                  setShowCloneModal(false);
+                  setCloneError(null);
+                }}
+                disabled={cloning}
+                className="font-bold"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                variant="primary"
+                disabled={cloning || !cloneName.trim()}
+                isLoading={cloning}
+                className="gap-1.5 font-bold"
+              >
+                <Copy className="w-3.5 h-3.5" />
+                <span>Clone Workspace</span>
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -178,18 +178,19 @@ export function BYOKModal({ isOpen, onClose, onKeyUpdated }: BYOKModalProps) {
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-xl max-h-[90vh] flex flex-col bg-surface border-2 border-border p-5 sm:p-6 shadow-neo rounded-xl overflow-hidden">
         <DialogHeader className="space-y-1.5 flex-shrink-0">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-cyan-500/10 border-2 border-border flex items-center justify-center text-cyan-500 shadow-[1px_1px_0px_0px_var(--neo-shadow-color)]">
+              <div className="w-8 h-8 rounded-lg bg-cyan-500/10 border-2 border-border flex items-center justify-center text-cyan-500 shadow-[1px_1px_0px_0px_var(--neo-shadow-color)] shrink-0">
                 <Sparkles className="w-4 h-4" />
               </div>
-              <DialogTitle className="text-base font-semibold text-text-primary">
+              <DialogTitle className="text-sm sm:text-base font-semibold text-text-primary">
                 Google Gemini API &amp; Model Selection
               </DialogTitle>
             </div>
             <Badge
               variant={activeModelMeta.tier === "free" ? "success" : "warning"}
               size="sm"
+              className="self-start sm:self-auto"
             >
               {activeModelMeta.tierLabel}
             </Badge>
@@ -231,9 +232,9 @@ export function BYOKModal({ isOpen, onClose, onKeyUpdated }: BYOKModalProps) {
 
           {/* Model Selection Header & Filter Tabs */}
           <div className="space-y-2 pt-2 border-t-2 border-border">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div className="flex items-center gap-1.5">
-                <Cpu className="w-3.5 h-3.5 text-accent" />
+                <Cpu className="w-3.5 h-3.5 text-accent shrink-0" />
                 <span className="text-xs font-bold text-text-primary">
                   Choose Gemini Model
                 </span>
@@ -243,7 +244,7 @@ export function BYOKModal({ isOpen, onClose, onKeyUpdated }: BYOKModalProps) {
               </div>
 
               {/* Filter Tabs */}
-              <div className="flex items-center gap-1 bg-surface-subtle p-0.5 rounded-md border border-border text-[10px] font-mono">
+              <div className="flex items-center gap-1 bg-surface-subtle p-0.5 rounded-md border border-border text-[10px] font-mono self-start sm:self-auto">
                 <button
                   type="button"
                   onClick={() => setFilterTier("all")}
@@ -366,27 +367,27 @@ export function BYOKModal({ isOpen, onClose, onKeyUpdated }: BYOKModalProps) {
         </div>
 
         {/* Footer Actions */}
-        <div className="flex items-center justify-between pt-3 border-t-2 border-border flex-shrink-0 mt-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between pt-3 border-t-2 border-border flex-shrink-0 mt-3 gap-2.5">
           {savedKey ? (
             <Button
               type="button"
               variant="ghost"
               onClick={handleClear}
-              className="text-xs text-danger hover:text-danger hover:bg-danger/10 gap-1.5 h-8 px-2.5 font-bold"
+              className="text-xs text-danger hover:text-danger hover:bg-danger/10 gap-1.5 h-8 px-2.5 font-bold w-full sm:w-auto"
             >
               <Trash2 className="w-3.5 h-3.5" />
               Remove Key
             </Button>
           ) : (
-            <div />
+            <div className="hidden sm:block" />
           )}
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
             <Button
               type="button"
               variant="secondary"
               onClick={onClose}
-              className="text-xs h-8 px-3"
+              className="text-xs h-8 px-3 flex-1 sm:flex-initial"
             >
               Cancel
             </Button>
@@ -394,7 +395,7 @@ export function BYOKModal({ isOpen, onClose, onKeyUpdated }: BYOKModalProps) {
               type="button"
               variant="primary"
               onClick={handleSave}
-              className="text-xs h-8 px-3 gap-1.5"
+              className="text-xs h-8 px-3 gap-1.5 flex-1 sm:flex-initial"
             >
               {isSaved ? (
                 <>

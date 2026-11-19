@@ -88,28 +88,28 @@ export function ProjectCard({ project, onDeleted }: ProjectCardProps) {
         </div>
 
         {/* Card Footer */}
-        <div className="pt-3 border-t-2 border-border flex items-center justify-between text-xs">
-          <div className="flex items-center gap-1.5 text-text-muted text-[11px] font-mono tabular-nums">
-            <Calendar className="w-3.5 h-3.5 text-text-subtle" />
-            <span>{formatDate(project.created_at)}</span>
+        <div className="pt-3 border-t-2 border-border flex items-center justify-between text-xs gap-2">
+          <div className="flex items-center gap-1.5 text-text-muted text-[11px] font-mono tabular-nums min-w-0">
+            <Calendar className="w-3.5 h-3.5 text-text-subtle shrink-0" />
+            <span className="truncate">{formatDate(project.created_at)}</span>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             {/* Delete Trigger Button */}
             <Button
               variant="ghost"
               size="icon"
               onClick={() => setShowDeleteDialog(true)}
               title={`Delete ${project.name}`}
-              className="text-text-muted hover:text-danger hover:border-border hover:bg-rose-100 dark:hover:bg-rose-950/40"
+              className="text-text-muted hover:text-danger hover:border-border hover:bg-rose-100 dark:hover:bg-rose-950/40 w-8 h-8"
             >
               <Trash2 className="w-3.5 h-3.5" />
             </Button>
 
             {/* Open Project Workspace */}
             <Link href={`/projects/${project.id}`}>
-              <Button variant="secondary" size="sm" className="gap-1.5 font-bold">
-                <span className="font-marker text-sm">Open Track</span>
+              <Button variant="secondary" size="sm" className="gap-1.5 font-bold h-8 text-xs">
+                <span className="font-marker text-xs sm:text-sm">Open Track</span>
                 <ArrowRight className="w-3 h-3 text-text-muted" />
               </Button>
             </Link>
