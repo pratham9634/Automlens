@@ -56,7 +56,7 @@ export function FeaturesSection() {
         <div className="text-center max-w-3xl mx-auto mb-16">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border-2 border-border bg-white dark:bg-surface shadow-neo-sm text-xs font-mono font-bold text-accent mb-3">
             <Layers className="w-3.5 h-3.5" />
-            <span>CHAPTER 04 // THE ARCHITECT&apos;S OPEN TOOLBELT</span>
+            <span>ENGINEERING SUITE // THE ARCHITECT&apos;S OPEN TOOLBELT</span>
             <span className="font-marker text-sm font-bold text-amber-500 dark:text-amber-400 -rotate-2 ml-1">
               ★ 4 Tangible Instruments
             </span>
@@ -307,10 +307,10 @@ export function FeaturesSection() {
                   </div>
                   <div>
                     <span className="text-[10px] font-mono uppercase tracking-wider text-text-muted font-bold block">
-                      INSTRUMENT 04 // LIVE SCENARIO CONSOLE
+                      INSTRUMENT 04 // SINGLE-RECORD INFERENCE
                     </span>
                     <h3 className="font-display text-lg font-bold text-text-primary">
-                      What-If Live Simulator
+                      Interactive Single-Record Prediction
                     </h3>
                   </div>
                 </div>

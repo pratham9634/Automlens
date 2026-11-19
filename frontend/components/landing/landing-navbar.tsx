@@ -51,17 +51,17 @@ export function LandingNavbar() {
 
         {/* Navigation Anchors */}
         <nav className="hidden md:flex items-center gap-6 text-xs font-mono font-bold text-text-secondary">
+          <a href="#dataset-metamorphosis-runway" className="hover:text-text-primary transition-colors cursor-pointer text-accent">
+            {"//"} The Journey
+          </a>
           <a href="#sketchbook" className="hover:text-text-primary transition-colors cursor-pointer">
-            {"//"} Sketchbook
+            {"//"} Principles
           </a>
           <a href="#example" className="hover:text-text-primary transition-colors cursor-pointer">
-            {"//"} Live Demo
+            {"//"} Interactive Demo
           </a>
           <a href="#features" className="hover:text-text-primary transition-colors cursor-pointer">
-            {"//"} Features
-          </a>
-          <a href="#pipeline" className="hover:text-text-primary transition-colors cursor-pointer">
-            {"//"} Pipeline
+            {"//"} Engineering Suite
           </a>
         </nav>
 
@@ -73,9 +73,9 @@ export function LandingNavbar() {
           <Show when="signed-out">
             <SignInButton mode="modal">
               <Button
-                variant="outline"
+                variant="ghost"
                 size="sm"
-                className="text-xs font-mono font-bold h-8.5 px-3"
+                className="text-xs font-mono font-bold h-8.5 px-3 hover:bg-surface text-text-secondary hover:text-text-primary"
               >
                 Sign In
               </Button>
@@ -84,7 +84,7 @@ export function LandingNavbar() {
             <Link href="/sign-in">
               <Button
                 size="sm"
-                className="text-xs font-mono font-bold h-8.5 px-3.5 bg-accent text-white"
+                className="text-xs font-mono font-bold h-8.5 px-3.5 bg-accent text-white shadow-neo-sm hover:shadow-neo transition-all"
               >
                 <span>Get Started</span>
                 <ArrowRight className="w-3.5 h-3.5 ml-1" />

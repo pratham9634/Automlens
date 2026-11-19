@@ -53,8 +53,8 @@ export function HeroSection() {
           transition={{ duration: 6, repeat: Infinity, ease: "easeInOut", delay: 1 }}
         >
           <SketchStamp
-            label="AI DATA ANALYST"
-            sublabel="Chat & Plan with Gemini"
+            label="AI DECISION ENGINE"
+            sublabel="Hybrid Heuristic Rationale"
             color="border-purple-500 text-purple-600 dark:border-purple-400 dark:text-purple-300"
             rotation="rotate-6"
           />
@@ -75,7 +75,7 @@ export function HeroSection() {
             className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border-2 border-border bg-pastel-cyan dark:bg-cyan-950/70 text-slate-900 dark:text-cyan-200 text-xs font-mono font-bold shadow-neo-sm cursor-default"
           >
             <Sparkles className="w-3.5 h-3.5 text-accent animate-pulse" />
-            <span>CHAPTER 01 // NO-CODE AUTOMATED MACHINE LEARNING</span>
+            <span>PLATFORM // NO-CODE AUTOMATED MACHINE LEARNING</span>
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
           </motion.div>
           <MarkerBadge className="text-sm sm:text-base text-amber-500 dark:text-amber-400 font-bold ml-1" rotation="-rotate-3">
@@ -154,7 +154,7 @@ export function HeroSection() {
         >
           {[
             { icon: ShieldCheck, label: "Zero Code Required", color: "text-emerald-500" },
-            { icon: Sparkles, label: "AI Data Analyst Assistant", color: "text-accent" },
+            { icon: Sparkles, label: "AI Decision Engine & Rationale", color: "text-accent" },
             { icon: Cpu, label: "ELI5 Plain-English Explanations", color: "text-amber-500" },
             { icon: Terminal, label: "1-Click Predictions & Exports", color: "text-cyan-500" },
           ].map((item, idx) => {

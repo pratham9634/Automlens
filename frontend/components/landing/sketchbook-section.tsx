@@ -33,25 +33,25 @@ const sketchNotes: SketchNote[] = [
     color: "bg-[#FFF9C4] text-amber-950 border-[#FBC02D]", // Sticky Yellow
     darkColor: "dark:bg-amber-950/70 dark:text-amber-100 dark:border-amber-600/50",
     rotation: -2.5,
-    annotation: "Messy columns? Missing numbers? Fixed automatically in seconds.",
+    annotation: "Messy columns? Missing numbers? Safely diagnosed & imputed inside folds.",
     summary:
-      "You don't need to learn Python or pandas data cleaning scripts. Simply drag and drop your raw Excel or CSV spreadsheet. AutoMLens scans every column, detects missing values, repairs messy data, and prepares a pristine training set behind the scenes.",
+      "You don't need to learn Python or pandas data cleaning scripts. Simply drag and drop your raw Excel or CSV spreadsheet. AutoMLens profiles every column, detects missing values, isolates outliers without auto-deleting, and prepares a pristine training set inside each fold.",
     codeSnippet: "// 📂 Uploaded: Sales_Q4_2024.xlsx (8,420 rows)\n✓ Detected: 12 numeric, 4 text categories\n✓ Repaired: 142 missing values handled safely\n✓ Status: 100% clean & ready for model training!",
     stamp: "100% NO-CODE",
     stampColor: "border-emerald-600 text-emerald-700 dark:border-emerald-400 dark:text-emerald-300",
   },
   {
     id: "ai-analyst",
-    title: "2. Chat with Your AI Analyst",
-    badge: "Built-In AI Assistant",
+    title: "2. AI Decision Rationale",
+    badge: "Heuristic + LLM Reasoning",
     color: "bg-[#E1F5FE] text-sky-950 border-[#81D4FA]", // Sticky Blue
     darkColor: "dark:bg-sky-950/70 dark:text-sky-100 dark:border-sky-600/50",
     rotation: 1.8,
-    annotation: "Ask questions in plain English: 'Which factors drive customer churn?'",
+    annotation: "Inspect the engineering rationale behind task and algorithm selections.",
     summary:
-      "Meet your 24/7 AI Data Analyst. Ask questions about your dataset in conversational language. It analyzes hidden correlations, translates complex statistics into plain English, and guides you on the best target column to predict.",
-    codeSnippet: "👤 User: \"Which factors impact customer renewals most?\"\n🤖 AI Analyst: \"Monthly fees and contract tenure have\nthe strongest influence. Let's predict 'Renewed'\nwith an automated model tournament!\"",
-    stamp: "AI ASSISTANT",
+      "No black boxes. AutoMLens combines a deterministic rule engine (100% offline reproducible for viva defense) with optional LLM reasoning to explain why specific candidate algorithms, encodings, and metrics were chosen for your data scale.",
+    codeSnippet: "// 💡 Decision Engine Reasoning\n→ Target: 'Renewed' (Binary)\n→ Selected: Classification (Macro F1)\n→ Rationale: Class distribution is 73/27; tree ensembles with balanced scoring recommended.",
+    stamp: "AI RATIONALE",
     stampColor: "border-purple-600 text-purple-700 dark:border-purple-400 dark:text-purple-300",
   },
   {
@@ -96,7 +96,7 @@ export function SketchbookSection() {
         <div className="text-center max-w-3xl mx-auto mb-16">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border-2 border-border bg-white dark:bg-surface shadow-neo-sm text-xs font-mono font-bold text-accent mb-3">
             <Bookmark className="w-3.5 h-3.5" />
-            <span>CHAPTER 02 // FROM SPREADSHEET TO SOLUTION</span>
+            <span>ARCHITECTURAL PRINCIPLES // ZERO-CODE MACHINE LEARNING</span>
             <span className="font-marker text-sm font-bold text-amber-500 dark:text-amber-400 -rotate-3 ml-1">★ No Code Needed</span>
           </div>
 
