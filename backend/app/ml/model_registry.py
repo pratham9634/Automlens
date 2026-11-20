@@ -233,16 +233,57 @@ def get_candidate_models(
     else:
         default_ids.update(["ridge", "random_forest", "hist_gradient_boosting", "extra_trees"])
 
-    # Intent-driven adjustments
-    if any(k in obj_lower for k in ("neural", "deep", "mlp")):
+    # Intent-driven adjustments based on user prompt objective
+    interpretable_keys = ("interpretable", "explainable", "simple", "linear", "transparent")
+    if any(k in obj_lower for k in interpretable_keys):
+        # User requested interpretable models: prioritize linear models and drop complex ensembles
+        default_ids = {
+            "dummy_classifier" if is_classification else "dummy_regressor",
+            "logistic_regression" if is_classification else "ridge",
+            "ridge_classifier" if is_classification else "lasso",
+        }
+        if not is_classification:
+            default_ids.add("elastic_net")
+
+    elif any(
+        k in obj_lower
+        for k in ("accuracy", "best", "boost", "performance", "high score", "win")
+    ):
+        # User wants maximum performance: load top tree ensembles and gradient boosters
+        default_ids.update(
+            ["random_forest", "hist_gradient_boosting", "lightgbm", "xgboost", "extra_trees"]
+        )
+
+    elif any(k in obj_lower for k in ("fast", "light", "scalable", "speed", "quick")):
+        # Fast iteration suite
+        default_ids = {
+            "dummy_classifier" if is_classification else "dummy_regressor",
+            "logistic_regression" if is_classification else "ridge",
+            "lightgbm",
+        }
+
+    # Specific model keyword mentions in user prompt
+    if any(k in obj_lower for k in ("neural", "deep", "mlp", "network")):
         default_ids.add("mlp_classifier" if is_classification else "mlp_regressor")
 
-    if any(k in obj_lower for k in ("fast", "light", "scalable")) or n_rows > 10000:
+    if any(k in obj_lower for k in ("lightgbm", "lgbm")):
         default_ids.add("lightgbm")
+
+    if any(k in obj_lower for k in ("xgboost", "xgb")):
         default_ids.add("xgboost")
 
-    if any(k in obj_lower for k in ("sparse", "lasso", "shrinkage")) and not is_classification:
+    if any(k in obj_lower for k in ("knn", "neighbor")):
+        default_ids.add("k_nearest_neighbors")
+
+    if any(k in obj_lower for k in ("svm", "svc", "support vector")):
+        default_ids.add("linear_svc" if is_classification else "svr")
+
+    has_sparse_key = any(k in obj_lower for k in ("sparse", "lasso", "l1", "shrinkage"))
+    if has_sparse_key and not is_classification:
         default_ids.add("lasso")
+
+    if any(k in obj_lower for k in ("adaboost", "ada boost")) and is_classification:
+        default_ids.add("adaboost")
 
     candidates: list[ModelCandidate] = []
     for model_id, meta in registry.items():

@@ -10,7 +10,7 @@ import pandas as pd
 from pydantic import BaseModel, Field
 
 
-class TaskType(str, Enum):
+class TaskType(str, Enum):  # noqa: UP042
     """Supported machine learning task types."""
 
     BINARY_CLASSIFICATION = "binary_classification"
@@ -38,20 +38,23 @@ class TargetAnalysis(BaseModel):
     reason: str
     classes: list[ClassDistributionItem] = Field(default_factory=list)
     summary_stats: dict[str, float] = Field(default_factory=dict)
+    min_class_count: int | None = None
+    has_rule3_warning: bool = False
+    imbalance_ratio: str | None = None
+    is_severe_imbalance: bool = False
+    target_skewness: float | None = None
+    skewness_warning: str | None = None
 
 
-def analyze_target_column(series: pd.Series, column_name: str) -> TargetAnalysis:
+def analyze_target_column(
+    series: pd.Series,
+    column_name: str,
+    effective_task_type: TaskType | None = None,
+) -> TargetAnalysis:
     """Analyze a candidate target series and suggest an ML task type.
 
-    Heuristics:
-    1. If exactly 2 unique non-null values (or bool) -> BINARY_CLASSIFICATION (high confidence).
-    2. If string, categorical, or object dtype:
-       - <= 20 distinct values -> MULTICLASS_CLASSIFICATION.
-       - > 20 distinct values -> High cardinality classification warning.
-    3. If numeric (int or float):
-       - If float with many unique values -> REGRESSION.
-       - If int with <= 10 unique values -> MULTICLASS_CLASSIFICATION.
-       - If int with > 10 unique values -> REGRESSION.
+    If effective_task_type is provided, distribution metrics (classes vs summary stats)
+    are dynamically computed to match the requested task type (Rule 2 Override).
     """
     non_null = series.dropna()
     total_len = len(series)
@@ -59,12 +62,10 @@ def analyze_target_column(series: pd.Series, column_name: str) -> TargetAnalysis
     null_pct = round((null_count / total_len) * 100.0, 2) if total_len > 0 else 0.0
     distinct_count = int(non_null.nunique())
 
-    # Default fallback
+    # Default heuristic suggestion
     task = TaskType.BINARY_CLASSIFICATION
     confidence = 0.5
     reason = "Default heuristic suggestion."
-    classes: list[ClassDistributionItem] = []
-    stats: dict[str, float] = {}
 
     is_bool = pd.api.types.is_bool_dtype(non_null)
     is_numeric = pd.api.types.is_numeric_dtype(non_null) and not is_bool
@@ -74,22 +75,11 @@ def analyze_target_column(series: pd.Series, column_name: str) -> TargetAnalysis
         task = TaskType.BINARY_CLASSIFICATION
         confidence = 0.95
         reason = f"Feature contains exactly 2 distinct classes ({distinct_count})."
-        for val, count in non_null.value_counts().items():
-            pct = round((count / len(non_null)) * 100.0, 2) if len(non_null) > 0 else 0.0
-            classes.append(ClassDistributionItem(label=str(val), count=int(count), percentage=pct))
 
     elif is_numeric and is_float:
         task = TaskType.REGRESSION
         confidence = 0.90
         reason = f"Continuous numeric feature (float) with {distinct_count:,} unique values."
-        if len(non_null) > 0:
-            stats = {
-                "mean": round(float(non_null.mean()), 3),
-                "std": round(float(non_null.std(ddof=1)), 3) if len(non_null) > 1 else 0.0,
-                "min": round(float(non_null.min()), 3),
-                "max": round(float(non_null.max()), 3),
-                "median": round(float(non_null.median()), 3),
-            }
 
     elif is_numeric and not is_float:
         # Integer target
@@ -97,23 +87,10 @@ def analyze_target_column(series: pd.Series, column_name: str) -> TargetAnalysis
             task = TaskType.MULTICLASS_CLASSIFICATION
             confidence = 0.85
             reason = f"Discrete integer feature with {distinct_count} distinct classes."
-            for val, count in non_null.value_counts().items():
-                pct = round((count / len(non_null)) * 100.0, 2) if len(non_null) > 0 else 0.0
-                classes.append(
-                    ClassDistributionItem(label=str(val), count=int(count), percentage=pct)
-                )
         else:
             task = TaskType.REGRESSION
             confidence = 0.75
             reason = f"Integer feature with high cardinality ({distinct_count} distinct values)."
-            if len(non_null) > 0:
-                stats = {
-                    "mean": round(float(non_null.mean()), 3),
-                    "std": round(float(non_null.std(ddof=1)), 3) if len(non_null) > 1 else 0.0,
-                    "min": round(float(non_null.min()), 3),
-                    "max": round(float(non_null.max()), 3),
-                    "median": round(float(non_null.median()), 3),
-                }
 
     else:
         # String / Categorical / Object target
@@ -121,20 +98,66 @@ def analyze_target_column(series: pd.Series, column_name: str) -> TargetAnalysis
             task = TaskType.MULTICLASS_CLASSIFICATION
             confidence = 0.90
             reason = f"Categorical feature with {distinct_count} distinct category labels."
-            for val, count in non_null.value_counts().items():
-                pct = round((count / len(non_null)) * 100.0, 2) if len(non_null) > 0 else 0.0
-                classes.append(
-                    ClassDistributionItem(label=str(val), count=int(count), percentage=pct)
-                )
         else:
             task = TaskType.MULTICLASS_CLASSIFICATION
             confidence = 0.60
             reason = f"High cardinality categorical feature ({distinct_count} categories)."
-            for val, count in non_null.value_counts().head(10).items():
-                pct = round((count / len(non_null)) * 100.0, 2) if len(non_null) > 0 else 0.0
+
+    # Determine active task: Use effective_task_type if human override provided
+    active_task = effective_task_type or task
+
+    classes: list[ClassDistributionItem] = []
+    stats: dict[str, float] = {}
+    min_class_count: int | None = None
+    has_rule3_warning = False
+    imbalance_ratio: str | None = None
+    is_severe_imbalance = False
+    target_skewness: float | None = None
+    skewness_warning: str | None = None
+
+    if active_task in (TaskType.BINARY_CLASSIFICATION, TaskType.MULTICLASS_CLASSIFICATION):
+        val_counts = non_null.value_counts()
+        total_valid = len(non_null)
+        if not val_counts.empty:
+            min_class_count = int(val_counts.min())
+            # Rule 3: If class count < 5, stratified 5-fold CV will fail or needs fold reduction
+            if min_class_count < 5:
+                has_rule3_warning = True
+
+            items_to_show = val_counts if len(val_counts) <= 20 else val_counts.head(10)
+            for val, count in items_to_show.items():
+                pct = round((count / total_valid) * 100.0, 2) if total_valid > 0 else 0.0
                 classes.append(
                     ClassDistributionItem(label=str(val), count=int(count), percentage=pct)
                 )
+
+            # Imbalance detection
+            if len(val_counts) >= 2:
+                top_pct = classes[0].percentage
+                second_pct = classes[1].percentage if len(classes) > 1 else (100.0 - top_pct)
+                imbalance_ratio = f"{top_pct:.1f}% : {second_pct:.1f}%"
+                if top_pct >= 80.0:
+                    is_severe_imbalance = True
+    else:
+        # Regression active task
+        clean_num = pd.to_numeric(non_null, errors="coerce").dropna()
+        if len(clean_num) > 0:
+            stats = {
+                "mean": round(float(clean_num.mean()), 3),
+                "std": round(float(clean_num.std(ddof=1)), 3) if len(clean_num) > 1 else 0.0,
+                "min": round(float(clean_num.min()), 3),
+                "max": round(float(clean_num.max()), 3),
+                "median": round(float(clean_num.median()), 3),
+            }
+            if len(clean_num) > 2:
+                skew_val = float(clean_num.skew())
+                target_skewness = round(skew_val, 3)
+                if abs(skew_val) > 1.2:
+                    direction = "right" if skew_val > 0 else "left"
+                    skewness_warning = (
+                        f"Target distribution is {direction}-skewed ({skew_val:+.2f}). "
+                        "Tree ensembles and robust loss scaling are prioritized."
+                    )
 
     return TargetAnalysis(
         column_name=column_name,
@@ -146,6 +169,12 @@ def analyze_target_column(series: pd.Series, column_name: str) -> TargetAnalysis
         reason=reason,
         classes=classes,
         summary_stats=stats,
+        min_class_count=min_class_count,
+        has_rule3_warning=has_rule3_warning,
+        imbalance_ratio=imbalance_ratio,
+        is_severe_imbalance=is_severe_imbalance,
+        target_skewness=target_skewness,
+        skewness_warning=skewness_warning,
     )
 
 

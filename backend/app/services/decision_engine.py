@@ -1,9 +1,10 @@
 """Hybrid AI Decision Engine service.
 
 Formulates deterministic data preprocessing pipelines and model candidate selections.
-Enriches decisions with Local Ollama (qwen2.5:3b) or OpenRouter LLM engineering rationale.
+Enriches decisions with Google Gemini AI copilot engineering rationale.
 Streams real-time token telemetry over Server-Sent Events (SSE).
-Enforces Rule 1 (Zero CV Leakage), Rule 2 (Target Confirmation), and Rule 4 (Baseline Control).
+Enforces Rule 1 (Zero CV Leakage), Rule 2 (Target Confirmation),
+Rule 3 (CV Folds Safeguard), and Rule 4 (Baseline Control).
 """
 
 import asyncio
@@ -15,7 +16,6 @@ from pathlib import Path
 
 import httpx
 import pandas as pd
-from openai import AsyncOpenAI
 from sqlalchemy.orm import Session
 
 from app.api.v1.schemas.decision_engine import (
@@ -136,7 +136,7 @@ class DecisionEngineService:
         if target_column not in df.columns:
             raise DatasetValidationError(f"Target column '{target_column}' not found in dataset.")
 
-        analysis = analyze_target_column(df[target_column], target_column)
+        analysis = analyze_target_column(df[target_column], target_column, override_task_type)
         task_type = override_task_type or analysis.inferred_task
 
         return TargetAnalysisDetailResponse(
@@ -149,6 +149,12 @@ class DecisionEngineService:
             classes=analysis.classes,
             summary_stats=analysis.summary_stats,
             reason=analysis.reason,
+            min_class_count=analysis.min_class_count,
+            has_rule3_warning=analysis.has_rule3_warning,
+            imbalance_ratio=analysis.imbalance_ratio,
+            is_severe_imbalance=analysis.is_severe_imbalance,
+            target_skewness=analysis.target_skewness,
+            skewness_warning=analysis.skewness_warning,
         )
 
     def _detect_automated_features(
@@ -358,36 +364,38 @@ class DecisionEngineService:
         models: list[ModelCandidate],
         engineered_features: list[EngineeredFeature],
         user_objective: str | None = None,
+        primary_metric: str | None = None,
     ) -> tuple[str, str]:
-        """Construct system and user prompt for Ollama or OpenRouter LLM."""
+        """Construct system and user prompt for Google Gemini AI Copilot."""
         system_prompt = (
-            "You are the Chief Machine Learning Architect for AutoMLens explaining a machine "
-            "learning pipeline for academic review. Enforce Rule 1 (zero data leakage: all "
-            "transformations fit inside CV folds) and Rule 4 (mandatory Dummy baseline control)."
+            "You are the Chief Machine Learning Architect for AutoMLens. "
+            "You analyze tabular datasets, formulate fold-safe preprocessing, "
+            "and explain how the user objective maps to algorithm candidate selection and metrics. "
+            "Always enforce Rule 1 (zero data leakage: all transformations fit inside CV folds) "
+            "and Rule 4 (mandatory Dummy baseline control)."
         )
 
         eng_feature_text = (
             ", ".join([f"{f.name} ({f.transformation_type})" for f in engineered_features])
             if engineered_features
-            else "None required"
+            else "Standard fold-safe pipeline"
         )
 
         user_prompt = (
-            f"Target Column: {target_column}\n"
+            f"Target Column: '{target_column}'\n"
             f"Task Type: {task_type.value}\n"
-            f"User Objective: {user_objective or 'General automated tabular modeling'}\n"
-            f"Features Summary (sample):\n{json.dumps(features_summary[:12], indent=2)}\n\n"
-            f"Engineered Features: {eng_feature_text}\n"
-            f"Candidate Estimators:\n{[m.name for m in models]}\n\n"
-            f"Write a friendly, insightful engineering explanation in 3 clear sections:\n"
-            f"1. 🎯 Goal & Target: Summary connecting user goal to target and metric.\n"
-            "2. 🧹 Automated Data Cleaning & Feature Extraction: Specifically name key "
-            "columns with missing values, outliers, or categories. Explain in simple, "
-            "plain English WHY you chose median vs mean, WHY one-hot encoding was used, "
-            "and explain any feature extraction or dimensionality reduction (PCA).\n"
-            f"3. 🤖 Model Selection & Baseline Control: Why these candidate algorithms were picked "
-            f"and why the Dummy baseline is like a scientific placebo control (Rule 4).\n"
-            "Use concise bullet points, plain English, and clear analogies. Keep under 340 words."
+            f"User Objective Prompt: {user_objective or 'General automated tabular modeling'}\n"
+            f"Selected Primary Metric: {primary_metric or 'Auto-inferred'}\n"
+            f"Candidate Estimators:\n{[m.name for m in models if m.default_selected]}\n\n"
+            f"Features Summary (sample):\n{json.dumps(features_summary[:10], indent=2)}\n\n"
+            f"Engineered Transformations: {eng_feature_text}\n\n"
+            "Write a concise, high-impact engineering explanation in 3 clear sections:\n"
+            "1. 🎯 Goal & Strategy: Directly connect user objective to target and metric.\n"
+            "2. 🧹 Automated Data Preparation: Explain in plain English WHY median vs mean "
+            "was picked, WHY specific scalers/encoders were chosen, and any PCA reductions.\n"
+            "3. 🤖 Algorithmic Selection: Why candidate algorithms achieve the desired outcome, "
+            "and why the Dummy baseline is like a scientific placebo control (Rule 4).\n\n"
+            "Use clear bullet points and plain English. Keep under 320 words. No marketing fluff."
         )
         return system_prompt, user_prompt
 
@@ -398,9 +406,13 @@ class DecisionEngineService:
         n_cols: int = 10,
         user_objective: str | None = None,
     ) -> tuple[str, list[str], list[ModelCandidate]]:
-        """Return primary metric, available metrics, and candidate models for task type."""
+        """Return primary metric, available metrics, and candidate models for task type.
+
+        Intelligently parses user_objective to adapt primary metric to desired outcome.
+        """
+        obj_lower = (user_objective or "").lower()
+
         if task_type == TaskType.BINARY_CLASSIFICATION:
-            primary_metric = "f1_macro"
             available_metrics = [
                 "f1_macro",
                 "accuracy",
@@ -408,12 +420,45 @@ class DecisionEngineService:
                 "precision_macro",
                 "recall_macro",
             ]
+            # Prompt-driven intent detection for binary classification
+            recall_keys = ("false negative", "recall", "sensitivity", "catch all", "churn", "fraud")
+            precision_keys = ("false positive", "precision", "specificity", "quality", "clean")
+            if any(k in obj_lower for k in recall_keys):
+                primary_metric = "recall_macro"
+            elif any(k in obj_lower for k in precision_keys):
+                primary_metric = "precision_macro"
+            elif any(k in obj_lower for k in ("auc", "roc", "rank", "probability", "threshold")):
+                primary_metric = "roc_auc"
+            elif any(k in obj_lower for k in ("accuracy", "overall correct")):
+                primary_metric = "accuracy"
+            else:
+                primary_metric = "f1_macro"
+
         elif task_type == TaskType.MULTICLASS_CLASSIFICATION:
-            primary_metric = "f1_macro"
             available_metrics = ["f1_macro", "accuracy", "precision_macro", "recall_macro"]
+            if any(k in obj_lower for k in ("recall", "sensitivity", "coverage", "catch all")):
+                primary_metric = "recall_macro"
+            elif any(k in obj_lower for k in ("precision", "exactness", "purity")):
+                primary_metric = "precision_macro"
+            elif any(k in obj_lower for k in ("accuracy", "overall correct")):
+                primary_metric = "accuracy"
+            else:
+                primary_metric = "f1_macro"
+
         else:  # REGRESSION
-            primary_metric = "r2"
             available_metrics = ["r2", "neg_root_mean_squared_error", "neg_mean_absolute_error"]
+            if any(
+                k in obj_lower
+                for k in ("rmse", "root mean", "penalize large", "extreme error", "quadratic")
+            ):
+                primary_metric = "neg_root_mean_squared_error"
+            elif any(
+                k in obj_lower
+                for k in ("mae", "mean absolute", "outlier resistant", "median error", "absolute")
+            ):
+                primary_metric = "neg_mean_absolute_error"
+            else:
+                primary_metric = "r2"
 
         models = get_candidate_models(
             task_type=task_type,
@@ -649,7 +694,7 @@ class DecisionEngineService:
                 engineered_features=eng_features,
             )
 
-            # Determine AI Provider (prioritizing Gemini when valid key is available)
+            # Determine AI Provider (Only Google Gemini is used in this section)
             effective_gemini_key = gemini_api_key
             if (
                 not effective_gemini_key
@@ -665,7 +710,7 @@ class DecisionEngineService:
             )
 
             use_gemini = bool(effective_gemini_key and effective_gemini_key.strip())
-            provider = "gemini" if use_gemini else settings.AI_PROVIDER.lower()
+            provider = "gemini" if use_gemini else "offline"
             yield _format_sse("status", {"status": "reasoning_started", "provider": provider})
 
             full_rationale = ""
@@ -681,6 +726,7 @@ class DecisionEngineService:
                         models=models,
                         engineered_features=eng_features,
                         user_objective=user_objective,
+                        primary_metric=primary_metric,
                     )
                     key = effective_gemini_key.strip()
                     url = (
@@ -745,100 +791,8 @@ class DecisionEngineService:
                     full_rationale = deterministic_rationale
                     active_provider = "offline"
 
-            elif provider == "ollama":
-                try:
-                    sys_prompt, usr_prompt = self._build_ai_prompt(
-                        task_type=task_type,
-                        target_column=target_column,
-                        features_summary=features_summary,
-                        models=models,
-                        engineered_features=eng_features,
-                        user_objective=user_objective,
-                    )
-                    client = AsyncOpenAI(
-                        base_url=settings.OLLAMA_BASE_URL,
-                        api_key="ollama",
-                        timeout=httpx.Timeout(5.0, connect=1.0),
-                        max_retries=0,
-                    )
-                    stream = await client.chat.completions.create(
-                        model=settings.OLLAMA_MODEL,
-                        messages=[
-                            {"role": "system", "content": sys_prompt},
-                            {"role": "user", "content": usr_prompt},
-                        ],
-                        temperature=0.3,
-                        max_tokens=650,
-                        stream=True,
-                    )
-                    async for chunk in stream:
-                        delta = chunk.choices[0].delta.content or ""
-                        if delta:
-                            full_rationale += delta
-                            yield _format_sse("token", {"token": delta})
-                    is_llm = True
-                    active_provider = "ollama"
-                except Exception as exc:
-                    logger.warning(
-                        "Ollama stream unreachable (%s), streaming offline fallback.",
-                        exc,
-                    )
-                    notice_data = json.dumps(
-                        {
-                            "message": (
-                                f"Local Ollama ({settings.OLLAMA_MODEL}) was unreachable ({exc}). "
-                                "Falling back to deterministic rule engine."
-                            )
-                        }
-                    )
-                    yield _format_sse("notice", notice_data)
-                    # Stream deterministic text line-by-line
-                    for line in deterministic_rationale.split("\n"):
-                        yield _format_sse("token", {"token": line + "\n"})
-                        await asyncio.sleep(0.015)
-                    full_rationale = deterministic_rationale
-                    active_provider = "offline"
-
-            elif provider == "openrouter" and settings.OPENROUTER_API_KEY:
-                try:
-                    sys_prompt, usr_prompt = self._build_ai_prompt(
-                        task_type=task_type,
-                        target_column=target_column,
-                        features_summary=features_summary,
-                        models=models,
-                        engineered_features=eng_features,
-                        user_objective=user_objective,
-                    )
-                    client = AsyncOpenAI(
-                        base_url="https://openrouter.ai/api/v1",
-                        api_key=settings.OPENROUTER_API_KEY,
-                        timeout=httpx.Timeout(20.0, connect=5.0),
-                    )
-                    stream = await client.chat.completions.create(
-                        model=settings.OPENROUTER_MODEL,
-                        messages=[
-                            {"role": "system", "content": sys_prompt},
-                            {"role": "user", "content": usr_prompt},
-                        ],
-                        temperature=0.3,
-                        max_tokens=650,
-                        stream=True,
-                    )
-                    async for chunk in stream:
-                        delta = chunk.choices[0].delta.content or ""
-                        if delta:
-                            full_rationale += delta
-                            yield _format_sse("token", {"token": delta})
-                    is_llm = True
-                    active_provider = "openrouter"
-                except Exception as exc:
-                    logger.warning("OpenRouter error (%s), using deterministic fallback.", exc)
-                    for line in deterministic_rationale.split("\n"):
-                        yield _format_sse("token", {"token": line + "\n"})
-                        await asyncio.sleep(0.01)
-                    full_rationale = deterministic_rationale
-                    active_provider = "offline"
             else:
+                # 100% Offline fallback mode
                 for line in deterministic_rationale.split("\n"):
                     yield _format_sse("token", {"token": line + "\n"})
                     await asyncio.sleep(0.01)
@@ -919,6 +873,7 @@ class DecisionEngineService:
                     models,
                     eng_features,
                     user_objective,
+                    primary_metric,
                 )
                 key = effective_gemini_key.strip()
                 url = f"https://generativelanguage.googleapis.com/v1beta/models/{chosen_gemini_model}:generateContent?key={key}"
@@ -940,76 +895,6 @@ class DecisionEngineService:
                                 active_provider = "gemini"
             except Exception as exc:
                 logger.warning("Gemini synchronous call unavailable (%s), using heuristics.", exc)
-
-        elif settings.AI_PROVIDER.lower() == "ollama":
-            try:
-                sys_prompt, usr_prompt = self._build_ai_prompt(
-                    task_type,
-                    target_column,
-                    features_summary,
-                    models,
-                    eng_features,
-                    user_objective,
-                )
-                headers = {"Content-Type": "application/json"}
-                payload = {
-                    "model": settings.OLLAMA_MODEL,
-                    "messages": [
-                        {"role": "system", "content": sys_prompt},
-                        {"role": "user", "content": usr_prompt},
-                    ],
-                    "temperature": 0.3,
-                    "max_tokens": 600,
-                    "stream": False,
-                }
-                with httpx.Client(timeout=6.0) as client:
-                    res = client.post(
-                        f"{settings.OLLAMA_BASE_URL}/chat/completions",
-                        headers=headers,
-                        json=payload,
-                    )
-                    if res.status_code == 200:
-                        llm_rationale = str(res.json()["choices"][0]["message"]["content"])
-                        is_llm_enriched = True
-                        active_provider = "ollama"
-            except Exception as exc:
-                logger.warning("Synchronous Ollama call unavailable (%s), using heuristics.", exc)
-
-        elif settings.AI_PROVIDER.lower() == "openrouter" and settings.OPENROUTER_API_KEY:
-            try:
-                sys_prompt, usr_prompt = self._build_ai_prompt(
-                    task_type,
-                    target_column,
-                    features_summary,
-                    models,
-                    eng_features,
-                    user_objective,
-                )
-                headers = {
-                    "Authorization": f"Bearer {settings.OPENROUTER_API_KEY.strip()}",
-                    "Content-Type": "application/json",
-                }
-                payload = {
-                    "model": settings.OPENROUTER_MODEL,
-                    "messages": [
-                        {"role": "system", "content": sys_prompt},
-                        {"role": "user", "content": usr_prompt},
-                    ],
-                    "temperature": 0.3,
-                    "max_tokens": 600,
-                }
-                with httpx.Client(timeout=8.0) as client:
-                    res = client.post(
-                        "https://openrouter.ai/api/v1/chat/completions",
-                        headers=headers,
-                        json=payload,
-                    )
-                    if res.status_code == 200:
-                        llm_rationale = str(res.json()["choices"][0]["message"]["content"])
-                        is_llm_enriched = True
-                        active_provider = "openrouter"
-            except Exception as exc:
-                logger.warning("Synchronous OpenRouter call unavailable (%s)", exc)
 
         rationale_text = llm_rationale or self._generate_deterministic_rationale(
             task_type,

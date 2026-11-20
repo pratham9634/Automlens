@@ -180,6 +180,12 @@ export interface TargetAnalysisDetailResponse {
   classes: ClassDistributionItem[];
   summary_stats: Record<string, number>;
   reason: string;
+  min_class_count?: number | null;
+  has_rule3_warning?: boolean;
+  imbalance_ratio?: string | null;
+  is_severe_imbalance?: boolean;
+  target_skewness?: number | null;
+  skewness_warning?: string | null;
 }
 
 export interface ModelCandidate {

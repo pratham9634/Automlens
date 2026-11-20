@@ -1,7 +1,7 @@
 "use client";
 
 import { TargetSuggestionItem, TargetAnalysisDetailResponse, TaskType } from "@/lib/types";
-import { CheckCircle2, ChevronDown, Sparkles, BarChart2 } from "lucide-react";
+import { CheckCircle2, ChevronDown, Sparkles, BarChart2, AlertTriangle, Info } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
@@ -184,22 +184,73 @@ export function TargetSelector({
             {analysis.reason}
           </p>
 
+          {/* Rule 3 Academic CV Warning */}
+          {analysis.has_rule3_warning && (
+            <div className="p-3 rounded-card bg-amber-500/10 border border-amber-500/30 flex items-start gap-2.5 text-xs text-amber-200">
+              <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+              <div>
+                <span className="font-semibold text-amber-300 font-mono">Rule 3 Academic Warning: </span>
+                <span>
+                  Minority class contains only {analysis.min_class_count} sample(s) (&lt; 5).
+                  Standard 5-fold Stratified CV requires at least 5 instances per category.
+                  Cross-validation may fail unless extra samples are added or fold count is reduced.
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Severe Class Imbalance Badge */}
+          {analysis.is_severe_imbalance && (
+            <div className="p-2.5 rounded-card bg-surface border border-border flex flex-wrap items-center gap-2 text-xs">
+              <Badge variant="warning" size="sm" className="font-mono text-[10px]">
+                Imbalance Ratio: {analysis.imbalance_ratio}
+              </Badge>
+              <span className="text-[11px] text-text-muted">
+                Severe skew detected. Macro-F1 and PR-AUC are enforced to prevent accuracy gaming.
+              </span>
+            </div>
+          )}
+
+          {/* Target Skewness Advisory for Regression */}
+          {analysis.skewness_warning && (
+            <div className="p-2.5 rounded-card bg-surface border border-border flex flex-wrap items-center gap-2 text-xs">
+              <Badge variant="info" size="sm" className="font-mono text-[10px]">
+                Skewness: {analysis.target_skewness}
+              </Badge>
+              <span className="text-[11px] text-text-muted">{analysis.skewness_warning}</span>
+            </div>
+          )}
+
           {/* Classification: Class Distribution Breakdown */}
           {analysis.classes && analysis.classes.length > 0 && (
             <div className="space-y-2 pt-2 border-t border-border">
-              <div className="text-[11px] font-mono text-text-muted">Class Frequency &amp; Balance:</div>
+              <div className="text-[11px] font-mono text-text-muted flex items-center justify-between">
+                <span>Class Frequency &amp; Balance:</span>
+                {analysis.imbalance_ratio && (
+                  <span className="text-text-muted">Ratio: {analysis.imbalance_ratio}</span>
+                )}
+              </div>
               <div className="space-y-1.5">
                 {analysis.classes.map((cls) => (
                   <div key={cls.label} className="space-y-1">
                     <div className="flex items-center justify-between text-[11px] font-mono text-text-primary">
-                      <span className="truncate max-w-[200px]">{cls.label}</span>
+                      <span className="truncate max-w-[200px] flex items-center gap-1.5">
+                        {cls.label}
+                        {cls.count < 5 && (
+                          <Badge variant="danger" size="sm" className="text-[9px] py-0 px-1">
+                            &lt; 5 rows
+                          </Badge>
+                        )}
+                      </span>
                       <span className="text-text-muted tabular-nums">
                         {cls.count.toLocaleString()} rows ({cls.percentage.toFixed(1)}%)
                       </span>
                     </div>
                     <div className="w-full h-1.5 rounded-pill bg-surface border border-border/60 overflow-hidden">
                       <div
-                        className="h-full bg-accent rounded-pill transition-all duration-300"
+                        className={`h-full rounded-pill transition-all duration-300 ${
+                          cls.count < 5 ? "bg-danger" : "bg-accent"
+                        }`}
                         style={{ width: `${Math.min(100, Math.max(2, cls.percentage))}%` }}
                       />
                     </div>
@@ -211,7 +262,7 @@ export function TargetSelector({
 
           {/* Regression: Summary Statistics */}
           {analysis.summary_stats && Object.keys(analysis.summary_stats).length > 0 && (
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-border">
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 pt-2 border-t border-border">
               {Object.entries(analysis.summary_stats).map(([k, v]) => (
                 <div key={k} className="p-2 rounded-card bg-surface border border-border">
                   <div className="text-[10px] font-mono uppercase text-text-muted">{k}</div>
@@ -220,6 +271,14 @@ export function TargetSelector({
                   </div>
                 </div>
               ))}
+              {analysis.target_skewness !== null && analysis.target_skewness !== undefined && (
+                <div className="p-2 rounded-card bg-surface border border-border">
+                  <div className="text-[10px] font-mono uppercase text-text-muted">skewness</div>
+                  <div className="text-xs font-mono font-medium text-text-primary mt-0.5 tabular-nums">
+                    {analysis.target_skewness.toFixed(3)}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>

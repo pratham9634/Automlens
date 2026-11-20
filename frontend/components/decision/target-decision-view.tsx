@@ -16,10 +16,12 @@ import { ModelCandidatesCard } from "./model-candidates-card";
 import {
   Loader2,
   Lock,
+  Unlock,
   CheckCircle2,
   ArrowRight,
   AlertCircle,
   Play,
+  RotateCcw,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -40,6 +42,8 @@ export function TargetDecisionView({
   const [computing, setComputing] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [validationError, setValidationError] = useState<string | null>(null);
+  const [isUnlocked, setIsUnlocked] = useState(false);
 
   const [suggestions, setSuggestions] = useState<TargetSuggestionItem[]>([]);
   const [selectedColumn, setSelectedColumn] = useState<string>("");
@@ -76,16 +80,29 @@ export function TargetDecisionView({
       setStreamingTokens("");
       setStreamNotice(null);
       setError(null);
+      setValidationError(null);
+
+      // Watchdog timer (15s) to guarantee spinner recovery if SSE drops
+      const watchdog = setTimeout(() => {
+        setIsStreaming((curr) => {
+          if (curr) {
+            console.warn("Decision stream watchdog timed out after 15s. Resolving state.");
+            setComputing(false);
+            return false;
+          }
+          return curr;
+        });
+      }, 15000);
 
       try {
-        // Fetch target column stats
+        // Fetch target column stats (recalculated dynamically on override)
         const analysisData = await apiClient.analyzeTarget(projectId, {
           target_column: col,
           override_task_type: override,
         });
         setAnalysis(analysisData);
 
-        // Stream AI reasoning from Ollama (qwen2.5:3b)
+        // Stream AI reasoning from Google Gemini
         await apiClient.streamDecisions(
           projectId,
           {
@@ -106,6 +123,7 @@ export function TargetDecisionView({
               setStreamNotice(notice);
             },
             onPipelineReady: (decisionData) => {
+              clearTimeout(watchdog);
               setDecision(decisionData);
               setPrimaryMetric(decisionData.primary_metric);
 
@@ -118,6 +136,7 @@ export function TargetDecisionView({
               setComputing(false);
             },
             onError: (err) => {
+              clearTimeout(watchdog);
               console.warn("Stream error, falling back to synchronous formulation:", err);
               // Fallback to synchronous formulation
               apiClient
@@ -146,6 +165,7 @@ export function TargetDecisionView({
           }
         );
       } catch (err) {
+        clearTimeout(watchdog);
         console.error("Error initiating decision stream:", err);
         setError(
           err instanceof Error
@@ -239,11 +259,12 @@ export function TargetDecisionView({
     if (!selectedColumn || !decision) return;
 
     if (selectedModels.length === 0) {
-      alert("Please select at least one candidate algorithm to train.");
+      setValidationError("Please select at least one candidate algorithm to train alongside Rule 4 Baseline.");
       return;
     }
 
     setConfirming(true);
+    setValidationError(null);
     try {
       const response = await apiClient.confirmTarget(projectId, {
         target_column: selectedColumn,
@@ -255,11 +276,12 @@ export function TargetDecisionView({
       });
 
       setConfirmedTarget(response);
+      setIsUnlocked(false);
       if (onTargetConfirmed) {
         onTargetConfirmed();
       }
     } catch (err) {
-      alert(
+      setValidationError(
         err instanceof Error
           ? err.message
           : "Failed to confirm target and configuration."
@@ -318,12 +340,21 @@ export function TargetDecisionView({
             </div>
           </div>
 
-          <div className="flex items-center gap-2 self-end md:self-auto">
+          <div className="flex flex-wrap items-center gap-2 self-end md:self-auto">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsUnlocked((prev) => !prev)}
+              className="gap-1.5 font-mono text-xs cursor-pointer border-border hover:border-border-strong"
+            >
+              {isUnlocked ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
+              <span>{isUnlocked ? "Close Editor" : "Unlock & Reconfigure"}</span>
+            </Button>
             {onNavigateToTraining && (
               <Button
                 variant="primary"
                 onClick={onNavigateToTraining}
-                className="gap-2 font-mono text-xs"
+                className="gap-2 font-mono text-xs cursor-pointer"
               >
                 <span>Proceed to Parallel Training</span>
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -377,6 +408,23 @@ export function TargetDecisionView({
             availableMetrics={decision.available_metrics}
             onChangePrimaryMetric={(m) => setPrimaryMetric(m)}
           />
+
+          {/* Validation Alert Banner */}
+          {validationError && (
+            <Card className="p-3.5 border-danger/40 bg-danger/10 text-danger text-xs font-mono flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0 text-danger" />
+                <span>{validationError}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setValidationError(null)}
+                className="text-text-muted hover:text-text-primary text-[11px] underline cursor-pointer"
+              >
+                Dismiss
+              </button>
+            </Card>
+          )}
 
           {/* Human Approval Gate: Action Bar */}
           <Card className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-accent/30 bg-surface">

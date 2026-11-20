@@ -91,38 +91,34 @@ export function AiReasoningTerminal({
   };
 
   return (
-    <Card className="border-2 border-border bg-[#090D16] text-gray-200 overflow-hidden shadow-neo-lg rounded-card">
-      {/* Terminal Header */}
-      <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 bg-[#0F172A] border-b-2 border-border">
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1.5 mr-2">
-            <span className="w-3 h-3 rounded-full bg-rose-500 border border-black inline-block shadow-[1px_1px_0px_#000]" />
-            <span className="w-3 h-3 rounded-full bg-amber-500 border border-black inline-block shadow-[1px_1px_0px_#000]" />
-            <span className="w-3 h-3 rounded-full bg-emerald-500 border border-black inline-block shadow-[1px_1px_0px_#000]" />
-          </div>
+    <Card className="border border-border/80 bg-[#0B0F19] text-gray-200 overflow-hidden shadow-sm rounded-card">
+      {/* Console Header */}
+      <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 bg-[#0E1526] border-b border-border/70">
+        <div className="flex items-center gap-2.5">
+          <div className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
           <Terminal className="w-4 h-4 text-cyan-400" />
-          <span className="text-xs font-mono uppercase tracking-wider font-bold text-gray-200">
-            AutoMLens AI Terminal
+          <span className="text-xs font-mono uppercase tracking-wider font-semibold text-gray-200">
+            AI Strategy Console
           </span>
-          <span className="text-[11px] font-marker font-bold px-2.5 py-0.5 rounded-md bg-cyan-950/80 text-cyan-300 border-2 border-border shadow-[2px_2px_0px_0px_#000]">
-            ★ {provider === "gemini" ? `Gemini (${activeModel}) Copilot` : provider === "ollama" ? "Ollama: qwen2.5:3b" : provider.toUpperCase()}
+          <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-cyan-950/80 text-cyan-300 border border-cyan-800/40">
+            {provider === "gemini" ? `Google Gemini (${activeModel}) Copilot` : "Deterministic Rule Engine (100% Offline)"}
           </span>
         </div>
 
-        {/* Status indicator with Cyan Luminescence */}
+        {/* Status indicator */}
         <div className="flex items-center gap-2">
           {isStreaming ? (
-            <div className="flex items-center gap-1.5 text-xs text-cyan-400 font-mono font-bold">
+            <div className="flex items-center gap-1.5 text-xs text-cyan-400 font-mono font-medium">
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75" />
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500" />
               </span>
-              <span className="font-marker font-bold text-sm">Streaming Reasoning...</span>
+              <span>Streaming Strategy...</span>
             </div>
           ) : (
-            <div className="flex items-center gap-1.5 text-xs text-emerald-400 font-mono font-bold">
+            <div className="flex items-center gap-1.5 text-xs text-emerald-400 font-mono font-medium">
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-              <span className="font-marker font-bold text-sm">★ Reasoning Formulated</span>
+              <span>Strategy Formulated</span>
             </div>
           )}
         </div>
@@ -130,50 +126,50 @@ export function AiReasoningTerminal({
 
       {/* Notice Banner (if fallback triggered) */}
       {notice && (
-        <div className="flex items-center gap-2 px-4 py-2 bg-amber-950/60 border-b-2 border-border text-amber-300 text-xs font-mono font-bold">
+        <div className="flex items-center gap-2 px-4 py-2 bg-amber-950/60 border-b border-border/70 text-amber-300 text-xs font-mono">
           <AlertCircle className="w-4 h-4 flex-shrink-0 text-amber-400" />
           <span>{notice}</span>
         </div>
       )}
 
       {/* Tabs */}
-      <div className="flex border-b-2 border-border bg-[#0F172A] px-4 text-xs font-mono">
+      <div className="flex border-b border-border/70 bg-[#0E1526] px-4 text-xs font-mono">
         <button
           type="button"
           onClick={() => setActiveTab("stream")}
-          className={`py-2 px-3 border-b-2 font-mono uppercase tracking-wider text-[11px] font-bold transition-all cursor-pointer ${
+          className={`py-2 px-3 border-b-2 font-mono uppercase tracking-wider text-[11px] font-semibold transition-all cursor-pointer ${
             activeTab === "stream"
               ? "border-cyan-400 text-cyan-400 bg-cyan-950/40"
               : "border-transparent text-gray-400 hover:text-gray-200"
           }`}
         >
-          Live AI Reasoning
+          Engineering Rationale
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab("cleaning")}
-          className={`py-2 px-3 border-b-2 font-mono uppercase tracking-wider text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+          className={`py-2 px-3 border-b-2 font-mono uppercase tracking-wider text-[11px] font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
             activeTab === "cleaning"
               ? "border-cyan-400 text-cyan-400 bg-cyan-950/40"
               : "border-transparent text-gray-400 hover:text-gray-200"
           }`}
         >
           <Database className="w-3 h-3 text-cyan-400" />
-          <span>Cleaning Strategy ({preprocessingSteps.length})</span>
+          <span>Fold-Safe Preprocessing ({preprocessingSteps.length})</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab("features")}
-          className={`py-2 px-3 border-b-2 font-mono uppercase tracking-wider text-[11px] transition-colors flex items-center gap-1.5 ${
+          className={`py-2 px-3 border-b-2 font-mono uppercase tracking-wider text-[11px] font-semibold transition-colors flex items-center gap-1.5 cursor-pointer ${
             activeTab === "features"
-              ? "border-cyan-400 text-cyan-400 font-semibold"
+              ? "border-cyan-400 text-cyan-400 bg-cyan-950/40"
               : "border-transparent text-gray-400 hover:text-gray-200"
           }`}
         >
           <Wand2 className="w-3 h-3 text-cyan-400" />
-          <span>Features &amp; Reductions ({engineeredFeatures.length})</span>
+          <span>Feature Extractions ({engineeredFeatures.length})</span>
         </button>
       </div>
 
