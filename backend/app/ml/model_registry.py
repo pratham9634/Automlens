@@ -109,6 +109,13 @@ CLASSIFICATION_REGISTRY: dict[str, ModelMetadata] = {
         description="Sequential boosting placing higher training weights on misclassified samples.",
         interpretability="Medium",
     ),
+    "stacked_ensemble": ModelMetadata(
+        id="stacked_ensemble",
+        name="AutoMLens Stacked Ensemble (Super-Learner)",
+        family="ensemble",
+        description="Multi-model stacked ensemble combining predictions from the top diverse models via a meta-learner.",
+        interpretability="Medium",
+    ),
 }
 
 # 12 Regression Estimators
@@ -197,6 +204,13 @@ REGRESSION_REGISTRY: dict[str, ModelMetadata] = {
         family="neural_net",
         description="Multi-layer feed-forward neural regressor for high-capacity modeling.",
         interpretability="Low",
+    ),
+    "stacked_ensemble": ModelMetadata(
+        id="stacked_ensemble",
+        name="AutoMLens Stacked Ensemble (Super-Learner)",
+        family="ensemble",
+        description="Multi-model stacked ensemble combining predictions from the top diverse models via a meta-learner.",
+        interpretability="Medium",
     ),
 }
 

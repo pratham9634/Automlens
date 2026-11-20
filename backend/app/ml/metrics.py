@@ -45,10 +45,16 @@ def compute_classification_metrics(
         "balanced_accuracy": float(balanced_accuracy_score(y_true, y_pred)),
         "f1_macro": float(f1_score(y_true, y_pred, average="macro", zero_division=0)),
         "f1_weighted": float(f1_score(y_true, y_pred, average="weighted", zero_division=0)),
-        "precision_macro": float(precision_score(y_true, y_pred, average="macro", zero_division=0)),
-        "precision_weighted": float(precision_score(y_true, y_pred, average="weighted", zero_division=0)),
+        "precision_macro": float(
+            precision_score(y_true, y_pred, average="macro", zero_division=0)
+        ),
+        "precision_weighted": float(
+            precision_score(y_true, y_pred, average="weighted", zero_division=0)
+        ),
         "recall_macro": float(recall_score(y_true, y_pred, average="macro", zero_division=0)),
-        "recall_weighted": float(recall_score(y_true, y_pred, average="weighted", zero_division=0)),
+        "recall_weighted": float(
+            recall_score(y_true, y_pred, average="weighted", zero_division=0)
+        ),
         "mcc": float(matthews_corrcoef(y_true, y_pred)),
     }
 
@@ -78,7 +84,9 @@ def compute_classification_metrics(
                 # Log Loss (Cross-Entropy Loss)
                 try:
                     prob_clipped = np.clip(y_prob, 1e-15, 1.0 - 1e-15)
-                    metrics["log_loss"] = float(log_loss(y_true, prob_clipped, labels=unique_classes))
+                    metrics["log_loss"] = float(
+                        log_loss(y_true, prob_clipped, labels=unique_classes)
+                    )
                 except Exception:
                     pass
 
@@ -104,7 +112,9 @@ def compute_classification_metrics(
                 # Multiclass Log Loss
                 try:
                     prob_clipped = np.clip(y_prob, 1e-15, 1.0 - 1e-15)
-                    metrics["log_loss"] = float(log_loss(y_true, prob_clipped, labels=unique_classes))
+                    metrics["log_loss"] = float(
+                        log_loss(y_true, prob_clipped, labels=unique_classes)
+                    )
                 except Exception:
                     pass
         except Exception:

@@ -1,7 +1,6 @@
 """Unit tests verifying mathematical accuracy and edge-case resilience of all academic metrics."""
 
 import numpy as np
-import pytest
 
 from app.ml.metrics import (
     aggregate_cv_metrics,

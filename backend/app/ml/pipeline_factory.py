@@ -19,6 +19,8 @@ from sklearn.ensemble import (
     HistGradientBoostingRegressor,
     RandomForestClassifier,
     RandomForestRegressor,
+    StackingClassifier,
+    StackingRegressor,
 )
 from sklearn.feature_selection import SelectKBest, f_classif, f_regression
 from sklearn.impute import SimpleImputer
@@ -32,7 +34,7 @@ from sklearn.linear_model import (
 from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
 from sklearn.neural_network import MLPClassifier, MLPRegressor
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import OneHotEncoder, RobustScaler, StandardScaler
+from sklearn.preprocessing import OneHotEncoder, RobustScaler, StandardScaler, TargetEncoder
 from sklearn.svm import LinearSVC, LinearSVR
 
 from app.ml.task_detection import TaskType
@@ -72,11 +74,13 @@ def create_preprocessor(
     datetime_cols: list[str] | None = None,
     interactions: list[tuple[str, str, str]] | None = None,
     preprocessing_plan: list[dict[str, Any]] | None = None,
+    high_cardinality_cols: list[str] | None = None,
 ) -> ColumnTransformer:
     """Build a ColumnTransformer encapsulating all imputation, scaling, and feature extractions.
 
     Strictly satisfies Rule 1: All transformations occur inside this transformer,
     ensuring zero leakage across cross-validation splits.
+    Dual-routes categoricals: OneHotEncoder for low-cardinality, TargetEncoder for high-cardinality.
     """
     transformers = []
 
@@ -102,15 +106,34 @@ def create_preprocessor(
         num_pipeline = Pipeline(steps=num_steps)
         transformers.append(("numeric", num_pipeline, numeric_cols))
 
-    # 2. Categorical Feature Pipeline (Protected against high-cardinality explosion via max_categories=30)
+    # 2. Categorical Feature Pipelines (Dual Route: OneHot for <= 20, TargetEncoder for > 20)
     if categorical_cols:
-        cat_pipeline = Pipeline(
-            steps=[
-                ("imputer", SimpleImputer(strategy="most_frequent")),
-                ("encoder", OneHotEncoder(handle_unknown="ignore", max_categories=30, sparse_output=False)),
-            ]
-        )
-        transformers.append(("categorical", cat_pipeline, categorical_cols))
+        high_card_set = set(high_cardinality_cols or [])
+        low_card_cols = [c for c in categorical_cols if c not in high_card_set]
+        high_card_cols = [c for c in categorical_cols if c in high_card_set]
+
+        if low_card_cols:
+            cat_pipeline = Pipeline(
+                steps=[
+                    ("imputer", SimpleImputer(strategy="most_frequent")),
+                    (
+                        "encoder",
+                        OneHotEncoder(
+                            handle_unknown="ignore", max_categories=30, sparse_output=False
+                        ),
+                    ),
+                ]
+            )
+            transformers.append(("categorical_onehot", cat_pipeline, low_card_cols))
+
+        if high_card_cols:
+            te_pipeline = Pipeline(
+                steps=[
+                    ("imputer", SimpleImputer(strategy="most_frequent")),
+                    ("target_encoder", TargetEncoder(smooth="auto", cv=5)),
+                ]
+            )
+            transformers.append(("categorical_target", te_pipeline, high_card_cols))
 
     # 3. Datetime Decomposition Pipeline (Rule 1 & Intent Guided)
     if datetime_cols:
@@ -247,6 +270,38 @@ def get_estimator(
                 random_state=random_state,
                 early_stopping=True,
             )
+
+        # 8. Stacked Ensemble Super-Learner
+        elif model_id == "stacked_ensemble":
+            base_estimators = [
+                (
+                    "rf",
+                    RandomForestClassifier(
+                        n_estimators=50,
+                        random_state=random_state,
+                        class_weight=cw,
+                        n_jobs=1,
+                    ),
+                ),
+                (
+                    "lr",
+                    LogisticRegression(
+                        max_iter=500,
+                        class_weight=cw,
+                        random_state=random_state,
+                    ),
+                ),
+            ]
+            return StackingClassifier(
+                estimators=base_estimators,
+                final_estimator=LogisticRegression(
+                    max_iter=500,
+                    class_weight=cw,
+                    random_state=random_state,
+                ),
+                cv=3,
+                n_jobs=1,
+            )
         else:
             raise ValueError(f"Unsupported classification model_id: {model_id}")
 
@@ -327,6 +382,26 @@ def get_estimator(
                 random_state=random_state,
                 early_stopping=True,
             )
+
+        # 8. Stacked Ensemble Super-Learner
+        elif model_id == "stacked_ensemble":
+            base_estimators = [
+                (
+                    "rf",
+                    RandomForestRegressor(
+                        n_estimators=50,
+                        random_state=random_state,
+                        n_jobs=1,
+                    ),
+                ),
+                ("ridge", Ridge(random_state=random_state)),
+            ]
+            return StackingRegressor(
+                estimators=base_estimators,
+                final_estimator=Ridge(random_state=random_state),
+                cv=3,
+                n_jobs=1,
+            )
         else:
             raise ValueError(f"Unsupported regression model_id: {model_id}")
 
@@ -340,6 +415,7 @@ def create_pipeline(
     interactions: list[tuple[str, str, str]] | None = None,
     engineered_features: list[dict[str, Any]] | None = None,
     preprocessing_plan: list[dict[str, Any]] | None = None,
+    high_cardinality_cols: list[str] | None = None,
     enable_pca: bool = False,
     pca_n_components: int | None = None,
     enable_feature_selection: bool = False,
@@ -377,6 +453,7 @@ def create_pipeline(
         datetime_cols=datetime_cols,
         interactions=interactions,
         preprocessing_plan=preprocessing_plan,
+        high_cardinality_cols=high_cardinality_cols,
     )
 
     estimator = get_estimator(
