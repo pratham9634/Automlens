@@ -64,6 +64,9 @@ def _train_single_model_worker(args: dict[str, Any]) -> dict[str, Any]:
     engineered_features: list[dict[str, Any]] = args.get("engineered_features", [])
     enable_pca: bool = args.get("enable_pca", False)
     pca_n_components: int | None = args.get("pca_n_components", None)
+    enable_feature_selection: bool = args.get("enable_feature_selection", False)
+    select_k_features: int | None = args.get("select_k_features", None)
+    is_imbalanced: bool = args.get("is_imbalanced", False)
     cv_splits: list[tuple[np.ndarray, np.ndarray]] = args["cv_splits"]
     random_state: int = args.get("random_state", 42)
     save_artifact_path: str = args["save_artifact_path"]
@@ -85,7 +88,7 @@ def _train_single_model_worker(args: dict[str, Any]) -> dict[str, Any]:
             X_train, y_train = X_df.iloc[train_idx], y_series.iloc[train_idx]
             X_val, y_val = X_df.iloc[val_idx], y_series.iloc[val_idx]
 
-            # Construct clean, leakage-free pipeline for this fold
+            # Construct clean, leakage-free pipeline for this fold (Rule 1)
             pipe = create_pipeline(
                 model_id=model_id,
                 task_type=task_type,
@@ -95,6 +98,9 @@ def _train_single_model_worker(args: dict[str, Any]) -> dict[str, Any]:
                 engineered_features=engineered_features,
                 enable_pca=enable_pca,
                 pca_n_components=pca_n_components,
+                enable_feature_selection=enable_feature_selection,
+                select_k_features=select_k_features,
+                is_imbalanced=is_imbalanced,
                 random_state=random_state,
             )
 
@@ -108,15 +114,20 @@ def _train_single_model_worker(args: dict[str, Any]) -> dict[str, Any]:
 
             if is_classification:
                 y_prob_val = None
+                y_prob_train = None
                 if hasattr(pipe, "predict_proba"):
                     try:
                         y_prob_val = pipe.predict_proba(X_val)
+                        y_prob_train = pipe.predict_proba(X_train)
                     except Exception:
                         y_prob_val = None
+                        y_prob_train = None
                 f_metrics_val = compute_classification_metrics(
                     y_val.to_numpy(), y_pred_val, y_prob_val
                 )
-                f_metrics_train = compute_classification_metrics(y_train.to_numpy(), y_pred_train)
+                f_metrics_train = compute_classification_metrics(
+                    y_train.to_numpy(), y_pred_train, y_prob_train
+                )
             else:
                 f_metrics_val = compute_regression_metrics(y_val.to_numpy(), y_pred_val)
                 f_metrics_train = compute_regression_metrics(y_train.to_numpy(), y_pred_train)
@@ -178,6 +189,9 @@ def _train_single_model_worker(args: dict[str, Any]) -> dict[str, Any]:
             engineered_features=engineered_features,
             enable_pca=enable_pca,
             pca_n_components=pca_n_components,
+            enable_feature_selection=enable_feature_selection,
+            select_k_features=select_k_features,
+            is_imbalanced=is_imbalanced,
             random_state=random_state,
         )
         full_pipe.fit(X_df, y_series)
@@ -417,6 +431,25 @@ class TrainingService:
         full_registry = {**CLASSIFICATION_REGISTRY, **REGRESSION_REGISTRY}
         engineered_features = target_config.get("engineered_features", [])
 
+        # Determine class imbalance adaptation
+        is_imbalanced = False
+        if is_classification:
+            val_counts = y.value_counts()
+            if len(val_counts) > 1:
+                ratio = float(val_counts.iloc[0]) / max(1.0, float(val_counts.iloc[-1]))
+                is_imbalanced = ratio >= 3.0
+
+        # Intelligent feature selection (focus on most predictive features)
+        total_feats = len(numeric_cols) + len(categorical_cols)
+        enable_fs = (
+            any(
+                f.get("transformation_type") in ("feature_selection", "k_best")
+                for f in engineered_features
+            )
+            or total_feats > 10
+        )
+        select_k = min(15, total_feats) if enable_fs else None
+
         # Build worker payload args
         tasks: list[dict[str, Any]] = []
         for m_id in selected_models:
@@ -449,6 +482,9 @@ class TrainingService:
                         for f in engineered_features
                     ),
                     "pca_n_components": None,
+                    "enable_feature_selection": enable_fs,
+                    "select_k_features": select_k,
+                    "is_imbalanced": is_imbalanced,
                 }
             )
 

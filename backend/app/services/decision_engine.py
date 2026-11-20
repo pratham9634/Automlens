@@ -416,14 +416,26 @@ class DecisionEngineService:
             available_metrics = [
                 "f1_macro",
                 "accuracy",
+                "balanced_accuracy",
                 "roc_auc",
+                "pr_auc",
+                "log_loss",
+                "mcc",
                 "precision_macro",
                 "recall_macro",
             ]
             # Prompt-driven intent detection for binary classification
             recall_keys = ("false negative", "recall", "sensitivity", "catch all", "churn", "fraud")
             precision_keys = ("false positive", "precision", "specificity", "quality", "clean")
-            if any(k in obj_lower for k in recall_keys):
+            if any(k in obj_lower for k in ("pr_auc", "average precision", "pr-auc", "imbalance", "rare")):
+                primary_metric = "pr_auc"
+            elif any(k in obj_lower for k in ("balanced", "balanced accuracy", "bacc")):
+                primary_metric = "balanced_accuracy"
+            elif any(k in obj_lower for k in ("mcc", "matthews")):
+                primary_metric = "mcc"
+            elif any(k in obj_lower for k in ("log loss", "logloss", "cross entropy")):
+                primary_metric = "log_loss"
+            elif any(k in obj_lower for k in recall_keys):
                 primary_metric = "recall_macro"
             elif any(k in obj_lower for k in precision_keys):
                 primary_metric = "precision_macro"
@@ -435,8 +447,24 @@ class DecisionEngineService:
                 primary_metric = "f1_macro"
 
         elif task_type == TaskType.MULTICLASS_CLASSIFICATION:
-            available_metrics = ["f1_macro", "accuracy", "precision_macro", "recall_macro"]
-            if any(k in obj_lower for k in ("recall", "sensitivity", "coverage", "catch all")):
+            available_metrics = [
+                "f1_macro",
+                "accuracy",
+                "balanced_accuracy",
+                "roc_auc",
+                "pr_auc",
+                "log_loss",
+                "mcc",
+                "precision_macro",
+                "recall_macro",
+            ]
+            if any(k in obj_lower for k in ("balanced", "balanced accuracy", "bacc")):
+                primary_metric = "balanced_accuracy"
+            elif any(k in obj_lower for k in ("mcc", "matthews")):
+                primary_metric = "mcc"
+            elif any(k in obj_lower for k in ("log loss", "logloss")):
+                primary_metric = "log_loss"
+            elif any(k in obj_lower for k in ("recall", "sensitivity", "coverage", "catch all")):
                 primary_metric = "recall_macro"
             elif any(k in obj_lower for k in ("precision", "exactness", "purity")):
                 primary_metric = "precision_macro"
@@ -446,7 +474,16 @@ class DecisionEngineService:
                 primary_metric = "f1_macro"
 
         else:  # REGRESSION
-            available_metrics = ["r2", "neg_root_mean_squared_error", "neg_mean_absolute_error"]
+            available_metrics = [
+                "r2",
+                "neg_root_mean_squared_error",
+                "neg_mean_absolute_error",
+                "medae",
+                "mape",
+                "rmsle",
+                "explained_variance",
+                "max_error",
+            ]
             if any(
                 k in obj_lower
                 for k in ("rmse", "root mean", "penalize large", "extreme error", "quadratic")
@@ -457,6 +494,16 @@ class DecisionEngineService:
                 for k in ("mae", "mean absolute", "outlier resistant", "median error", "absolute")
             ):
                 primary_metric = "neg_mean_absolute_error"
+            elif any(k in obj_lower for k in ("medae", "median absolute")):
+                primary_metric = "medae"
+            elif any(k in obj_lower for k in ("mape", "percentage error", "relative error")):
+                primary_metric = "mape"
+            elif any(k in obj_lower for k in ("rmsle", "log error")):
+                primary_metric = "rmsle"
+            elif any(k in obj_lower for k in ("explained variance", "ev")):
+                primary_metric = "explained_variance"
+            elif any(k in obj_lower for k in ("max error", "worst case")):
+                primary_metric = "max_error"
             else:
                 primary_metric = "r2"
 

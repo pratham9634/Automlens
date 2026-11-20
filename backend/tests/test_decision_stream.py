@@ -37,14 +37,12 @@ def test_decision_stream_offline_fallback(client: TestClient) -> None:
         "user_objective": "Detect fraudulent transactions and extract transaction date patterns",
     }
 
-    # Request SSE stream with Ollama mocked as offline
-    err = Exception("ConnectionRefused")
-    with patch("app.services.decision_engine.AsyncOpenAI", side_effect=err):
-        res = client.post(f"/api/v1/projects/{project_id}/decision/stream", json=payload)
-        assert res.status_code == 200
-        assert "text/event-stream" in res.headers["content-type"]
+    # Request SSE stream (offline deterministic rule engine fallback)
+    res = client.post(f"/api/v1/projects/{project_id}/decision/stream", json=payload)
+    assert res.status_code == 200
+    assert "text/event-stream" in res.headers["content-type"]
 
-        body = res.text
+    body = res.text
     assert "event: status" in body
     assert "event: token" in body
     assert "event: reasoning_completed" in body
@@ -92,35 +90,42 @@ def test_decision_stream_mock_ollama_tokens(client: TestClient) -> None:
     )
     project_id = _create_project_with_dataset(client, csv_data)
 
-    class MockChunkDelta:
-        def __init__(self, content):
-            self.content = content
+    class MockResponse:
+        status_code = 200
 
-    class MockChunkChoice:
-        def __init__(self, delta):
-            self.delta = delta
+        async def aiter_lines(self):
+            yield 'data: {"candidates": [{"content": {"parts": [{"text": "Analyzing "}]}}]}'
+            yield 'data: {"candidates": [{"content": {"parts": [{"text": "pricing "}]}}]}'
+            yield 'data: {"candidates": [{"content": {"parts": [{"text": "patterns."}]}}]}'
+            yield "data: [DONE]"
 
-    class MockChunk:
-        def __init__(self, content):
-            self.choices = [MockChunkChoice(MockChunkDelta(content))]
+        async def __aenter__(self):
+            return self
 
-    async def mock_streaming_generator():
-        yield MockChunk("Analyzing ")
-        yield MockChunk("pricing ")
-        yield MockChunk("patterns.")
+        async def __aexit__(self, exc_type, exc_val, exc_tb):
+            pass
 
-    mock_stream = mock_streaming_generator()
+    class MockAsyncClient:
+        def stream(self, method, url, **kwargs):
+            return MockResponse()
 
-    with patch("app.services.decision_engine.AsyncOpenAI") as mock_openai_cls:
-        mock_client = AsyncMock()
-        mock_client.chat.completions.create = AsyncMock(return_value=mock_stream)
-        mock_openai_cls.return_value = mock_client
+        async def __aenter__(self):
+            return self
 
+        async def __aexit__(self, exc_type, exc_val, exc_tb):
+            pass
+
+    with patch("httpx.AsyncClient", return_value=MockAsyncClient()):
         payload = {
             "target_column": "Price",
             "user_objective": "Predict house prices with explainable models",
         }
-        res = client.post(f"/api/v1/projects/{project_id}/decision/stream", json=payload)
+        headers = {"X-Gemini-API-Key": "AIzaSy_fake_test_key"}
+        res = client.post(
+            f"/api/v1/projects/{project_id}/decision/stream",
+            json=payload,
+            headers=headers,
+        )
         assert res.status_code == 200
         body = res.text
         assert '{"token": "Analyzing "}' in body

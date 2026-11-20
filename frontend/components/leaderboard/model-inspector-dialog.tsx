@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   ConfusionMatrixResponse,
   ModelDetailResponse,
@@ -43,6 +43,29 @@ interface ModelInspectorDialogProps {
   onSelectForPredict?: (modelId: string) => void;
 }
 
+const METRIC_DESCRIPTIONS: Record<string, string> = {
+  rmse: "Root Mean Squared Error (Lower is better)",
+  mae: "Mean Absolute Error (Lower is better)",
+  r2: "R² Coefficient of Determination (Higher is better)",
+  medae: "Median Absolute Error - Outlier robust (Lower is better)",
+  mape: "Mean Absolute Percentage Error (Lower is better)",
+  rmsle: "Root Mean Squared Logarithmic Error (Lower is better)",
+  explained_variance: "Explained Variance Score (Higher is better)",
+  max_error: "Maximum Residual Error (Lower is better)",
+  accuracy: "Overall Classification Accuracy (Higher is better)",
+  balanced_accuracy: "Balanced Accuracy - Macro recall across classes (Higher is better)",
+  f1_macro: "F1 Score - Macro averaged (Higher is better)",
+  f1_weighted: "F1 Score - Support weighted (Higher is better)",
+  precision_macro: "Precision - Macro averaged (Higher is better)",
+  precision_weighted: "Precision - Support weighted (Higher is better)",
+  recall_macro: "Recall - Macro averaged (Higher is better)",
+  recall_weighted: "Recall - Support weighted (Higher is better)",
+  roc_auc: "Area Under ROC Curve (Higher is better)",
+  pr_auc: "Area Under PR Curve / Average Precision (Higher is better)",
+  log_loss: "Cross-Entropy Loss (Lower is better)",
+  mcc: "Matthews Correlation Coefficient (Higher is better, -1 to +1)",
+};
+
 export function ModelInspectorDialog({
   projectId,
   model,
@@ -59,7 +82,7 @@ export function ModelInspectorDialog({
 
   const isClassification = taskType !== "regression";
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     setError(null);
 
@@ -83,12 +106,12 @@ export function ModelInspectorDialog({
     } finally {
       setLoading(false);
     }
-  };
+  }, [projectId, model.model_id, isClassification]);
 
   useEffect(() => {
     if (!isOpen) return;
     fetchData();
-  }, [projectId, model.model_id, isOpen, isClassification]);
+  }, [isOpen, fetchData]);
 
   const downloadUrl = apiClient.getModelDownloadUrl(projectId, model.model_id);
 
@@ -241,32 +264,41 @@ export function ModelInspectorDialog({
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {Object.entries(model.all_metrics).map(([metricName, agg]) => {
-                          const isPrimary = metricName === model.primary_metric_name;
-                          return (
-                            <TableRow
-                              key={metricName}
-                              className={isPrimary ? "bg-accent/5 font-medium" : undefined}
-                            >
-                              <TableCell className="text-text-primary font-mono flex items-center gap-1.5">
-                                <span>{metricName}</span>
-                                {isPrimary && (
-                                  <Badge variant="accent" size="sm">
-                                    Primary
-                                  </Badge>
-                                )}
-                              </TableCell>
-                              {agg.folds.map((val, idx) => (
-                                <TableCell key={idx} className="text-right font-mono text-text-muted tabular-nums">
-                                  {val.toFixed(4)}
+                        {Object.entries(model.all_metrics)
+                          .filter(
+                            ([metricName, agg]) =>
+                              !metricName.startsWith("_") &&
+                              !metricName.startsWith("neg_") &&
+                              agg &&
+                              Array.isArray(agg.folds)
+                          )
+                          .map(([metricName, agg]) => {
+                            const isPrimary = metricName === model.primary_metric_name;
+                            const desc = METRIC_DESCRIPTIONS[metricName];
+                            return (
+                              <TableRow
+                                key={metricName}
+                                className={isPrimary ? "bg-accent/5 font-medium" : undefined}
+                              >
+                                <TableCell className="text-text-primary font-mono flex items-center gap-1.5" title={desc}>
+                                  <span>{metricName}</span>
+                                  {isPrimary && (
+                                    <Badge variant="accent" size="sm">
+                                      Primary
+                                    </Badge>
+                                  )}
                                 </TableCell>
-                              ))}
-                              <TableCell className="text-right font-mono text-text-primary font-semibold tabular-nums">
-                                {agg.mean.toFixed(4)} ± {agg.std.toFixed(4)}
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })}
+                                {agg.folds.map((val, idx) => (
+                                  <TableCell key={idx} className="text-right font-mono text-text-muted tabular-nums">
+                                    {val.toFixed(4)}
+                                  </TableCell>
+                                ))}
+                                <TableCell className="text-right font-mono text-text-primary font-semibold tabular-nums">
+                                  {agg.mean.toFixed(4)} ± {agg.std.toFixed(4)}
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
                       </TableBody>
                     </Table>
                   ) : (

@@ -213,11 +213,13 @@ export function TrainingDashboard({
 
   // Watchdog polling fallback: reconciles state if SSE disconnects or user refreshes
   useEffect(() => {
-    if (!activeRun || activeRun.status !== "running") return;
+    const runId = activeRun?.id;
+    const runStatus = activeRun?.status;
+    if (!runId || runStatus !== "running") return;
 
     const watchdog = setInterval(async () => {
       try {
-        const freshRun = await apiClient.getTrainingRun(activeRun.id);
+        const freshRun = await apiClient.getTrainingRun(runId);
         if (freshRun.status === "completed" || freshRun.status === "failed") {
           setActiveRun(freshRun);
           if (freshRun.status === "completed" && onTrainingCompleted) {

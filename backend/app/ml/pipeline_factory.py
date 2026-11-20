@@ -102,12 +102,12 @@ def create_preprocessor(
         num_pipeline = Pipeline(steps=num_steps)
         transformers.append(("numeric", num_pipeline, numeric_cols))
 
-    # 2. Categorical Feature Pipeline
+    # 2. Categorical Feature Pipeline (Protected against high-cardinality explosion via max_categories=30)
     if categorical_cols:
         cat_pipeline = Pipeline(
             steps=[
                 ("imputer", SimpleImputer(strategy="most_frequent")),
-                ("encoder", OneHotEncoder(handle_unknown="ignore", sparse_output=False)),
+                ("encoder", OneHotEncoder(handle_unknown="ignore", max_categories=30, sparse_output=False)),
             ]
         )
         transformers.append(("categorical", cat_pipeline, categorical_cols))
@@ -140,30 +140,38 @@ def get_estimator(
     model_id: str,
     task_type: TaskType,
     random_state: int = 42,
+    is_imbalanced: bool = False,
 ) -> Any:
-    """Instantiate candidate estimator from 24-model catalog with academic defaults (Rule 4)."""
+    """Instantiate candidate estimator from 24-model catalog with academic defaults (Rule 4).
+
+    When is_imbalanced is True, automatically injects balanced class weighting into
+    applicable tree and linear estimators to prevent majority-class bias.
+    """
     is_classification = task_type in (
         TaskType.BINARY_CLASSIFICATION,
         TaskType.MULTICLASS_CLASSIFICATION,
     )
 
     if is_classification:
+        cw = "balanced" if is_imbalanced else None
+
         # 1. Mandatory Rule 4 Baseline
         if model_id == "dummy_classifier":
             return DummyClassifier(strategy="most_frequent")
 
         # 2. Linear Models
         elif model_id == "logistic_regression":
-            return LogisticRegression(max_iter=1000, random_state=random_state)
+            return LogisticRegression(max_iter=1000, class_weight=cw, random_state=random_state)
         elif model_id == "ridge_classifier":
-            return RidgeClassifier(random_state=random_state)
+            return RidgeClassifier(class_weight=cw, random_state=random_state)
 
-        # 3. Tree Ensembles (Senior ML regularized defaults to prevent memorization)
+        # 3. Tree Ensembles (Senior ML regularized defaults with imbalance support)
         elif model_id == "random_forest":
             return RandomForestClassifier(
                 n_estimators=100,
                 min_samples_leaf=2,
                 max_features="sqrt",
+                class_weight=cw,
                 random_state=random_state,
                 n_jobs=1,
             )
@@ -172,6 +180,7 @@ def get_estimator(
                 n_estimators=100,
                 min_samples_leaf=2,
                 max_features="sqrt",
+                class_weight=cw,
                 random_state=random_state,
                 n_jobs=1,
             )
@@ -180,6 +189,7 @@ def get_estimator(
         elif model_id in ("gradient_boosting", "hist_gradient_boosting"):
             return HistGradientBoostingClassifier(
                 random_state=random_state,
+                class_weight=cw,
                 early_stopping=True,
             )
         elif model_id in ("xgboost", "xgb"):
@@ -193,7 +203,11 @@ def get_estimator(
                     n_jobs=1,
                 )
             except ImportError:
-                return HistGradientBoostingClassifier(random_state=random_state)
+                return HistGradientBoostingClassifier(
+                    random_state=random_state,
+                    class_weight=cw,
+                    early_stopping=True,
+                )
         elif model_id in ("lightgbm", "lgbm"):
             try:
                 from lightgbm import LGBMClassifier
@@ -201,17 +215,24 @@ def get_estimator(
                 return LGBMClassifier(
                     n_estimators=100,
                     random_state=random_state,
+                    class_weight=cw,
                     verbosity=-1,
                     n_jobs=1,
                 )
             except ImportError:
-                return HistGradientBoostingClassifier(random_state=random_state)
+                return HistGradientBoostingClassifier(
+                    random_state=random_state,
+                    class_weight=cw,
+                    early_stopping=True,
+                )
         elif model_id == "adaboost":
             return AdaBoostClassifier(n_estimators=50, random_state=random_state)
 
-        # 5. Support Vector Machine (Calibrated)
+        # 5. Support Vector Machine (Calibrated with balanced weights)
         elif model_id in ("linear_svc", "svc"):
-            base_svc = LinearSVC(random_state=random_state, dual="auto", max_iter=2000)
+            base_svc = LinearSVC(
+                random_state=random_state, class_weight=cw, dual="auto", max_iter=2000
+            )
             return CalibratedClassifierCV(estimator=base_svc)
 
         # 6. Instance-based (K-NN)
@@ -323,9 +344,10 @@ def create_pipeline(
     pca_n_components: int | None = None,
     enable_feature_selection: bool = False,
     select_k_features: int | None = None,
+    is_imbalanced: bool = False,
     random_state: int = 42,
 ) -> Pipeline:
-    """Construct an end-to-end Pipeline combining preprocessing and estimator.
+    """Construct an end-to-end Pipeline combining preprocessing, feature selection, and estimator.
 
     Rule 1 & Rule 8: All transformations occur inside the Pipeline to guarantee
     zero test-set leakage across CV folds.
@@ -361,6 +383,7 @@ def create_pipeline(
         model_id=model_id,
         task_type=task_type,
         random_state=random_state,
+        is_imbalanced=is_imbalanced,
     )
 
     pipeline_steps: list[tuple[str, Any]] = [("preprocessor", preprocessor)]

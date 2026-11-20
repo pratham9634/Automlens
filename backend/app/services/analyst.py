@@ -21,6 +21,7 @@ from app.db.repositories.audit import AuditRepository
 from app.db.repositories.datasets import DatasetRepository
 from app.db.repositories.projects import ProjectRepository
 from app.db.repositories.runs import RunRepository
+from app.ml.metrics import is_error_metric
 from app.services.explainability import ExplainabilityService
 from app.services.profiling import ProfilingService
 from app.storage.local import LocalStorageBackend
@@ -140,9 +141,7 @@ class AnalystService:
                 model_runs = self.run_repo.list_model_runs_by_run_id(latest_run.id)
                 completed_models = [m for m in model_runs if m.primary_metric_score is not None]
 
-                lower_is_better = any(
-                    err in latest_run.primary_metric.lower() for err in ("rmse", "mae", "loss")
-                )
+                lower_is_better = is_error_metric(latest_run.primary_metric)
 
                 sorted_models = sorted(
                     completed_models,
