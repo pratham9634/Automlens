@@ -36,7 +36,7 @@ export function QualityScoreGauge({ profile }: QualityScoreGaugeProps) {
   return (
     <div className="space-y-3">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
-        {/* Overall Health Score Card */}
+        {/* Overall Health Score Card with Semi-Circular Gauge */}
         <Card className="p-4 sm:p-5 flex items-center justify-between gap-4">
           <div className="space-y-1">
             <div className="flex items-center gap-1.5">
@@ -60,14 +60,44 @@ export function QualityScoreGauge({ profile }: QualityScoreGaugeProps) {
             </p>
           </div>
 
-          <div className="w-12 h-12 rounded-card border border-border bg-surface-subtle flex items-center justify-center shrink-0">
-            {quality_score >= 80 ? (
-              <ShieldCheck className="w-6 h-6 text-success" />
-            ) : quality_score >= 50 ? (
-              <AlertTriangle className="w-6 h-6 text-warning" />
-            ) : (
-              <ShieldAlert className="w-6 h-6 text-danger" />
-            )}
+          {/* SVG Semi-Circular Arc Health Gauge */}
+          <div className="relative w-16 h-16 shrink-0 flex items-center justify-center">
+            <svg className="w-16 h-16 -rotate-90" viewBox="0 0 64 64">
+              {/* Background Arc */}
+              <circle
+                cx="32"
+                cy="32"
+                r="26"
+                fill="none"
+                stroke="currentColor"
+                className="text-surface-subtle"
+                strokeWidth="6"
+              />
+              {/* Active Progress Arc */}
+              <circle
+                cx="32"
+                cy="32"
+                r="26"
+                fill="none"
+                stroke={
+                  quality_score >= 80 ? "#10B981" : quality_score >= 50 ? "#F59E0B" : "#EF4444"
+                }
+                strokeWidth="6"
+                strokeDasharray="163.36"
+                strokeDashoffset={163.36 * (1 - Math.min(100, Math.max(0, quality_score)) / 100)}
+                strokeLinecap="round"
+                className="transition-all duration-500 ease-out"
+              />
+            </svg>
+            <div className="absolute inset-0 flex items-center justify-center">
+              {quality_score >= 80 ? (
+                <ShieldCheck className="w-5 h-5 text-success" />
+              ) : quality_score >= 50 ? (
+                <AlertTriangle className="w-5 h-5 text-warning" />
+              ) : (
+                <ShieldAlert className="w-5 h-5 text-danger" />
+              )}
+            </div>
           </div>
         </Card>
 
@@ -214,6 +244,69 @@ export function QualityScoreGauge({ profile }: QualityScoreGaugeProps) {
           </div>
         )}
       </div>
+
+      {/* Executive Data Health Briefing */}
+      {(() => {
+        const totalRows = profile.total_rows || 1;
+        const totalCols = profile.total_columns || 1;
+        const totalCells = totalRows * totalCols;
+        const totalNulls =
+          profile.numeric_columns.reduce((a, c) => a + c.null_count, 0) +
+          profile.categorical_columns.reduce((a, c) => a + c.null_count, 0);
+        const completenessPct = Math.max(0, 100 - (totalNulls / Math.max(totalCells, 1)) * 100);
+        const ratio = Math.round(totalRows / Math.max(totalCols, 1));
+        const outlierColsCount = profile.numeric_columns.filter((c) => c.outlier_count > 0).length;
+
+        return (
+          <div className="p-3.5 sm:p-4 rounded-card border border-border bg-surface-subtle/70 space-y-2">
+            <div className="flex items-center justify-between text-xs font-mono">
+              <span className="font-semibold text-text-primary flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-accent" />
+                <span>Executive Data Health Briefing</span>
+              </span>
+              <span className="text-[10px] text-text-muted">Automated Diagnostic Assessment</span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 text-xs font-mono pt-0.5">
+              <div className="p-2.5 rounded-button bg-surface border border-border space-y-1">
+                <span className="text-[10.5px] uppercase font-bold text-success flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-success" />
+                  1. Completeness ({completenessPct.toFixed(1)}%)
+                </span>
+                <p className="text-[11px] text-text-secondary leading-relaxed">
+                  {completenessPct >= 95
+                    ? "High density across features. Standard median/mode imputation in CV folds will preserve maximum sample fidelity."
+                    : "Missingness detected in specific columns. High-null features will be evaluated for automated dropping in Step 2."}
+                </p>
+              </div>
+
+              <div className="p-2.5 rounded-button bg-surface border border-border space-y-1">
+                <span className="text-[10.5px] uppercase font-bold text-info flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-info" />
+                  2. Dimensionality ({ratio}:1 Ratio)
+                </span>
+                <p className="text-[11px] text-text-secondary leading-relaxed">
+                  {ratio >= 15
+                    ? `${totalRows.toLocaleString()} samples over ${totalCols} columns provides sufficient power for 5-fold CV without overfitting.`
+                    : "Compact sample-to-feature ratio. Regularized models (Ridge/Lasso) and shallow trees will be favored."}
+                </p>
+              </div>
+
+              <div className="p-2.5 rounded-button bg-surface border border-border space-y-1">
+                <span className="text-[10.5px] uppercase font-bold text-warning flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-warning" />
+                  3. Outliers ({outlierColsCount} Cols Flagged)
+                </span>
+                <p className="text-[11px] text-text-secondary leading-relaxed">
+                  {constantColumns === 0
+                    ? "All columns exhibit variance (0 constant columns). Extreme values are preserved per Rule 6 without silent loss."
+                    : `${constantColumns} constant zero-variance feature(s) detected. Automatically pruned inside sklearn Pipeline.`}
+                </p>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

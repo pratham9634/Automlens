@@ -46,6 +46,21 @@ export function CorrelationHeatmap({ matrix }: CorrelationHeatmapProps) {
     return Array.from(set).sort((a, b) => a - b);
   }, [matrix]);
 
+  // Ranked Top 5 Strongest Feature Dependencies
+  const topCorrelations = useMemo(() => {
+    if (!matrix || matrix.columns.length < 2) return [];
+    const pairs: Array<{ featureA: string; featureB: string; val: number }> = [];
+    for (let i = 0; i < matrix.columns.length; i++) {
+      for (let j = i + 1; j < matrix.columns.length; j++) {
+        const val = matrix.values[i]?.[j];
+        if (val !== null && val !== undefined) {
+          pairs.push({ featureA: matrix.columns[i], featureB: matrix.columns[j], val });
+        }
+      }
+    }
+    return pairs.sort((a, b) => Math.abs(b.val) - Math.abs(a.val)).slice(0, 5);
+  }, [matrix]);
+
   if (!matrix || matrix.columns.length < 2) {
     return (
       <Card className="p-8 text-center space-y-2">
@@ -162,6 +177,54 @@ export function CorrelationHeatmap({ matrix }: CorrelationHeatmapProps) {
         </AlertRow>
       )}
 
+      {/* Top 5 Strongest Feature Dependencies Leaderboard */}
+      {topCorrelations.length > 0 && (
+        <div className="p-3.5 rounded-card border border-border bg-surface-subtle/70 space-y-2">
+          <div className="flex items-center justify-between text-xs font-mono">
+            <span className="font-semibold text-text-primary flex items-center gap-1.5">
+              <span>Top Strongest Feature Linear Dependencies</span>
+            </span>
+            <span className="text-[10px] text-text-muted">Ranked by |Pearson r|</span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
+            {topCorrelations.map((pair, rankIdx) => {
+              const absVal = Math.abs(pair.val);
+              const tier = absVal >= 0.85 ? "Severe" : absVal >= 0.6 ? "Strong" : "Moderate";
+              return (
+                <div
+                  key={rankIdx}
+                  className="p-2.5 rounded-button bg-surface border border-border flex flex-col justify-between space-y-1.5 text-xs font-mono"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold text-text-muted">#{rankIdx + 1}</span>
+                    <Badge
+                      variant={tier === "Severe" ? "danger" : tier === "Strong" ? "warning" : "info"}
+                      size="sm"
+                    >
+                      {tier}
+                    </Badge>
+                  </div>
+                  <div className="truncate font-semibold text-text-primary text-[11px]" title={`${pair.featureA} ↔ ${pair.featureB}`}>
+                    {pair.featureA} ↔ {pair.featureB}
+                  </div>
+                  <div className="flex items-baseline justify-between pt-0.5 border-t border-border/60 text-[11px] tabular-nums">
+                    <span className="text-text-muted text-[10px]">r =</span>
+                    <span
+                      className={`font-bold ${
+                        pair.val > 0 ? "text-info" : "text-danger"
+                      }`}
+                    >
+                      {pair.val > 0 ? `+${pair.val.toFixed(3)}` : pair.val.toFixed(3)}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Interactive Matrix Table */}
       <div className="rounded-card border border-border overflow-x-auto bg-surface-subtle max-h-96">
         <table className="w-full text-center text-xs font-mono border-collapse">
@@ -170,24 +233,39 @@ export function CorrelationHeatmap({ matrix }: CorrelationHeatmapProps) {
               <th className="px-3 py-2.5 text-left text-text-muted text-[11px] font-medium border-r border-border sticky left-0 bg-surface">
                 Features ({activeColumns.length})
               </th>
-              {activeColumns.map((col) => (
-                <th
-                  key={col}
-                  className="px-3 py-2 text-text-muted text-[11px] font-medium border-r border-border last:border-r-0 whitespace-nowrap max-w-[120px] truncate"
-                  title={col}
-                >
-                  {col}
-                </th>
-              ))}
+              {activeColumns.map((col) => {
+                const isCrosshairCol = hoveredCell?.featureB === col || hoveredCell?.featureA === col;
+                return (
+                  <th
+                    key={col}
+                    className={`px-3 py-2 text-text-muted text-[11px] font-medium border-r border-border last:border-r-0 whitespace-nowrap max-w-[120px] truncate transition-colors ${
+                      isCrosshairCol ? "bg-accent/15 text-accent font-bold" : ""
+                    }`}
+                    title={col}
+                  >
+                    {col}
+                  </th>
+                );
+              })}
             </tr>
           </thead>
           <tbody>
             {activeColIndices.map((origRowIdx) => {
               const rowName = columns[origRowIdx];
+              const isCrosshairRow = hoveredCell?.featureA === rowName || hoveredCell?.featureB === rowName;
               return (
-                <tr key={rowName} className="border-b border-border/70 last:border-b-0">
+                <tr
+                  key={rowName}
+                  className={`border-b border-border/70 last:border-b-0 transition-colors ${
+                    isCrosshairRow ? "bg-accent/5" : ""
+                  }`}
+                >
                   <td
-                    className="px-3 py-2 text-left font-medium text-text-primary text-[11px] border-r border-border whitespace-nowrap max-w-[140px] truncate sticky left-0 bg-surface"
+                    className={`px-3 py-2 text-left font-medium text-[11px] border-r border-border whitespace-nowrap max-w-[140px] truncate sticky left-0 transition-colors ${
+                      isCrosshairRow
+                        ? "bg-accent/15 text-accent font-bold"
+                        : "bg-surface text-text-primary"
+                    }`}
                     title={rowName}
                   >
                     {rowName}
@@ -195,6 +273,12 @@ export function CorrelationHeatmap({ matrix }: CorrelationHeatmapProps) {
                   {activeColIndices.map((origColIdx) => {
                     const colName = columns[origColIdx];
                     const val = values[origRowIdx]?.[origColIdx] ?? null;
+                    const isCellHovered =
+                      hoveredCell?.featureA === rowName && hoveredCell?.featureB === colName;
+                    const isCrosshair =
+                      (hoveredCell?.featureA === rowName || hoveredCell?.featureB === colName) &&
+                      !isCellHovered;
+
                     return (
                       <td
                         key={colName}
@@ -202,9 +286,15 @@ export function CorrelationHeatmap({ matrix }: CorrelationHeatmapProps) {
                           setHoveredCell({ featureA: rowName, featureB: colName, val })
                         }
                         onMouseLeave={() => setHoveredCell(null)}
-                        className={`px-3 py-2 border-r border-border/60 last:border-r-0 transition-colors cursor-pointer text-[11px] tabular-nums ${getCellBg(
+                        className={`px-3 py-2 border-r border-border/60 last:border-r-0 transition-all cursor-pointer text-[11px] tabular-nums ${getCellBg(
                           val
-                        )}`}
+                        )} ${
+                          isCellHovered
+                            ? "ring-2 ring-accent ring-inset font-black scale-105 z-10"
+                            : isCrosshair
+                            ? "bg-opacity-90"
+                            : ""
+                        }`}
                       >
                         {val !== null ? val.toFixed(2) : "—"}
                       </td>

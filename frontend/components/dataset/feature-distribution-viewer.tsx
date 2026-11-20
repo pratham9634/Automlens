@@ -204,8 +204,8 @@ export function FeatureDistributionViewer({
             ))}
           </div>
 
-          {/* Outlier & Constant Flag Banner */}
-          <div className="flex flex-wrap items-center gap-3 text-xs font-mono">
+          {/* Outlier & Constant Flag Banner with Skewness Recommendation */}
+          <div className="flex flex-wrap items-center gap-2.5 text-xs font-mono">
             {currentNumeric.outlier_count > 0 ? (
               <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-pill bg-warning/10 border border-warning/30 text-warning">
                 <AlertCircle className="w-3.5 h-3.5" />
@@ -220,6 +220,28 @@ export function FeatureDistributionViewer({
                 Zero IQR outliers detected in numeric span.
               </span>
             )}
+
+            {/* Skewness Transform Intelligence */}
+            {currentNumeric.skewness !== null && currentNumeric.skewness !== undefined && (
+              <div
+                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-pill text-[11px] border font-mono ${
+                  Math.abs(currentNumeric.skewness) >= 1.5
+                    ? "bg-amber-500/10 border-amber-500/30 text-amber-800 dark:text-amber-300"
+                    : Math.abs(currentNumeric.skewness) >= 0.5
+                    ? "bg-info/10 border-info/30 text-info"
+                    : "bg-success/10 border-success/30 text-success"
+                }`}
+              >
+                <span>
+                  {Math.abs(currentNumeric.skewness) >= 1.5
+                    ? `Heavy Skew (${currentNumeric.skewness.toFixed(2)}) → Step 2: Log1p / PowerTransformer Recommended`
+                    : Math.abs(currentNumeric.skewness) >= 0.5
+                    ? `Moderate Skew (${currentNumeric.skewness.toFixed(2)})`
+                    : `Symmetric Distribution (${currentNumeric.skewness.toFixed(2)})`}
+                </span>
+              </div>
+            )}
+
             {currentNumeric.null_count > 0 && (
               <span className="text-[11px] text-warning tabular-nums">
                 • {currentNumeric.null_count.toLocaleString()} missing cells ({currentNumeric.null_percentage.toFixed(1)}%)
@@ -272,6 +294,171 @@ export function FeatureDistributionViewer({
               </div>
             </div>
           )}
+
+          {/* SVG Box-and-Whisker Plot & Outlier Fences */}
+          {currentNumeric.min !== null &&
+            currentNumeric.max !== null &&
+            currentNumeric.q25 !== null &&
+            currentNumeric.q75 !== null &&
+            currentNumeric.median !== null &&
+            currentNumeric.min !== undefined &&
+            currentNumeric.max !== undefined &&
+            currentNumeric.q25 !== undefined &&
+            currentNumeric.q75 !== undefined &&
+            currentNumeric.median !== undefined && (
+              <div className="space-y-2 pt-1 border-t border-border">
+                <div className="flex items-center justify-between text-xs font-mono">
+                  <span className="text-text-muted flex items-center gap-1.5">
+                    <span>Box &amp; Whisker Dispersion (Tukey 1.5× IQR)</span>
+                  </span>
+                  <span className="text-[11px] text-text-muted flex items-center gap-3">
+                    <span className="flex items-center gap-1">
+                      <span className="w-2.5 h-2.5 rounded-sm bg-accent/20 border border-accent inline-block" />
+                      IQR Box (Q1 - Q3)
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <span className="w-2.5 h-0.5 bg-amber-500 inline-block" />
+                      Median
+                    </span>
+                    {currentNumeric.outlier_count > 0 && (
+                      <span className="flex items-center gap-1">
+                        <span className="w-2 h-2 rounded-full bg-danger inline-block" />
+                        Outlier Fences
+                      </span>
+                    )}
+                  </span>
+                </div>
+
+                {(() => {
+                  const minVal = currentNumeric.min!;
+                  const maxVal = currentNumeric.max!;
+                  const q25 = currentNumeric.q25!;
+                  const median = currentNumeric.median!;
+                  const q75 = currentNumeric.q75!;
+                  const iqr = q75 - q25;
+                  const rawLowerFence = round(q25 - 1.5 * iqr, 2);
+                  const rawUpperFence = round(q75 + 1.5 * iqr, 2);
+                  const lowerWhisker = Math.max(minVal, rawLowerFence);
+                  const upperWhisker = Math.min(maxVal, rawUpperFence);
+
+                  const span = maxVal - minVal > 0 ? maxVal - minVal : 1;
+                  const toPct = (v: number) => Math.min(100, Math.max(0, ((v - minVal) / span) * 100));
+
+                  const boxLeft = toPct(q25);
+                  const boxWidth = Math.max(toPct(q75) - boxLeft, 0.5);
+                  const medianLeft = toPct(median);
+                  const whiskerLeft = toPct(lowerWhisker);
+                  const whiskerRight = toPct(upperWhisker);
+
+                  return (
+                    <div className="p-3 rounded-card border border-border bg-surface-subtle/50 space-y-2 font-mono">
+                      {/* SVG Box Plot Canvas */}
+                      <div className="relative w-full h-10 flex items-center">
+                        <svg className="w-full h-full overflow-visible" preserveAspectRatio="none">
+                          {/* Whisker Connecting Line */}
+                          <line
+                            x1={`${whiskerLeft}%`}
+                            x2={`${boxLeft}%`}
+                            y1="50%"
+                            y2="50%"
+                            stroke="currentColor"
+                            className="text-text-muted"
+                            strokeWidth="1.5"
+                          />
+                          <line
+                            x1={`${boxLeft + boxWidth}%`}
+                            x2={`${whiskerRight}%`}
+                            y1="50%"
+                            y2="50%"
+                            stroke="currentColor"
+                            className="text-text-muted"
+                            strokeWidth="1.5"
+                          />
+
+                          {/* Whisker End Caps */}
+                          <line
+                            x1={`${whiskerLeft}%`}
+                            x2={`${whiskerLeft}%`}
+                            y1="30%"
+                            y2="70%"
+                            stroke="currentColor"
+                            className="text-text-primary"
+                            strokeWidth="2"
+                          />
+                          <line
+                            x1={`${whiskerRight}%`}
+                            x2={`${whiskerRight}%`}
+                            y1="30%"
+                            y2="70%"
+                            stroke="currentColor"
+                            className="text-text-primary"
+                            strokeWidth="2"
+                          />
+
+                          {/* Central IQR Box (Q1 to Q3) */}
+                          <rect
+                            x={`${boxLeft}%`}
+                            y="20%"
+                            width={`${boxWidth}%`}
+                            height="60%"
+                            rx="3"
+                            className="fill-sky-500/20 stroke-sky-500"
+                            strokeWidth="1.5"
+                          />
+
+                          {/* Median Marker Line */}
+                          <line
+                            x1={`${medianLeft}%`}
+                            x2={`${medianLeft}%`}
+                            y1="15%"
+                            y2="85%"
+                            stroke="#F59E0B"
+                            strokeWidth="2.5"
+                          />
+
+                          {/* Outlier Dots beyond fences */}
+                          {minVal < rawLowerFence && (
+                            <circle
+                              cx={`${toPct(minVal)}%`}
+                              cy="50%"
+                              r="3.5"
+                              className="fill-danger stroke-surface"
+                              strokeWidth="1"
+                            >
+                              <title>Min Outlier: {minVal}</title>
+                            </circle>
+                          )}
+                          {maxVal > rawUpperFence && (
+                            <circle
+                              cx={`${toPct(maxVal)}%`}
+                              cy="50%"
+                              r="3.5"
+                              className="fill-danger stroke-surface"
+                              strokeWidth="1"
+                            >
+                              <title>Max Outlier: {maxVal}</title>
+                            </circle>
+                          )}
+                        </svg>
+                      </div>
+
+                      {/* Precise Mathematical Fence Labels */}
+                      <div className="flex flex-wrap items-center justify-between text-[10.5px] text-text-muted pt-1 border-t border-border/60">
+                        <span>
+                          Lower Fence: <strong className="text-text-primary tabular-nums">{rawLowerFence}</strong>
+                        </span>
+                        <span className="text-accent font-semibold">
+                          IQR Span: <strong className="tabular-nums">{iqr.toFixed(2)}</strong>
+                        </span>
+                        <span>
+                          Upper Fence: <strong className="text-text-primary tabular-nums">{rawUpperFence}</strong>
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
         </div>
       )}
 
