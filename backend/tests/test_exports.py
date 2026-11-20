@@ -1,13 +1,15 @@
 """Tests for Export Hub status inspection and artifact downloads (Phase 9)."""
 
+import io
 import json
 import uuid
+import zipfile
 
 from fastapi.testclient import TestClient
 
 
 def test_get_export_status_overview(client: TestClient) -> None:
-    """Verify that export status lists all 6 artifacts with correct availability."""
+    """Verify that export status lists all artifacts with correct availability."""
     unique_name = f"ExportStatus {uuid.uuid4().hex[:8]}"
     create_res = client.post("/api/v1/projects", json={"name": unique_name})
     assert create_res.status_code == 201
@@ -18,9 +20,10 @@ def test_get_export_status_overview(client: TestClient) -> None:
     data = status_res.json()
 
     assert data["project_id"] == project_id
-    assert len(data["exports"]) == 6
+    assert len(data["exports"]) == 7
 
     keys = [item["export_type"] for item in data["exports"]]
+    assert "bundle" in keys
     assert "quality_report" in keys
     assert "leaderboard" in keys
     assert "predictions" in keys
@@ -28,7 +31,9 @@ def test_get_export_status_overview(client: TestClient) -> None:
     assert "pipeline" in keys
     assert "audit_log" in keys
 
-    # audit_log should always be available
+    # bundle and audit_log should always be available
+    bundle_item = next(i for i in data["exports"] if i["export_type"] == "bundle")
+    assert bundle_item["is_available"] is True
     audit_item = next(i for i in data["exports"] if i["export_type"] == "audit_log")
     assert audit_item["is_available"] is True
 
@@ -76,3 +81,25 @@ def test_download_invalid_export_type(client: TestClient) -> None:
     res = client.get(f"/api/v1/projects/{project_id}/exports/unsupported_type")
     assert res.status_code == 400
     assert res.json()["error"]["code"] == "INVALID_EXPORT_TYPE"
+
+
+def test_download_bundle_export(client: TestClient) -> None:
+    """Verify that downloading the bundle generates a valid zip with reproducibility readme."""
+    unique_name = f"BundleExport {uuid.uuid4().hex[:8]}"
+    create_res = client.post("/api/v1/projects", json={"name": unique_name})
+    assert create_res.status_code == 201
+    project_id = create_res.json()["id"]
+
+    download_res = client.get(f"/api/v1/projects/{project_id}/exports/bundle")
+    assert download_res.status_code == 200
+    assert "application/zip" in download_res.headers.get("content-type", "")
+    assert "attachment;" in download_res.headers.get("content-disposition", "")
+    assert "X-Artifact-Checksum-SHA256" in download_res.headers
+
+    # Verify zip content
+    with zipfile.ZipFile(io.BytesIO(download_res.content), "r") as zf:
+        namelist = zf.namelist()
+        assert "README_REPRODUCIBILITY.txt" in namelist
+        # Audit log should be included in zip
+        assert any(n.startswith("audit/") for n in namelist)
+
