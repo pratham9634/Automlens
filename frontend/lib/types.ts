@@ -119,6 +119,15 @@ export interface CorrelationMatrix {
   high_correlations: HighCorrelationPair[];
 }
 
+export interface QualityScoreBreakdown {
+  base_score: number;
+  missing_penalty: number;
+  duplicate_penalty: number;
+  constant_penalty: number;
+  outlier_penalty: number;
+  net_score: number;
+}
+
 export interface DatasetProfileResponse {
   project_id: string;
   dataset_id: string;
@@ -127,6 +136,7 @@ export interface DatasetProfileResponse {
   duplicate_rows_count: number;
   duplicate_rows_percentage: number;
   quality_score: number;
+  score_breakdown?: QualityScoreBreakdown | null;
   warnings: DataQualityWarning[];
   numeric_columns: NumericColumnProfile[];
   categorical_columns: CategoricalColumnProfile[];
@@ -170,6 +180,12 @@ export interface TargetAnalysisDetailResponse {
   classes: ClassDistributionItem[];
   summary_stats: Record<string, number>;
   reason: string;
+  min_class_count?: number | null;
+  has_rule3_warning?: boolean;
+  imbalance_ratio?: string | null;
+  is_severe_imbalance?: boolean;
+  target_skewness?: number | null;
+  skewness_warning?: string | null;
 }
 
 export interface ModelCandidate {
@@ -254,6 +270,9 @@ export interface ModelRun {
   primary_metric_name: string;
   primary_metric_score?: number | null;
   primary_metric_std?: number | null;
+  train_score?: number | null;
+  overfit_gap?: number | null;
+  overfit_risk?: "low" | "moderate" | "high" | null;
   all_metrics?: Record<string, MetricAggregation> | null;
   train_time_seconds?: number | null;
   artifact_path?: string | null;
@@ -306,6 +325,23 @@ export interface SinglePredictionResponse {
   confidence?: number | null;
 }
 
+export interface BatchValidationResponse {
+  valid: boolean;
+  total_rows: number;
+  required_features: string[];
+  matched_features: string[];
+  missing_features: string[];
+  extra_features: string[];
+  message: string;
+}
+
+export interface SampleRowResponse {
+  sample_type: "median" | "random" | string;
+  values: Record<string, any>;
+  target_column: string;
+  target_value?: any;
+}
+
 export interface BatchPredictionResponse {
   model_id: string;
   model_name: string;
@@ -314,6 +350,7 @@ export interface BatchPredictionResponse {
   total_rows: number;
   preview_rows: Record<string, string | number | boolean | null>[];
   download_url: string;
+  distribution_summary?: Record<string, any> | null;
 }
 
 export interface PerClassMetric {
@@ -437,7 +474,7 @@ export interface ChatMessage {
 export interface ChatSuggestion {
   title: string;
   prompt: string;
-  category: "quality" | "models" | "features" | "executive";
+  category: "quality" | "models" | "features" | "executive" | "guidance" | "security" | string;
 }
 
 // Advanced XAI Counterfactual Types (Phase 4)

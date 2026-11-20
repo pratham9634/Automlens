@@ -14,9 +14,11 @@ from sklearn.pipeline import Pipeline
 
 from app.api.v1.schemas.predictions import (
     BatchPredictionResponse,
+    BatchValidationResponse,
     ClassProbability,
     ConfusionMatrixResponse,
     ModelDetailResponse,
+    SampleRowResponse,
     SinglePredictionResponse,
 )
 from app.core.config import get_settings
@@ -246,6 +248,37 @@ class PredictionService:
             except Exception:
                 pass
 
+        # Compute distribution summary for batch predictions
+        distribution_summary: dict[str, Any] = {}
+        if is_classification:
+            val_counts = pd.Series(batch_preds).value_counts()
+            distribution_summary = {
+                "type": "classification",
+                "class_counts": {str(k): int(v) for k, v in val_counts.items()},
+                "class_percentages": {
+                    str(k): round((int(v) / max(len(batch_preds), 1)) * 100, 1)
+                    for k, v in val_counts.items()
+                },
+            }
+            if "prediction_confidence" in result_df.columns:
+                distribution_summary["mean_confidence"] = round(
+                    float(result_df["prediction_confidence"].mean()), 4
+                )
+        else:
+            preds_series = pd.Series(batch_preds, dtype=float)
+            distribution_summary = {
+                "type": "regression",
+                "mean": round(float(preds_series.mean()), 4),
+                "std": (
+                    round(float(preds_series.std()), 4) if len(preds_series) > 1 else 0.0
+                ),
+                "median": round(float(preds_series.median()), 4),
+                "min": round(float(preds_series.min()), 4),
+                "max": round(float(preds_series.max()), 4),
+                "q25": round(float(preds_series.quantile(0.25)), 4),
+                "q75": round(float(preds_series.quantile(0.75)), 4),
+            }
+
         # Save exported annotated CSV
         export_filename = f"predictions_{model_id}_{uuid.uuid4().hex[:8]}.csv"
         export_dir = os.path.join(settings.AUTOMLENS_ARTIFACT_DIR, project_id, "exports")
@@ -313,8 +346,179 @@ class PredictionService:
                 total_rows=len(df),
                 preview_rows=preview_rows,
                 download_url=download_url,
+                distribution_summary=distribution_summary,
             ),
             export_path,
+        )
+
+    def validate_batch_file(
+        self,
+        project_id: str,
+        model_id: str,
+        file_bytes: bytes,
+        filename: str,
+    ) -> BatchValidationResponse:
+        """Pre-flight validation checking if uploaded batch file schema matches model features."""
+        _, _, pipeline, target_config = self._get_model_run_and_pipeline(
+            project_id, model_id
+        )
+        target_col = target_config["target_column"]
+
+        if hasattr(pipeline, "feature_names_in_"):
+            required_features = list(pipeline.feature_names_in_)
+        else:
+            ds = self.dataset_repo.get_latest_by_project_id(project_id)
+            if ds and ds.columns_metadata:
+                cols_meta = json.loads(ds.columns_metadata)
+                required_features = [c["name"] for c in cols_meta if c["name"] != target_col]
+            else:
+                required_features = []
+
+        try:
+            if filename.lower().endswith(".csv"):
+                df_sample = pd.read_csv(io.BytesIO(file_bytes), nrows=5)
+            elif filename.lower().endswith((".xlsx", ".xls")):
+                df_sample = pd.read_excel(io.BytesIO(file_bytes), nrows=5)
+            else:
+                return BatchValidationResponse(
+                    valid=False,
+                    total_rows=0,
+                    required_features=required_features,
+                    matched_features=[],
+                    missing_features=required_features,
+                    extra_features=[],
+                    message="File format must be CSV (.csv) or Excel (.xlsx, .xls)",
+                )
+        except Exception as exc:
+            return BatchValidationResponse(
+                valid=False,
+                total_rows=0,
+                required_features=required_features,
+                matched_features=[],
+                missing_features=required_features,
+                extra_features=[],
+                message=f"Could not parse uploaded batch file: {exc}",
+            )
+
+        uploaded_cols = [c for c in df_sample.columns if c != target_col]
+        matched = [f for f in required_features if f in uploaded_cols]
+        missing = [f for f in required_features if f not in uploaded_cols]
+        extra = [c for c in uploaded_cols if c not in required_features]
+
+        try:
+            if filename.lower().endswith(".csv"):
+                total_rows = max(0, sum(1 for _ in io.BytesIO(file_bytes)) - 1)
+            else:
+                full_df = pd.read_excel(io.BytesIO(file_bytes))
+                total_rows = len(full_df)
+        except Exception:
+            total_rows = len(df_sample)
+
+        is_valid = len(missing) == 0
+        if is_valid:
+            message = (
+                f"Valid schema: All {len(required_features)} required features present. "
+                f"Ready to run inference on {total_rows:,} rows."
+            )
+        else:
+            missing_str = ", ".join(missing[:5])
+            if len(missing) > 5:
+                missing_str += f" (+{len(missing) - 5} more)"
+            message = f"Schema mismatch: Missing {len(missing)} required feature(s): {missing_str}"
+
+        return BatchValidationResponse(
+            valid=is_valid,
+            total_rows=total_rows,
+            required_features=required_features,
+            matched_features=matched,
+            missing_features=missing,
+            extra_features=extra,
+            message=message,
+        )
+
+    def get_sample_row(
+        self,
+        project_id: str,
+        model_id: str,
+        sample_type: str = "median",
+    ) -> SampleRowResponse:
+        """Provide a representative sample row (typical median or real sample from dataset)."""
+        _, _, _, target_config = self._get_model_run_and_pipeline(project_id, model_id)
+        target_col = target_config["target_column"]
+
+        dataset = self.dataset_repo.get_latest_by_project_id(project_id)
+        if not dataset:
+            raise DatasetNotFoundError(project_id)
+
+        file_bytes = self.storage.read_file(
+            project_id, "datasets", os.path.basename(dataset.storage_path)
+        )
+        if dataset.filename.lower().endswith(".csv"):
+            df = pd.read_csv(io.BytesIO(file_bytes))
+        else:
+            df = pd.read_excel(io.BytesIO(file_bytes))
+
+        if df.empty:
+            raise DatasetValidationError("Dataset is empty.")
+
+        feature_cols = [c for c in df.columns if c != target_col]
+        sample_vals: dict[str, Any] = {}
+        target_val: Any = None
+
+        if sample_type == "random":
+            row = df.sample(n=1, random_state=None).iloc[0]
+            if target_col in df.columns:
+                raw_t = row[target_col]
+                if pd.isna(raw_t):
+                    target_val = None
+                elif isinstance(raw_t, np.integer | int):
+                    target_val = int(raw_t)
+                elif isinstance(raw_t, np.floating | float):
+                    target_val = round(float(raw_t), 4)
+                elif isinstance(raw_t, np.bool_ | bool):
+                    target_val = bool(raw_t)
+                else:
+                    target_val = str(raw_t)
+
+            for col in feature_cols:
+                v = row[col]
+                if pd.isna(v):
+                    sample_vals[col] = None
+                elif isinstance(v, np.integer | int):
+                    sample_vals[col] = int(v)
+                elif isinstance(v, np.floating | float):
+                    sample_vals[col] = round(float(v), 4)
+                elif isinstance(v, np.bool_ | bool):
+                    sample_vals[col] = bool(v)
+                else:
+                    sample_vals[col] = str(v)
+        else:
+            # Default median/mode representation
+            for col in feature_cols:
+                col_data = df[col].dropna()
+                if col_data.empty:
+                    sample_vals[col] = 0
+                elif pd.api.types.is_numeric_dtype(col_data):
+                    med = float(col_data.median())
+                    sample_vals[col] = int(med) if med.is_integer() else round(med, 3)
+                else:
+                    mode = col_data.mode()
+                    sample_vals[col] = str(mode.iloc[0]) if not mode.empty else ""
+
+            if target_col in df.columns:
+                t_data = df[target_col].dropna()
+                if not t_data.empty:
+                    if pd.api.types.is_numeric_dtype(t_data):
+                        target_val = round(float(t_data.median()), 3)
+                    else:
+                        t_mode = t_data.mode()
+                        target_val = str(t_mode.iloc[0]) if not t_mode.empty else None
+
+        return SampleRowResponse(
+            sample_type=sample_type,
+            values=sample_vals,
+            target_column=target_col,
+            target_value=target_val,
         )
 
     def get_confusion_matrix(

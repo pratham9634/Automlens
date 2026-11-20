@@ -158,15 +158,30 @@ def get_estimator(
         elif model_id == "ridge_classifier":
             return RidgeClassifier(random_state=random_state)
 
-        # 3. Tree Ensembles
+        # 3. Tree Ensembles (Senior ML regularized defaults to prevent memorization)
         elif model_id == "random_forest":
-            return RandomForestClassifier(n_estimators=100, random_state=random_state, n_jobs=1)
+            return RandomForestClassifier(
+                n_estimators=100,
+                min_samples_leaf=2,
+                max_features="sqrt",
+                random_state=random_state,
+                n_jobs=1,
+            )
         elif model_id == "extra_trees":
-            return ExtraTreesClassifier(n_estimators=100, random_state=random_state, n_jobs=1)
+            return ExtraTreesClassifier(
+                n_estimators=100,
+                min_samples_leaf=2,
+                max_features="sqrt",
+                random_state=random_state,
+                n_jobs=1,
+            )
 
         # 4. Gradient Boosting
         elif model_id in ("gradient_boosting", "hist_gradient_boosting"):
-            return HistGradientBoostingClassifier(random_state=random_state)
+            return HistGradientBoostingClassifier(
+                random_state=random_state,
+                early_stopping=True,
+            )
         elif model_id in ("xgboost", "xgb"):
             try:
                 from xgboost import XGBClassifier
@@ -227,15 +242,30 @@ def get_estimator(
         elif model_id == "elastic_net":
             return ElasticNet(alpha=1.0, l1_ratio=0.5, random_state=random_state, max_iter=2000)
 
-        # 3. Tree Ensembles
+        # 3. Tree Ensembles (Senior ML regularized defaults to prevent memorization)
         elif model_id == "random_forest":
-            return RandomForestRegressor(n_estimators=100, random_state=random_state, n_jobs=1)
+            return RandomForestRegressor(
+                n_estimators=100,
+                min_samples_leaf=2,
+                max_features="sqrt",
+                random_state=random_state,
+                n_jobs=1,
+            )
         elif model_id == "extra_trees":
-            return ExtraTreesRegressor(n_estimators=100, random_state=random_state, n_jobs=1)
+            return ExtraTreesRegressor(
+                n_estimators=100,
+                min_samples_leaf=2,
+                max_features="sqrt",
+                random_state=random_state,
+                n_jobs=1,
+            )
 
         # 4. Gradient Boosting
         elif model_id in ("gradient_boosting", "hist_gradient_boosting"):
-            return HistGradientBoostingRegressor(random_state=random_state)
+            return HistGradientBoostingRegressor(
+                random_state=random_state,
+                early_stopping=True,
+            )
         elif model_id in ("xgboost", "xgb"):
             try:
                 from xgboost import XGBRegressor

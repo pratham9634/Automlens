@@ -147,3 +147,56 @@ def test_confirm_target_and_lock(client: TestClient) -> None:
     get_res = client.get(f"/api/v1/projects/{project_id}/target/confirm")
     assert get_res.status_code == 200
     assert get_res.json()["target_column"] == "Outcome"
+
+
+def test_target_analysis_rule3_and_task_override(client: TestClient) -> None:
+    """Verify Rule 3 minority class check and dynamic recalculation on override."""
+    # Rare class 'A' has only 2 rows (< 5)
+    csv_data = (
+        b"Feature,Target\n"
+        b"1,A\n2,A\n3,B\n4,B\n5,B\n6,B\n7,B\n8,B\n9,B\n10,B\n"
+    )
+    project_id = _create_project_with_dataset(client, csv_data)
+
+    res = client.post(
+        f"/api/v1/projects/{project_id}/target/analyze",
+        json={"target_column": "Target"},
+    )
+    assert res.status_code == 200
+    data = res.json()
+    assert data["has_rule3_warning"] is True
+    assert data["min_class_count"] == 2
+    assert data["is_severe_imbalance"] is True
+    assert len(data["classes"]) == 2
+
+
+def test_user_objective_prompt_influences_metric_and_models(client: TestClient) -> None:
+    """Verify user natural language prompt genuinely guides metric & model selection."""
+    csv_data = (
+        b"Feature1,Feature2,Target\n"
+        b"1.0,2.0,0\n2.0,3.0,1\n3.0,4.0,1\n4.0,5.0,0\n5.0,6.0,1\n"
+    )
+    project_id = _create_project_with_dataset(client, csv_data)
+
+    # 1. User wants recall / sensitivity to catch all fraud
+    payload_recall = {
+        "target_column": "Target",
+        "user_objective": "Focus on high sensitivity and recall to catch all fraudulent transactions",
+    }
+    res_recall = client.post(f"/api/v1/projects/{project_id}/decision", json=payload_recall)
+    assert res_recall.status_code == 200
+    data_recall = res_recall.json()
+    assert data_recall["primary_metric"] == "recall_macro"
+
+    # 2. User wants explainable linear models for audit
+    payload_linear = {
+        "target_column": "Target",
+        "user_objective": "I want an interpretable simple linear model for executive review",
+    }
+    res_linear = client.post(f"/api/v1/projects/{project_id}/decision", json=payload_linear)
+    assert res_linear.status_code == 200
+    data_linear = res_linear.json()
+
+    selected_ids = [m["id"] for m in data_linear["candidate_models"] if m["default_selected"]]
+    assert "logistic_regression" in selected_ids
+    assert "random_forest" not in selected_ids

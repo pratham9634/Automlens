@@ -57,13 +57,48 @@ def compute_regression_metrics(
 ) -> dict[str, float]:
     """Calculate standard academic regression metrics for a single validation fold.
 
-    Labels every metric unambiguously (Rule 9).
+    Labels every metric unambiguously (Rule 9). Supports both raw positive error values
+    and sklearn neg_* metric aliases to prevent key mismatches.
     """
+    r2_val = float(r2_score(y_true, y_pred))
+    rmse_val = float(root_mean_squared_error(y_true, y_pred))
+    mae_val = float(mean_absolute_error(y_true, y_pred))
+
     return {
-        "r2": float(r2_score(y_true, y_pred)),
-        "rmse": float(root_mean_squared_error(y_true, y_pred)),
-        "mae": float(mean_absolute_error(y_true, y_pred)),
+        "r2": r2_val,
+        "rmse": rmse_val,
+        "mae": mae_val,
+        "neg_root_mean_squared_error": -rmse_val,
+        "neg_mean_absolute_error": -mae_val,
     }
+
+
+def normalize_primary_metric(metric_name: str) -> str:
+    """Normalize metric aliases to standard display and lookup keys."""
+    m = metric_name.strip().lower()
+    if m in ("rmse", "root_mean_squared_error", "neg_root_mean_squared_error"):
+        return "rmse"
+    if m in ("mae", "mean_absolute_error", "neg_mean_absolute_error"):
+        return "mae"
+    if m in ("r2", "r_squared", "r2_score"):
+        return "r2"
+    if m in ("f1", "f1_macro", "macro_f1"):
+        return "f1_macro"
+    if m in ("acc", "accuracy"):
+        return "accuracy"
+    if m in ("precision", "precision_macro"):
+        return "precision_macro"
+    if m in ("recall", "recall_macro"):
+        return "recall_macro"
+    if m in ("roc_auc", "auc", "roc"):
+        return "roc_auc"
+    return m
+
+
+def is_error_metric(metric_name: str) -> bool:
+    """Return True if a lower score indicates a better model (Rule 9)."""
+    norm = normalize_primary_metric(metric_name)
+    return norm in ("rmse", "mae", "loss", "log_loss", "mse")
 
 
 def aggregate_cv_metrics(

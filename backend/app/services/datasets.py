@@ -55,9 +55,16 @@ class DatasetService:
         elif "bool" in dtype_str:
             return "boolean"
         else:
+            # Check if values are boolean strings
+            non_null = series.dropna()
+            if len(non_null) > 0:
+                sample_vals = {str(val).strip().lower() for val in non_null.iloc[:50]}
+                valid_bool_tokens = {"true", "false", "0", "1", "yes", "no", "t", "f"}
+                if sample_vals.issubset(valid_bool_tokens) and len(sample_vals) <= 2:
+                    return "boolean"
             # Check unique ratio to detect categorical vs free text
             unique_count = series.nunique(dropna=True)
-            total_count = len(series.dropna())
+            total_count = len(non_null)
             if total_count > 0 and (unique_count / total_count < 0.2 or unique_count <= 20):
                 return "categorical"
             return "text"
@@ -70,15 +77,44 @@ class DatasetService:
         if len(content) == 0:
             raise DatasetValidationError("Uploaded file is empty (0 bytes).")
 
+        common_null_sentinels = ["?", "NA", "N/A", "null", "None", "-999", ""]
+
         # Parse file based on extension
         try:
             if extension == ".csv":
+                # Detect delimiter with fallback
+                sep = ","
                 try:
-                    df = pd.read_csv(io.BytesIO(content), encoding="utf-8")
+                    import csv
+                    sample_text = content[:4096].decode("utf-8", errors="ignore")
+                    if sample_text:
+                        dialect = csv.Sniffer().sniff(sample_text, delimiters=",;\t|")
+                        sep = dialect.delimiter
+                except Exception:
+                    sep = ","
+
+                try:
+                    df = pd.read_csv(
+                        io.BytesIO(content),
+                        sep=sep,
+                        encoding="utf-8",
+                        na_values=common_null_sentinels,
+                        keep_default_na=True,
+                    )
                 except UnicodeDecodeError:
-                    df = pd.read_csv(io.BytesIO(content), encoding="latin1")
+                    df = pd.read_csv(
+                        io.BytesIO(content),
+                        sep=sep,
+                        encoding="latin1",
+                        na_values=common_null_sentinels,
+                        keep_default_na=True,
+                    )
             else:
-                df = pd.read_excel(io.BytesIO(content))
+                df = pd.read_excel(
+                    io.BytesIO(content),
+                    na_values=common_null_sentinels,
+                    keep_default_na=True,
+                )
         except Exception as exc:
             logger.error("Failed to parse tabular file: %s", exc)
             msg = f"Could not parse tabular file. Error: {str(exc)}"
@@ -260,7 +296,19 @@ class DatasetService:
             )
             ext = "." + dataset.filename.rsplit(".", 1)[-1].lower()
             if ext == ".csv":
-                df = pd.read_csv(io.BytesIO(content), nrows=10)
+                sep = ","
+                try:
+                    import csv
+
+                    sample_text = content[:2048].decode("utf-8", errors="ignore")
+                    if sample_text:
+                        sep = csv.Sniffer().sniff(sample_text, delimiters=",;\t|").delimiter
+                except Exception:
+                    sep = ","
+                try:
+                    df = pd.read_csv(io.BytesIO(content), sep=sep, nrows=10)
+                except UnicodeDecodeError:
+                    df = pd.read_csv(io.BytesIO(content), sep=sep, encoding="latin1", nrows=10)
             else:
                 df = pd.read_excel(io.BytesIO(content), nrows=10)
             preview_rows = df.replace({np.nan: None}).to_dict(orient="records")
@@ -299,6 +347,21 @@ class DatasetService:
             subfolder="datasets",
             filename=Path(dataset.storage_path).name,
         )
+
+        # Purge associated profile artifact and Redis cache
+        try:
+            if self.storage.file_exists(project_id, "profiles", "profile.json"):
+                self.storage.delete_file(project_id, "profiles", "profile.json")
+            from app.core.redis import redis_manager
+
+            redis_manager.delete(f"automlens:profile:{project_id}")
+            if hasattr(dataset, "sha256_hash") and dataset.sha256_hash:
+                redis_manager.delete(f"automlens:profile:hash:{dataset.sha256_hash}")
+        except Exception as cache_err:
+            logger.warning(
+                "Failed to clean up profile artifacts/cache on dataset deletion: %s",
+                cache_err,
+            )
 
         # Delete database record
         self.dataset_repo.delete(dataset)

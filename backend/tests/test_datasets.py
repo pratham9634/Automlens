@@ -152,3 +152,33 @@ def test_delete_dataset_success(client: TestClient) -> None:
     # Verify project status reverted
     project_res = client.get(f"/api/v1/projects/{project_id}")
     assert project_res.json()["status"] == "created"
+
+
+def test_upload_semicolon_delimited_csv(client: TestClient) -> None:
+    """Verify that European CSV with semicolon delimiters is automatically detected."""
+    project_id = _create_test_project(client)
+    csv_content = b"ColA;ColB;ColC\n10;20;30\n40;50;60\n"
+    files = {"file": ("data_semicolon.csv", csv_content, "text/csv")}
+
+    response = client.post(f"/api/v1/projects/{project_id}/dataset/upload", files=files)
+    assert response.status_code == 201
+    data = response.json()
+    assert data["dataset"]["column_count"] == 3
+    assert len(data["dataset"]["columns"]) == 3
+    col_names = [c["name"] for c in data["dataset"]["columns"]]
+    assert col_names == ["ColA", "ColB", "ColC"]
+
+
+def test_upload_missing_sentinels_parsed_as_null(client: TestClient) -> None:
+    """Verify that common null sentinels (?, NA, -999) are recognized as nulls."""
+    project_id = _create_test_project(client)
+    csv_content = b"NumA,CatB\n10,apple\n?,banana\n30,NA\n"
+    files = {"file": ("sentinels.csv", csv_content, "text/csv")}
+
+    response = client.post(f"/api/v1/projects/{project_id}/dataset/upload", files=files)
+    assert response.status_code == 201
+    data = response.json()
+    cols = {c["name"]: c for c in data["dataset"]["columns"]}
+    assert cols["NumA"]["null_count"] == 1
+    assert cols["NumA"]["dtype"] == "numeric"
+    assert cols["CatB"]["null_count"] == 1

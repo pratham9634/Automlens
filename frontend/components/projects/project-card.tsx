@@ -32,14 +32,20 @@ interface ProjectCardProps {
 export function ProjectCard({ project, onDeleted }: ProjectCardProps) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const handleDelete = async () => {
     setDeleting(true);
+    setDeleteError(null);
     try {
       await apiClient.deleteProject(project.id);
       setShowDeleteDialog(false);
       onDeleted(project.id);
-    } catch {
+    } catch (err) {
+      setDeleteError(
+        err instanceof Error ? err.message : "Failed to delete project. Please try again."
+      );
+    } finally {
       setDeleting(false);
     }
   };
@@ -47,15 +53,15 @@ export function ProjectCard({ project, onDeleted }: ProjectCardProps) {
   const renderStatusBadge = (status: string) => {
     switch (status) {
       case "created":
-        return <Badge variant="neutral">Ready for Data</Badge>;
+        return <Badge variant="neutral" className="font-marker text-xs font-bold">Ready for Data</Badge>;
       case "dataset_uploaded":
-        return <Badge variant="streaming" withBeacon>Dataset Active</Badge>;
+        return <Badge variant="streaming" withBeacon className="font-marker text-xs font-bold">Dataset Active</Badge>;
       case "profiled":
-        return <Badge variant="optimal">Profiled</Badge>;
+        return <Badge variant="optimal" className="font-marker text-xs font-bold">Profiled</Badge>;
       case "trained":
-        return <Badge variant="success">Trained & Evaluated</Badge>;
+        return <Badge variant="success" className="font-marker text-xs font-bold">★ Trained</Badge>;
       default:
-        return <Badge variant="neutral">{status}</Badge>;
+        return <Badge variant="neutral" className="font-marker text-xs font-bold">{status}</Badge>;
     }
   };
 
@@ -82,28 +88,28 @@ export function ProjectCard({ project, onDeleted }: ProjectCardProps) {
         </div>
 
         {/* Card Footer */}
-        <div className="pt-3 border-t-2 border-border flex items-center justify-between text-xs">
-          <div className="flex items-center gap-1.5 text-text-muted text-[11px] font-mono tabular-nums">
-            <Calendar className="w-3.5 h-3.5 text-text-subtle" />
-            <span>{formatDate(project.created_at)}</span>
+        <div className="pt-3 border-t-2 border-border flex items-center justify-between text-xs gap-2">
+          <div className="flex items-center gap-1.5 text-text-muted text-[11px] font-mono tabular-nums min-w-0">
+            <Calendar className="w-3.5 h-3.5 text-text-subtle shrink-0" />
+            <span className="truncate">{formatDate(project.created_at)}</span>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             {/* Delete Trigger Button */}
             <Button
               variant="ghost"
               size="icon"
               onClick={() => setShowDeleteDialog(true)}
               title={`Delete ${project.name}`}
-              className="text-text-muted hover:text-danger hover:border-border hover:bg-rose-100 dark:hover:bg-rose-950/40"
+              className="text-text-muted hover:text-danger hover:border-border hover:bg-rose-100 dark:hover:bg-rose-950/40 w-8 h-8"
             >
               <Trash2 className="w-3.5 h-3.5" />
             </Button>
 
             {/* Open Project Workspace */}
             <Link href={`/projects/${project.id}`}>
-              <Button variant="secondary" size="sm" className="gap-1.5 font-bold">
-                <span>Open</span>
+              <Button variant="secondary" size="sm" className="gap-1.5 font-bold h-8 text-xs">
+                <span className="font-marker text-xs sm:text-sm">Open Track</span>
                 <ArrowRight className="w-3 h-3 text-text-muted" />
               </Button>
             </Link>
@@ -130,11 +136,20 @@ export function ProjectCard({ project, onDeleted }: ProjectCardProps) {
             This action will permanently delete all associated dataset files, statistical profiles, model pipelines, training runs, and audit ledger logs. This action cannot be reversed.
           </div>
 
+          {deleteError && (
+            <div className="text-xs text-danger bg-danger/10 border border-danger/20 p-2.5 rounded-md font-medium my-1">
+              {deleteError}
+            </div>
+          )}
+
           <DialogFooter>
             <Button
               type="button"
               variant="secondary"
-              onClick={() => setShowDeleteDialog(false)}
+              onClick={() => {
+                setShowDeleteDialog(false);
+                setDeleteError(null);
+              }}
               disabled={deleting}
             >
               Cancel

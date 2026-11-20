@@ -46,6 +46,12 @@ class TargetAnalysisDetailResponse(BaseModel):
     classes: list[ClassDistributionItem] = Field(default_factory=list)
     summary_stats: dict[str, float] = Field(default_factory=dict)
     reason: str
+    min_class_count: int | None = None
+    has_rule3_warning: bool = False
+    imbalance_ratio: str | None = None
+    is_severe_imbalance: bool = False
+    target_skewness: float | None = None
+    skewness_warning: str | None = None
 
 
 class ModelCandidate(BaseModel):

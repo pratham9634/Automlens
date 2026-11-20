@@ -46,6 +46,21 @@ html {
   --danger: #DC2626;
   --info: #0284C7;
 
+  /* Dataset Metamorphosis Editorial Tokens (Light Theme) */
+  --story-bg: var(--canvas);
+  --story-surface: #FFFFFF;
+  --story-surface-subtle: #EBECE7;
+  --story-border: #DCDDD6;
+  --story-border-strong: #0F172A;
+  --story-grid: #E6E7E1;
+  --story-text-primary: #20211F;
+  --story-text-secondary: #64748B;
+  --story-text-muted: #94A3B8;
+  --story-accent-teal: #059669;
+  --story-accent-blue: #0284C7;
+  --story-accent-amber: #D97706;
+  --story-accent-red: #DC2626;
+
   /* Neo-Brutalist Hard Shadows */
   --neo-shadow-color: #0F172A;
   --neo-shadow: 4px 4px 0px 0px #0F172A;
@@ -104,6 +119,21 @@ html {
   --danger: #EF4444;
   --info: #06B6D4;
 
+  /* Dataset Metamorphosis Editorial Tokens (Dark Theme) */
+  --story-bg: var(--canvas);
+  --story-surface: #141822;
+  --story-surface-subtle: #1C2230;
+  --story-border: #2B3344;
+  --story-border-strong: #475569;
+  --story-grid: #1A212E;
+  --story-text-primary: #F8FAFC;
+  --story-text-secondary: #94A3B8;
+  --story-text-muted: #64748B;
+  --story-accent-teal: #10B981;
+  --story-accent-blue: #38BDF8;
+  --story-accent-amber: #F59E0B;
+  --story-accent-red: #EF4444;
+
   /* Neo-Brutalist Hard Shadows in Dark Mode (Pitch-black block depth) */
   --neo-shadow-color: #000000;
   --neo-shadow: 4px 4px 0px 0px #000000;
@@ -118,27 +148,63 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   letter-spacing: -0.005em;
-  overflow-x: hidden;
+  overflow-x: clip;
   transition: background-color var(--motion-standard) var(--ease-enter), color var(--motion-standard) var(--ease-enter);
 }
 
-/* Custom Telemetry Scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+/* Lenis Smooth Scrolling Core Baseline */
+html.lenis,
+html.lenis body {
+  height: auto;
 }
 
-::-webkit-scrollbar-track {
-  background: var(--canvas);
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
 }
 
-::-webkit-scrollbar-thumb {
-  background: var(--border-strong);
-  border-radius: 9999px;
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: var(--secondary);
+.lenis.lenis-stopped {
+  overflow: clip;
+}
+
+.lenis.lenis-scrolling iframe {
+  pointer-events: none;
+}
+
+/* Custom Telemetry Scrollbar (Standard CSS Baseline) */
+* {
+  --scrollbar-thumb: var(--border-strong);
+  --scrollbar-track: var(--canvas);
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+/* Legacy fallback for WebKit/Blink browsers without standard scrollbar-color support */
+@supports not (scrollbar-color: auto) {
+  * {
+    scrollbar-width: auto;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: var(--canvas);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--border-strong);
+    border-radius: 9999px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--secondary);
+  }
 }
 
 /* Icy Luminescence & Glow Presets */

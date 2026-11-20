@@ -26,6 +26,8 @@ from app.ml.metrics import (
     aggregate_cv_metrics,
     compute_classification_metrics,
     compute_regression_metrics,
+    is_error_metric,
+    normalize_primary_metric,
 )
 from app.ml.model_registry import CLASSIFICATION_REGISTRY, REGRESSION_REGISTRY
 from app.ml.pipeline_factory import create_pipeline
@@ -74,6 +76,8 @@ def _train_single_model_worker(args: dict[str, Any]) -> dict[str, Any]:
 
     t0 = time.perf_counter()
     fold_metrics: list[dict[str, float]] = []
+    fold_train_metrics: list[dict[str, float]] = []
+    norm_metric = normalize_primary_metric(primary_metric)
 
     try:
         # 1. Evaluate Model across Cross-Validation Folds
@@ -98,25 +102,71 @@ def _train_single_model_worker(args: dict[str, Any]) -> dict[str, Any]:
             pipe.fit(X_train, y_train)
 
             # Evaluate on fold validation data
-            y_pred = pipe.predict(X_val)
+            y_pred_val = pipe.predict(X_val)
+            # Evaluate on fold training data (Senior ML overfitting diagnostic)
+            y_pred_train = pipe.predict(X_train)
 
             if is_classification:
-                y_prob = None
+                y_prob_val = None
                 if hasattr(pipe, "predict_proba"):
                     try:
-                        y_prob = pipe.predict_proba(X_val)
+                        y_prob_val = pipe.predict_proba(X_val)
                     except Exception:
-                        y_prob = None
-                f_metrics = compute_classification_metrics(y_val.to_numpy(), y_pred, y_prob)
+                        y_prob_val = None
+                f_metrics_val = compute_classification_metrics(
+                    y_val.to_numpy(), y_pred_val, y_prob_val
+                )
+                f_metrics_train = compute_classification_metrics(y_train.to_numpy(), y_pred_train)
             else:
-                f_metrics = compute_regression_metrics(y_val.to_numpy(), y_pred)
+                f_metrics_val = compute_regression_metrics(y_val.to_numpy(), y_pred_val)
+                f_metrics_train = compute_regression_metrics(y_train.to_numpy(), y_pred_train)
 
-            fold_metrics.append(f_metrics)
+            fold_metrics.append(f_metrics_val)
+            fold_train_metrics.append(f_metrics_train)
 
         # 2. Aggregate CV metrics (mean ± std)
-        aggregated = aggregate_cv_metrics(fold_metrics, primary_metric)
-        primary_score = aggregated.get(primary_metric, {}).get("mean", 0.0)
-        primary_std = aggregated.get(primary_metric, {}).get("std", 0.0)
+        aggregated = aggregate_cv_metrics(fold_metrics, norm_metric)
+        aggregated_train = aggregate_cv_metrics(fold_train_metrics, norm_metric)
+
+        primary_score = aggregated.get(norm_metric, {}).get("mean")
+        if primary_score is None:
+            primary_score = aggregated.get(primary_metric, {}).get("mean", 0.0)
+
+        primary_std = aggregated.get(norm_metric, {}).get("std")
+        if primary_std is None:
+            primary_std = aggregated.get(primary_metric, {}).get("std", 0.0)
+
+        train_score = aggregated_train.get(norm_metric, {}).get("mean")
+        if train_score is None:
+            train_score = aggregated_train.get(primary_metric, {}).get("mean", 0.0)
+
+        # Senior ML Overfitting Gap Diagnostics
+        if is_error_metric(norm_metric):
+            # For error metrics, overfit occurs when validation error is higher than train error
+            overfit_gap = max(0.0, round(float(primary_score - train_score), 4))
+            rel_gap = overfit_gap / max(abs(train_score), 1e-6)
+            if rel_gap <= 0.08:
+                overfit_risk = "low"
+            elif rel_gap <= 0.18:
+                overfit_risk = "moderate"
+            else:
+                overfit_risk = "high"
+        else:
+            # Score metrics (F1, Accuracy, R2): overfit when train exceeds val
+            overfit_gap = max(0.0, round(float(train_score - primary_score), 4))
+            if overfit_gap <= 0.05:
+                overfit_risk = "low"
+            elif overfit_gap <= 0.12:
+                overfit_risk = "moderate"
+            else:
+                overfit_risk = "high"
+
+        aggregated["_diagnostics"] = {
+            "train_score": round(float(train_score), 4),
+            "val_score": round(float(primary_score), 4),
+            "overfit_gap": round(float(overfit_gap), 4),
+            "overfit_risk": overfit_risk,
+        }
 
         # 3. Full Dataset Refit (Rule 8: Persist fitted model on 100% data)
         full_pipe = create_pipeline(
@@ -146,6 +196,9 @@ def _train_single_model_worker(args: dict[str, Any]) -> dict[str, Any]:
             "metrics": aggregated,
             "primary_metric_score": primary_score,
             "primary_metric_std": primary_std,
+            "train_score": round(float(train_score), 4),
+            "overfit_gap": round(float(overfit_gap), 4),
+            "overfit_risk": overfit_risk,
             "train_time_seconds": train_time,
             "artifact_path": save_artifact_path,
             "error_message": None,
@@ -431,6 +484,9 @@ class TrainingService:
                         "primary_metric": primary_metric,
                         "score": res.get("primary_metric_score"),
                         "std": res.get("primary_metric_std"),
+                        "train_score": res.get("train_score"),
+                        "overfit_gap": res.get("overfit_gap"),
+                        "overfit_risk": res.get("overfit_risk"),
                         "metrics": res.get("metrics"),
                         "train_time_seconds": res.get("train_time_seconds"),
                         "error_message": res.get("error_message"),
@@ -477,19 +533,42 @@ class TrainingService:
                     if r["status"] == "completed" and r.get("primary_metric_score") is not None:
                         valid_scores.append((r["model_id"], r["primary_metric_score"]))
 
-            # Determine best model
+            # Determine best model and lift over baseline (Senior ML Standards)
             best_model_id = None
             best_score = None
+            norm_metric = normalize_primary_metric(target_config.get("primary_metric", ""))
+            lower_is_better = is_error_metric(norm_metric)
+
             if valid_scores:
-                # If metric is an error (e.g. RMSE, MAE), lower is better
-                lower_is_better = any(
-                    err_term in target_config["primary_metric"].lower()
-                    for err_term in ("rmse", "mae", "loss")
-                )
                 if lower_is_better:
                     best_model_id, best_score = min(valid_scores, key=lambda x: x[1])
                 else:
                     best_model_id, best_score = max(valid_scores, key=lambda x: x[1])
+
+            # Calculate baseline lift (Rule 4)
+            baseline_m = next((m for m in existing_models if m.is_baseline), None)
+            base_score = baseline_m.primary_metric_score if baseline_m else None
+            lift_percent: float | None = None
+            lift_text = "Standard baseline established"
+
+            if best_score is not None and base_score is not None:
+                if lower_is_better:
+                    # Error reduction percentage
+                    err_reduction = ((base_score - best_score) / max(abs(base_score), 1e-6)) * 100
+                    lift_percent = round(err_reduction, 2)
+                    lift_text = f"{lift_percent:+.1f}% error reduction over baseline"
+                else:
+                    score_lift = ((best_score - base_score) / max(abs(base_score), 1e-6)) * 100
+                    lift_percent = round(score_lift, 2)
+                    lift_text = f"{lift_percent:+.1f}% lift over baseline"
+
+            best_model_run = model_by_id.get(best_model_id) if best_model_id else None
+            best_diagnostics = (
+                best_model_run.all_metrics.get("_diagnostics", {})
+                if best_model_run and best_model_run.all_metrics
+                else {}
+            )
+            best_overfit_risk = best_diagnostics.get("overfit_risk", "low")
 
             run.status = "completed"
             run.completed_models = len([r for r in results if r["status"] == "completed"])
@@ -497,6 +576,38 @@ class TrainingService:
             run.best_score = best_score
             run.completed_at = datetime.now(UTC)
             run_repo.update(run)
+
+            # Persist comprehensive training summary artifact
+            try:
+                summary_data = {
+                    "run_id": run_id,
+                    "project_id": project_id,
+                    "target_column": target_config.get("target_column"),
+                    "task_type": target_config.get("task_type"),
+                    "primary_metric": norm_metric,
+                    "lower_is_better": lower_is_better,
+                    "best_model_id": best_model_id,
+                    "best_score": best_score,
+                    "baseline_score": base_score,
+                    "lift_percent": lift_percent,
+                    "lift_text": lift_text,
+                    "best_overfit_risk": best_overfit_risk,
+                    "total_models": run.total_models,
+                    "completed_models": run.completed_models,
+                    "completed_at": run.completed_at.isoformat() if run.completed_at else None,
+                }
+                summary_path = os.path.join(
+                    settings.AUTOMLENS_ARTIFACT_DIR,
+                    "models",
+                    project_id,
+                    run_id,
+                    "training_summary.json",
+                )
+                os.makedirs(os.path.dirname(summary_path), exist_ok=True)
+                with open(summary_path, "w", encoding="utf-8") as sf:
+                    json.dump(summary_data, sf, indent=2)
+            except Exception as sum_err:
+                logger.warning("Could not persist training_summary.json: %s", sum_err)
 
             # Update project status to 'trained'
             project = project_repo.get_by_id(project_id)
@@ -514,6 +625,10 @@ class TrainingService:
                     "status": "completed",
                     "best_model_id": best_model_id,
                     "best_score": best_score,
+                    "baseline_score": base_score,
+                    "lift_percent": lift_percent,
+                    "lift_text": lift_text,
+                    "overfit_risk": best_overfit_risk,
                     "completed_models": run.completed_models,
                     "total_models": run.total_models,
                     "completed_at": run.completed_at.isoformat(),
@@ -521,10 +636,11 @@ class TrainingService:
             )
 
             logger.info(
-                "Training run %s completed: best model '%s' (score=%.4f)",
+                "Training run %s completed: best model '%s' (score=%.4f, lift=%s)",
                 run_id,
                 best_model_id,
                 best_score if best_score is not None else 0.0,
+                lift_text,
             )
 
             try:
@@ -535,14 +651,18 @@ class TrainingService:
                     project_id=project_id,
                     action="training_completed",
                     reason=(
-                        f"Parallel training completed across {run.total_models} models. "
-                        f"Top performer: {best_model_id} (Score: {score_fmt} "
-                        f"{target_config['primary_metric']})"
+                        f"Parallel 5-fold CV finished across {run.total_models} models. "
+                        f"Top performer: {best_model_id} ({norm_metric}: {score_fmt}) with "
+                        f"{lift_text} and {best_overfit_risk} overfit risk."
                     ),
                     evidence={
                         "run_id": run_id,
+                        "primary_metric": norm_metric,
                         "best_model_id": best_model_id,
                         "best_score": best_score,
+                        "baseline_score": base_score,
+                        "lift_percent": lift_percent,
+                        "overfit_risk": best_overfit_risk,
                         "completed_models": run.completed_models,
                         "total_models": run.total_models,
                     },

@@ -23,10 +23,21 @@ import {
   CheckCircle2,
   ChevronRight,
   ShieldCheck,
+  AlertTriangle,
 } from "lucide-react";
 import { apiClient, ApiClientError } from "@/lib/api-client";
 import { DatasetPreviewResponse, DatasetProfileResponse, Project } from "@/lib/types";
 import { formatDate } from "@/lib/utils";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { DatasetUploadZone } from "@/components/dataset/dataset-upload-zone";
 import { DatasetPreviewTable } from "@/components/dataset/dataset-preview-table";
 import { StatisticalProfileView } from "@/components/dataset/statistical-profile-view";
@@ -101,6 +112,15 @@ export default function ProjectWorkspacePage() {
   const [cloning, setCloning] = useState(false);
   const [selectedPredictModelId, setSelectedPredictModelId] = useState<string | null>(null);
 
+  // Modal dialog states
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [resetError, setResetError] = useState<string | null>(null);
+  const [showCloneModal, setShowCloneModal] = useState(false);
+  const [cloneName, setCloneName] = useState("");
+  const [cloneError, setCloneError] = useState<string | null>(null);
+
   const fetchWorkspaceData = async () => {
     setLoading(true);
     setError(null);
@@ -152,69 +172,65 @@ export default function ProjectWorkspacePage() {
       setProject((prev) => (prev ? { ...prev, status: "profiled" } : null));
       setDatasetSubTab("profile");
     } catch (err) {
-      alert(
-        err instanceof Error
-          ? err.message
-          : "Failed to run statistical profiling."
-      );
+      console.error("Profiling error:", err);
     } finally {
       setProfilingLoading(false);
     }
   };
 
-  const handleResetRun = async () => {
+  const handleResetRunConfirm = async () => {
     if (!project) return;
-    if (
-      !window.confirm(
-        `Are you sure you want to reset training runs and target configuration for "${project.name}"?\n\nThe uploaded dataset will be preserved.`
-      )
-    ) {
-      return;
-    }
-
     setResetting(true);
+    setResetError(null);
     try {
       const updated = await apiClient.resetProject(project.id);
       setProject(updated);
       setActiveTab("dataset");
-      alert("Workspace training runs reset successfully.");
+      setShowResetModal(false);
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to reset workspace");
+      setResetError(err instanceof Error ? err.message : "Failed to reset workspace");
     } finally {
       setResetting(false);
     }
   };
 
-  const handleCloneProject = async () => {
+  const handleOpenCloneModal = () => {
     if (!project) return;
-    const newName = window.prompt(
-      `Enter name for the cloned workspace:`,
-      `${project.name} (Clone)`
-    );
-    if (!newName || !newName.trim()) return;
+    setCloneName(`${project.name} (Clone)`);
+    setCloneError(null);
+    setShowCloneModal(true);
+  };
+
+  const handleCloneConfirm = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!project || !cloneName.trim()) return;
 
     setCloning(true);
+    setCloneError(null);
     try {
-      const cloned = await apiClient.cloneProject(project.id, newName.trim());
+      const cloned = await apiClient.cloneProject(project.id, cloneName.trim());
+      setShowCloneModal(false);
       router.push(`/projects/${cloned.id}`);
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to clone workspace");
+      setCloneError(err instanceof Error ? err.message : "Failed to clone workspace");
+    } finally {
       setCloning(false);
     }
   };
 
-  const handleDelete = async () => {
+  const handleDeleteConfirm = async () => {
     if (!project) return;
-    if (!window.confirm(`Are you sure you want to delete workspace "${project.name}"?`)) {
-      return;
-    }
-
     setDeleting(true);
+    setDeleteError(null);
     try {
       await apiClient.deleteProject(project.id);
-      router.push("/");
-    } catch {
-      alert("Failed to delete project. Please check backend connection.");
+      setShowDeleteModal(false);
+      router.push("/dashboard");
+    } catch (err) {
+      setDeleteError(
+        err instanceof Error ? err.message : "Failed to delete project. Please check backend connection."
+      );
+    } finally {
       setDeleting(false);
     }
   };
@@ -239,7 +255,7 @@ export default function ProjectWorkspacePage() {
           <p className="text-xs text-ink-muted">{error || "The requested workspace does not exist."}</p>
         </div>
         <Link
-          href="/"
+          href="/dashboard"
           className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-surface-2 hover:bg-surface-3 border border-hairline text-xs font-medium text-ink transition-colors"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
@@ -259,7 +275,7 @@ export default function ProjectWorkspacePage() {
       {/* Top Navigation & Workspace Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <Link
-          href="/"
+          href="/dashboard"
           className="inline-flex items-center gap-2 text-xs font-bold text-text-muted hover:text-text-primary transition-colors"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
@@ -278,45 +294,40 @@ export default function ProjectWorkspacePage() {
           </button>
 
           <button
-            onClick={handleCloneProject}
+            onClick={handleOpenCloneModal}
             disabled={cloning}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border-2 border-border bg-surface hover:bg-surface-subtle text-xs font-mono font-bold text-text-primary shadow-neo-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-neo active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all cursor-pointer"
             title="Clone this workspace configuration and dataset"
           >
-            {cloning ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            ) : (
-              <Copy className="w-3.5 h-3.5 text-text-muted" />
-            )}
+            <Copy className="w-3.5 h-3.5 text-text-muted" />
             <span>Clone</span>
           </button>
 
           {isTrainingReady && (
             <button
-              onClick={handleResetRun}
+              onClick={() => {
+                setResetError(null);
+                setShowResetModal(true);
+              }}
               disabled={resetting}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border-2 border-border bg-amber-100 dark:bg-amber-950/60 hover:bg-amber-200 text-xs font-mono font-bold text-amber-900 dark:text-amber-200 shadow-neo-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-neo active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all cursor-pointer"
               title="Reset training models while keeping dataset"
             >
-              {resetting ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              ) : (
-                <RotateCcw className="w-3.5 h-3.5" />
-              )}
+              <RotateCcw className="w-3.5 h-3.5" />
               <span>Reset Run</span>
             </button>
           )}
 
           <button
-            onClick={handleDelete}
+            onClick={() => {
+              setDeleteError(null);
+              setShowDeleteModal(true);
+            }}
             disabled={deleting}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border-2 border-border bg-rose-100 dark:bg-rose-950/60 hover:bg-rose-200 text-xs font-mono font-bold text-rose-900 dark:text-rose-200 shadow-neo-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-neo active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all cursor-pointer"
+            title="Delete this workspace"
           >
-            {deleting ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            ) : (
-              <Trash2 className="w-3.5 h-3.5" />
-            )}
+            <Trash2 className="w-3.5 h-3.5" />
             <span>Delete</span>
           </button>
         </div>
@@ -329,8 +340,8 @@ export default function ProjectWorkspacePage() {
             <h1 className="text-lg md:text-xl font-semibold font-display text-text-primary tracking-tight">
               {project.name}
             </h1>
-            <span className="px-2.5 py-0.5 rounded-md text-[10px] font-mono font-bold uppercase bg-sky-100 dark:bg-sky-950/80 text-sky-800 dark:text-sky-300 border-2 border-border shadow-[2px_2px_0px_0px_var(--neo-shadow-color)]">
-              {project.status}
+            <span className="px-2.5 py-0.5 rounded-md text-[11px] font-marker font-bold uppercase bg-sky-100 dark:bg-sky-950/80 text-sky-800 dark:text-sky-300 border-2 border-border shadow-[2px_2px_0px_0px_var(--neo-shadow-color)]">
+              ★ {project.status}
             </span>
           </div>
           <p className="text-xs text-text-secondary max-w-2xl leading-relaxed font-medium">
@@ -349,7 +360,7 @@ export default function ProjectWorkspacePage() {
 
       {/* 5-Stage Guided Pipeline Progress Stepper */}
       <div className="space-y-3">
-        <div className="grid grid-cols-1 sm:grid-cols-5 gap-2.5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2.5">
           {pipelineSteps.map((step) => {
             const Icon = step.icon;
             const isCurrent =
@@ -520,31 +531,31 @@ export default function ProjectWorkspacePage() {
           {datasetPreview ? (
             <div className="space-y-6">
               {/* Dataset Sub-Tab Bar */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-hairline pb-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b-2 border-border pb-3">
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setDatasetSubTab("preview")}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-mono transition-colors ${
+                    className={`px-3 py-1.5 rounded-md text-xs font-mono font-bold transition-all cursor-pointer ${
                       datasetSubTab === "preview"
-                        ? "bg-surface-2 text-ink font-semibold border border-hairline"
-                        : "text-ink-muted hover:text-ink"
+                        ? "bg-surface text-text-primary border-2 border-border shadow-neo-sm"
+                        : "text-text-muted hover:text-text-primary"
                     }`}
                   >
                     Raw Data Preview
                   </button>
                   <button
                     onClick={() => setDatasetSubTab("profile")}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono transition-colors ${
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-mono font-bold transition-all cursor-pointer ${
                       datasetSubTab === "profile"
-                        ? "bg-surface-2 text-ink font-semibold border border-hairline"
-                        : "text-ink-muted hover:text-ink"
+                        ? "bg-surface text-text-primary border-2 border-border shadow-neo-sm"
+                        : "text-text-muted hover:text-text-primary"
                     }`}
                   >
                     <span>Statistical Profile</span>
                     {profile ? (
-                      <span className="w-2 h-2 rounded-full bg-telemetry-emerald" />
+                      <span className="w-2 h-2 rounded-full bg-success" />
                     ) : (
-                      <span className="text-[10px] px-1 py-0.2 rounded bg-surface-3 text-brand-hover">
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-surface-subtle text-accent font-semibold border border-border">
                         New
                       </span>
                     )}
@@ -555,7 +566,7 @@ export default function ProjectWorkspacePage() {
                   <button
                     onClick={handleGenerateProfile}
                     disabled={profilingLoading}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-brand-lavender hover:bg-brand-hover text-ink text-xs font-mono font-medium transition-colors shadow-sm disabled:opacity-50"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border-2 border-border bg-sky-200 dark:bg-sky-900/60 hover:bg-sky-300 dark:hover:bg-sky-800 text-slate-950 dark:text-sky-200 text-xs font-mono font-bold shadow-neo-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-neo active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all disabled:opacity-50 cursor-pointer"
                   >
                     {profilingLoading ? (
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -592,23 +603,23 @@ export default function ProjectWorkspacePage() {
                       onProfileUpdated={(p) => setProfile(p)}
                     />
                   ) : (
-                    <div className="p-12 rounded-xl border border-dashed border-hairline-strong bg-surface-1/60 text-center flex flex-col items-center justify-center space-y-4">
-                      <div className="w-14 h-14 rounded-2xl bg-surface-2 border border-brand-lavender/30 flex items-center justify-center text-brand-hover">
+                    <div className="p-10 rounded-card border-2 border-dashed border-border bg-surface text-center flex flex-col items-center justify-center space-y-4">
+                      <div className="w-14 h-14 rounded-card border-2 border-border bg-sky-100 dark:bg-sky-950/60 flex items-center justify-center text-accent shadow-neo-sm">
                         <Sparkles className="w-7 h-7" />
                       </div>
                       <div className="space-y-1.5 max-w-md">
-                        <h3 className="text-sm font-semibold text-ink">
+                        <h3 className="text-sm font-bold text-text-primary">
                           Compute Statistical Profile &amp; Quality Engine
                         </h3>
-                        <p className="text-xs text-ink-muted leading-relaxed">
+                        <p className="text-xs text-text-muted leading-relaxed">
                           Analyze univariate distributions, IQR outlier boundaries,
-                          missing value distributions, and pairwise Pearson correlations across all continuous features.
+                          missing value distributions, and pairwise Pearson correlations across continuous features.
                         </p>
                       </div>
                       <button
                         onClick={handleGenerateProfile}
                         disabled={profilingLoading}
-                        className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-brand-lavender hover:bg-brand-hover text-ink text-xs font-mono font-medium transition-colors shadow-md disabled:opacity-50"
+                        className="inline-flex items-center gap-2 px-4 py-2 rounded-md border-2 border-border bg-sky-200 dark:bg-sky-900/60 hover:bg-sky-300 dark:hover:bg-sky-800 text-slate-950 dark:text-sky-200 text-xs font-mono font-bold shadow-neo-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-neo active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all disabled:opacity-50 cursor-pointer"
                       >
                         {profilingLoading ? (
                           <Loader2 className="w-4 h-4 animate-spin" />
@@ -625,6 +636,31 @@ export default function ProjectWorkspacePage() {
                   )}
                 </div>
               )}
+
+              {/* Bottom Workflow Progression Banner */}
+              <div className="p-4 sm:p-5 rounded-card border-2 border-border bg-surface shadow-neo flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-success animate-pulse" />
+                    <h4 className="text-sm font-bold font-display text-text-primary">
+                      Step 1 Complete: Dataset &amp; Health Verified
+                    </h4>
+                  </div>
+                  <p className="text-xs text-text-muted">
+                    {profile
+                      ? `Data Quality Score: ${profile.quality_score.toFixed(1)}/100 • Ready to select target column and configure zero-leakage strategy.`
+                      : `Raw tabular dataset loaded (${datasetPreview.dataset.row_count.toLocaleString()} rows × ${datasetPreview.dataset.column_count} features). Proceed to Step 2.`}
+                  </p>
+                </div>
+
+                <button
+                  onClick={() => setActiveTab("target")}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-md border-2 border-border bg-sky-200 dark:bg-sky-900/80 hover:bg-sky-300 dark:hover:bg-sky-800 text-slate-950 dark:text-sky-200 text-xs font-mono font-bold shadow-neo-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-neo active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all cursor-pointer shrink-0"
+                >
+                  <span>Proceed to Step 2: AI Strategy &amp; Target</span>
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
             </div>
           ) : (
             <DatasetUploadZone
@@ -716,7 +752,215 @@ export default function ProjectWorkspacePage() {
       )}
 
       {/* Floating Tabular AI Analyst Trigger & Drawer */}
-      <AnalystTrigger projectId={project.id} />
+      <AnalystTrigger projectId={project.id} projectName={project.name} />
+
+      {/* Explicit Delete Confirmation Dialog */}
+      <Dialog
+        open={showDeleteModal}
+        onOpenChange={(open) => {
+          if (!deleting) {
+            setShowDeleteModal(open);
+            if (!open) setDeleteError(null);
+          }
+        }}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <div className="flex items-center gap-2 text-danger mb-1">
+              <div className="w-8 h-8 rounded-md bg-rose-100 dark:bg-rose-950/80 border-2 border-border shadow-neo-sm flex items-center justify-center text-danger shrink-0">
+                <AlertTriangle className="w-4 h-4 text-rose-600 dark:text-rose-400" />
+              </div>
+              <DialogTitle className="text-base font-bold text-text-primary">
+                Delete Project Workspace
+              </DialogTitle>
+            </div>
+            <DialogDescription className="text-xs text-text-muted">
+              Are you sure you want to delete <span className="font-bold text-text-primary">&quot;{project.name}&quot;</span>?
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="text-xs text-text-secondary bg-surface-subtle border-2 border-border p-3.5 rounded-card leading-relaxed my-2 space-y-1.5">
+            <p className="font-bold text-rose-700 dark:text-rose-400 flex items-center gap-1.5">
+              <span>⚠️ Permanent Action</span>
+            </p>
+            <p>
+              This will permanently delete this workspace, including all uploaded dataset files, statistical profiles, model pipelines, 5-fold CV weights, predictions, and the immutable PostgreSQL audit ledger.
+            </p>
+          </div>
+
+          {deleteError && (
+            <div className="text-xs text-danger bg-danger/10 border-2 border-danger/30 p-2.5 rounded-md font-medium my-1">
+              {deleteError}
+            </div>
+          )}
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => {
+                setShowDeleteModal(false);
+                setDeleteError(null);
+              }}
+              disabled={deleting}
+              className="font-bold"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="danger"
+              onClick={handleDeleteConfirm}
+              isLoading={deleting}
+              className="gap-1.5 font-bold"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Delete Workspace</span>
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Explicit Reset Confirmation Dialog */}
+      <Dialog
+        open={showResetModal}
+        onOpenChange={(open) => {
+          if (!resetting) {
+            setShowResetModal(open);
+            if (!open) setResetError(null);
+          }
+        }}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 mb-1">
+              <div className="w-8 h-8 rounded-md bg-amber-100 dark:bg-amber-950/80 border-2 border-border shadow-neo-sm flex items-center justify-center text-amber-600 dark:text-amber-400 shrink-0">
+                <RotateCcw className="w-4 h-4" />
+              </div>
+              <DialogTitle className="text-base font-bold text-text-primary">
+                Reset Workspace Training Runs
+              </DialogTitle>
+            </div>
+            <DialogDescription className="text-xs text-text-muted">
+              Reset model training runs and target configuration for <span className="font-bold text-text-primary">&quot;{project.name}&quot;</span>.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="text-xs text-text-secondary bg-surface-subtle border-2 border-border p-3.5 rounded-card leading-relaxed my-2 space-y-1.5">
+            <p className="font-bold text-emerald-700 dark:text-emerald-400">
+              ✓ Ingested dataset &amp; profile will be preserved.
+            </p>
+            <p>
+              Trained models, 5-fold cross-validation metrics, predictions, and SHAP explainability caches will be cleared so you can re-configure targets or re-train fresh candidate models.
+            </p>
+          </div>
+
+          {resetError && (
+            <div className="text-xs text-danger bg-danger/10 border-2 border-danger/30 p-2.5 rounded-md font-medium my-1">
+              {resetError}
+            </div>
+          )}
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => {
+                setShowResetModal(false);
+                setResetError(null);
+              }}
+              disabled={resetting}
+              className="font-bold"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="primary"
+              onClick={handleResetRunConfirm}
+              isLoading={resetting}
+              className="gap-1.5 font-bold"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>Reset Runs</span>
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Explicit Clone Workspace Dialog */}
+      <Dialog
+        open={showCloneModal}
+        onOpenChange={(open) => {
+          if (!cloning) {
+            setShowCloneModal(open);
+            if (!open) setCloneError(null);
+          }
+        }}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <div className="flex items-center gap-2 mb-1">
+              <div className="w-8 h-8 rounded-md bg-sky-100 dark:bg-sky-950/80 border-2 border-border shadow-neo-sm flex items-center justify-center text-accent shrink-0">
+                <Copy className="w-4 h-4" />
+              </div>
+              <DialogTitle className="text-base font-bold text-text-primary">
+                Clone Workspace
+              </DialogTitle>
+            </div>
+            <DialogDescription className="text-xs text-text-muted">
+              Create a duplicate of <span className="font-bold text-text-primary">&quot;{project.name}&quot;</span> with the same dataset and configuration.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleCloneConfirm} className="space-y-4">
+            <div className="space-y-1.5">
+              <label htmlFor="clone-workspace-name" className="text-xs font-bold text-text-primary">
+                New Workspace Name
+              </label>
+              <Input
+                id="clone-workspace-name"
+                value={cloneName}
+                onChange={(e) => setCloneName(e.target.value)}
+                placeholder="Workspace name..."
+                required
+                className="text-xs"
+              />
+            </div>
+
+            {cloneError && (
+              <div className="text-xs text-danger bg-danger/10 border-2 border-danger/30 p-2.5 rounded-md font-medium my-1">
+                {cloneError}
+              </div>
+            )}
+
+            <DialogFooter className="gap-2 sm:gap-0">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => {
+                  setShowCloneModal(false);
+                  setCloneError(null);
+                }}
+                disabled={cloning}
+                className="font-bold"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                variant="primary"
+                disabled={cloning || !cloneName.trim()}
+                isLoading={cloning}
+                className="gap-1.5 font-bold"
+              >
+                <Copy className="w-3.5 h-3.5" />
+                <span>Clone Workspace</span>
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

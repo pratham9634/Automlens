@@ -111,4 +111,17 @@ async def get_gemini_api_key(
     """Extract BYOK Gemini API Key from header or server settings fallback."""
     if x_gemini_api_key and x_gemini_api_key.strip():
         return x_gemini_api_key.strip()
-    return settings.GEMINI_API_KEY
+    if settings.GEMINI_API_KEY and settings.GEMINI_API_KEY.strip().startswith("AIzaSy"):
+        return settings.GEMINI_API_KEY.strip()
+    return None
+
+
+async def get_gemini_model(
+    x_gemini_model: str | None = Header(None, alias="X-Gemini-Model"),
+    settings: Settings = Depends(get_settings),
+) -> str:
+    """Extract BYOK Gemini Model from header or server settings fallback."""
+    if x_gemini_model and x_gemini_model.strip():
+        return x_gemini_model.strip()
+    return settings.GEMINI_MODEL
+

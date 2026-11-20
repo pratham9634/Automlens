@@ -114,6 +114,26 @@ export function ModelTrainingCard({ model, isWinner }: ModelTrainingCardProps) {
               </span>
             )}
           </div>
+          {model.status === "completed" && (
+            <div className="flex items-center gap-2 mt-1.5">
+              {model.overfit_risk === "high" ? (
+                <span className="inline-flex items-center gap-1 text-[10px] font-mono font-medium px-1.5 py-0.5 rounded bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
+                  <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+                  High Overfit Risk
+                </span>
+              ) : model.overfit_risk === "moderate" ? (
+                <span className="inline-flex items-center gap-1 text-[10px] font-mono font-medium px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                  Moderate Overfit Gap
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 text-[10px] font-mono font-medium px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                  Low Overfit Risk
+                </span>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Training Duration Clock */}

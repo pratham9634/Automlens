@@ -143,6 +143,8 @@ const config: Config = {
         sans: ["var(--font-sans)", "Arimo", "system-ui", "sans-serif"],
         body: ["var(--font-sans)", "Arimo", "system-ui", "sans-serif"],
         mono: ["var(--font-mono)", "'Be Vietnam Pro'", "ui-monospace", "monospace"],
+        marker: ["var(--font-marker)", "'Caveat'", "cursive"],
+        hand: ["var(--font-marker)", "'Caveat'", "cursive"],
       },
       transitionDuration: {
         fast: "var(--motion-fast)",

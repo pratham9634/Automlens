@@ -14,14 +14,13 @@ import {
   Sparkles,
   History,
   HardDriveDownload,
-  Activity,
   ArrowLeft,
-  Terminal,
+  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AutoMLensIcon } from "@/components/ui/logo";
 
-const projectPipelineNav = [
+export const projectPipelineNav = [
   { id: "dataset", label: "Data & Health", icon: Database },
   { id: "target", label: "AI Strategy", icon: Sliders },
   { id: "training", label: "Training & CV", icon: Cpu },
@@ -56,7 +55,7 @@ export function Sidebar() {
   return (
     <aside
       className={cn(
-        "border-r-2 border-border bg-surface flex flex-col justify-between h-screen sticky top-0 z-30 transition-[width] duration-150 select-none shrink-0",
+        "hidden lg:flex border-r-2 border-border bg-surface flex-col justify-between h-screen sticky top-0 z-30 transition-[width] duration-150 select-none shrink-0",
         collapsed ? "w-[64px]" : "w-[236px]"
       )}
     >
@@ -65,7 +64,7 @@ export function Sidebar() {
         {/* Brand Header */}
         <div className="h-[60px] flex items-center justify-between px-3.5 border-b-2 border-border">
           <Link
-            href="/"
+            href="/dashboard"
             className="flex items-center gap-2.5 min-w-0 group"
             title="AutoMLens Workspace"
           >
@@ -80,8 +79,8 @@ export function Sidebar() {
                     v1.0
                   </span>
                 </span>
-                <span className="text-[9px] font-mono uppercase tracking-wider text-text-muted truncate font-bold">
-                  Human-Assisted AutoML
+                <span className="text-[11px] font-marker font-bold text-accent truncate">
+                  ★ Human-Assisted AutoML
                 </span>
               </div>
             )}
@@ -105,11 +104,11 @@ export function Sidebar() {
         {/* Global Navigation */}
         <nav className="p-2.5 space-y-1.5">
           <Link
-            href="/"
+            href="/dashboard"
             title="Workspace Overview"
             className={cn(
               "flex items-center gap-2.5 px-3 py-2 text-xs rounded-md transition-all duration-100 font-sans cursor-pointer",
-              pathname === "/"
+              pathname === "/dashboard"
                 ? "bg-accent text-white border-2 border-border font-bold shadow-neo-sm"
                 : "text-text-secondary hover:text-text-primary hover:bg-surface-hover border-2 border-transparent hover:border-border hover:shadow-neo-sm"
             )}
@@ -122,11 +121,11 @@ export function Sidebar() {
           {isProjectRoute && (
             <div className="pt-3 mt-2 border-t-2 border-border">
               {!collapsed && (
-                <div className="px-2.5 pb-2 flex items-center justify-between text-[11px] font-mono font-bold uppercase tracking-wider text-text-muted">
-                  <span>Pipeline Tracks</span>
+                <div className="px-2.5 pb-2 flex items-center justify-between text-xs">
+                  <span className="font-marker font-bold text-accent text-sm">★ Pipeline Tracks</span>
                   <Link
-                    href="/"
-                    className="text-[10px] text-accent hover:underline flex items-center gap-0.5 lowercase font-mono font-bold"
+                    href="/dashboard"
+                    className="text-[10px] text-text-muted hover:text-accent hover:underline flex items-center gap-0.5 lowercase font-mono font-bold"
                     title="Return to projects list"
                   >
                     <ArrowLeft className="w-2.5 h-2.5" />
@@ -158,42 +157,168 @@ export function Sidebar() {
         </nav>
       </div>
 
-      {/* Engine Status / Telemetry Footer */}
+      {/* Clean Academic Footer (Telemetry removed) */}
       <div className="p-2.5 border-t-2 border-border">
         {collapsed ? (
           <div
             className="flex items-center justify-center p-2 rounded-md bg-surface-subtle border-2 border-border shadow-neo-sm text-text-muted"
-            title="System: Online | 4 Cores CPU"
+            title="AutoMLens v1.0"
           >
-            <div className="relative flex items-center justify-center">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block animate-pulse" />
-            </div>
+            <AutoMLensIcon size={20} />
           </div>
         ) : (
-          <div className="p-3 rounded-card border-2 border-border bg-surface-subtle shadow-neo-sm">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-1.5 text-xs font-bold text-text-primary font-sans">
-                <Activity className="w-3.5 h-3.5 text-secondary animate-pulse" />
-                <span className="font-mono text-[11px] uppercase tracking-wider">System Status</span>
-              </div>
-              <span className="flex items-center gap-1 text-[10px] font-mono font-bold text-emerald-800 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950/80 px-1.5 py-0.5 rounded border border-border shadow-[1px_1px_0px_0px_var(--neo-shadow-color)]">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-ping" />
-                Ready
-              </span>
-            </div>
-            <div className="text-[11px] text-text-muted space-y-1 font-mono">
-              <div className="flex justify-between">
-                <span className="text-text-subtle">Engine:</span>
-                <span className="text-text-secondary font-bold">Hybrid AI</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-text-subtle">Workers:</span>
-                <span className="text-accent font-bold tabular-nums">4 Cores CPU</span>
+          <div className="p-2.5 rounded-card border-2 border-border bg-surface-subtle shadow-neo-sm flex items-center justify-between">
+            <div className="flex items-center gap-2 min-w-0">
+              <AutoMLensIcon size={22} className="shrink-0" />
+              <div className="flex flex-col min-w-0">
+                <span className="font-display text-xs font-bold text-text-primary truncate">
+                  AutoMLens
+                </span>
+                <span className="text-[10px] text-text-muted font-mono truncate">
+                  Enterprise AutoML
+                </span>
               </div>
             </div>
+            <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded border border-border bg-yellow-200 dark:bg-yellow-900/60 text-slate-950 dark:text-yellow-300 shadow-[1px_1px_0px_0px_var(--neo-shadow-color)] shrink-0">
+              v1.0
+            </span>
           </div>
         )}
       </div>
     </aside>
+  );
+}
+
+export function MobileSidebarDrawer({
+  isOpen,
+  onClose,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+}) {
+  const pathname = usePathname();
+  const isProjectRoute = pathname.startsWith("/projects/") && pathname !== "/projects";
+  const projectId = isProjectRoute ? pathname.split("/")[2] : null;
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+      window.addEventListener("keydown", handleKeyDown);
+    }
+    return () => {
+      document.body.style.overflow = "";
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isOpen, onClose]);
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 lg:hidden flex">
+      {/* Backdrop */}
+      <div
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity animate-in fade-in-0 duration-150"
+        onClick={onClose}
+        aria-hidden="true"
+      />
+
+      {/* Slide-in Drawer */}
+      <div className="relative z-50 w-[280px] max-w-[82vw] bg-surface border-r-2 border-border h-full flex flex-col justify-between shadow-neo-lg animate-in slide-in-from-left duration-200 select-none">
+        <div className="flex flex-col min-w-0">
+          {/* Drawer Header */}
+          <div className="h-[60px] flex items-center justify-between px-4 border-b-2 border-border">
+            <Link
+              href="/dashboard"
+              onClick={onClose}
+              className="flex items-center gap-2.5 min-w-0"
+            >
+              <AutoMLensIcon size={30} />
+              <div className="flex flex-col min-w-0">
+                <span className="font-display text-sm tracking-wide text-text-primary uppercase flex items-center gap-1.5 truncate font-bold">
+                  AutoM<span className="text-accent">Lens</span>
+                </span>
+                <span className="text-[10px] font-marker font-bold text-accent truncate">
+                  ★ Human-Assisted AutoML
+                </span>
+              </div>
+            </Link>
+            <button
+              onClick={onClose}
+              className="p-1.5 rounded-md border-2 border-border text-text-primary hover:bg-surface-hover shadow-neo-sm active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all cursor-pointer"
+              aria-label="Close menu"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Nav Links */}
+          <nav className="p-3 space-y-2 overflow-y-auto">
+            <Link
+              href="/dashboard"
+              onClick={onClose}
+              className={cn(
+                "flex items-center gap-3 px-3 py-2.5 text-xs rounded-md transition-all font-sans",
+                pathname === "/dashboard"
+                  ? "bg-accent text-white border-2 border-border font-bold shadow-neo-sm"
+                  : "text-text-secondary hover:text-text-primary hover:bg-surface-hover border-2 border-transparent hover:border-border"
+              )}
+            >
+              <Layers className="w-4 h-4 shrink-0" />
+              <span>Workspace Overview</span>
+            </Link>
+
+            {isProjectRoute && (
+              <div className="pt-3 mt-2 border-t-2 border-border">
+                <div className="px-3 pb-2 flex items-center justify-between text-xs">
+                  <span className="font-marker font-bold text-accent text-sm">★ Pipeline Tracks</span>
+                  <Link
+                    href="/dashboard"
+                    onClick={onClose}
+                    className="text-[10px] text-text-muted hover:text-accent font-mono font-bold flex items-center gap-1"
+                  >
+                    <ArrowLeft className="w-2.5 h-2.5" />
+                    all
+                  </Link>
+                </div>
+                <div className="space-y-1">
+                  {projectPipelineNav.map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <Link
+                        key={item.id}
+                        href={`/projects/${projectId}?tab=${item.id}`}
+                        onClick={onClose}
+                        className="flex items-center gap-3 px-3 py-2 text-xs rounded-md transition-all font-sans border-2 border-transparent hover:border-border hover:bg-surface-hover font-medium text-text-primary"
+                      >
+                        <Icon className="w-4 h-4 shrink-0 text-text-muted" />
+                        <span className="truncate">{item.label}</span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </nav>
+        </div>
+
+        {/* Drawer Footer */}
+        <div className="p-3 border-t-2 border-border bg-surface-subtle">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <AutoMLensIcon size={20} />
+              <span className="text-xs font-bold text-text-primary font-display">
+                AutoMLens v1.0
+              </span>
+            </div>
+            <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded border border-border bg-yellow-200 dark:bg-yellow-900/60 text-slate-950 dark:text-yellow-300">
+              Automated ML
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }

@@ -7,6 +7,7 @@ import json
 import os
 import re
 import sys
+import zipfile
 from datetime import UTC, datetime
 from typing import Any
 
@@ -104,6 +105,16 @@ class ExportService:
 
         exports = [
             ExportItemStatus(
+                export_type="bundle",
+                title="Complete Reproducibility Bundle (.zip)",
+                description=(
+                    "All available project deliverables (quality profile, leaderboard, "
+                    "manifest, audit ledger, and fitted pipeline) in one verified archive."
+                ),
+                format="zip",
+                is_available=True,
+            ),
+            ExportItemStatus(
                 export_type="quality_report",
                 title="Data Quality & Profile Report",
                 description=(
@@ -199,7 +210,9 @@ class ExportService:
         safe_project_name = self._safe_filename_part(project.name)
         timestamp = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
 
-        if export_type == "quality_report":
+        if export_type == "bundle":
+            return self._export_bundle(project_id, project, safe_project_name, timestamp)
+        elif export_type == "quality_report":
             return self._export_quality_report(project_id, safe_project_name, timestamp)
         elif export_type == "leaderboard":
             return self._export_leaderboard(project_id, safe_project_name, timestamp)
@@ -219,9 +232,96 @@ class ExportService:
         else:
             raise AutoMLensError(
                 f"Unknown export type or file '{export_type}'. Supported: "
-                "quality_report, leaderboard, predictions, manifest, pipeline, audit_log",
+                "bundle, quality_report, leaderboard, predictions, manifest, pipeline, audit_log",
                 code="INVALID_EXPORT_TYPE",
             )
+
+    def _export_bundle(
+        self,
+        project_id: str,
+        project: Any,
+        safe_name: str,
+        timestamp: str,
+    ) -> tuple[bytes, str, str, str | None]:
+        """Bundle all available project artifacts into a single ZIP archive."""
+        zip_buffer = io.BytesIO()
+
+        with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zf:
+            # 1. Quality Report (if available)
+            try:
+                q_bytes, _, q_name, _ = self._export_quality_report(
+                    project_id, safe_name, timestamp
+                )
+                zf.writestr(f"quality_report/{q_name}", q_bytes)
+            except Exception:
+                pass
+
+            # 2. Leaderboard (if available)
+            try:
+                l_bytes, _, l_name, _ = self._export_leaderboard(
+                    project_id, safe_name, timestamp
+                )
+                zf.writestr(f"leaderboard/{l_name}", l_bytes)
+            except Exception:
+                pass
+
+            # 3. Predictions (if available)
+            try:
+                p_bytes, _, p_name, _ = self._export_predictions(
+                    project_id, safe_name, timestamp
+                )
+                zf.writestr(f"predictions/{p_name}", p_bytes)
+            except Exception:
+                pass
+
+            # 4. Manifest (if available)
+            try:
+                m_bytes, _, m_name, _ = self._export_manifest(
+                    project, safe_name, timestamp
+                )
+                zf.writestr(f"manifest/{m_name}", m_bytes)
+            except Exception:
+                pass
+
+            # 5. Audit Log (always available)
+            try:
+                a_bytes, _, a_name, _ = self._export_audit_log(
+                    project_id, safe_name, timestamp
+                )
+                zf.writestr(f"audit/{a_name}", a_bytes)
+            except Exception:
+                pass
+
+            # 6. Pipeline Joblib (if available)
+            try:
+                pipe_bytes, _, pipe_name, _ = self._export_pipeline(
+                    project_id, safe_name
+                )
+                zf.writestr(f"model/{pipe_name}", pipe_bytes)
+            except Exception:
+                pass
+
+            # 7. Reproducibility Readme
+            readme_text = (
+                f"AutoMLens Reproducibility Bundle\n"
+                f"================================\n"
+                f"Project: {project.name} (ID: {project_id})\n"
+                f"Generated At: {datetime.now(UTC).isoformat()}\n"
+                f"Python: {sys.version.split()[0]}\n"
+                f"Scikit-Learn: {sklearn.__version__}\n\n"
+                f"Contents:\n"
+                f"- quality_report/: Statistical profile and data health diagnostics\n"
+                f"- leaderboard/: Multi-model CV evaluation rankings and metrics\n"
+                f"- manifest/: Runtime configuration, random seed, and dataset fingerprint\n"
+                f"- audit/: Chronological immutable audit ledger\n"
+                f"- model/: Serialized Scikit-Learn Pipeline (.joblib)\n"
+            )
+            zf.writestr("README_REPRODUCIBILITY.txt", readme_text.encode("utf-8"))
+
+        zip_data = zip_buffer.getvalue()
+        sha256 = hashlib.sha256(zip_data).hexdigest()
+        filename = f"{safe_name}_reproducibility_bundle_{timestamp}.zip"
+        return zip_data, "application/zip", filename, sha256
 
     def _export_quality_report(
         self,

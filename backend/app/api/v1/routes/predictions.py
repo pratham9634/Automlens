@@ -8,8 +8,10 @@ from sqlalchemy.orm import Session
 
 from app.api.v1.schemas.predictions import (
     BatchPredictionResponse,
+    BatchValidationResponse,
     ConfusionMatrixResponse,
     ModelDetailResponse,
+    SampleRowResponse,
     SinglePredictionRequest,
     SinglePredictionResponse,
 )
@@ -80,6 +82,47 @@ async def predict_batch(
         filename=file.filename or "batch_input.csv",
     )
     return response
+
+
+@router.post(
+    "/projects/{project_id}/models/{model_id}/predict/batch/validate",
+    response_model=BatchValidationResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Validate CSV/Excel batch upload schema against model required features",
+)
+async def validate_batch(
+    project_id: str,
+    model_id: str,
+    file: UploadFile = File(...),
+    prediction_service: PredictionService = Depends(get_prediction_service),
+) -> BatchValidationResponse:
+    """Check whether uploaded file contains all necessary features before full batch execution."""
+    file_bytes = await file.read()
+    return prediction_service.validate_batch_file(
+        project_id=project_id,
+        model_id=model_id,
+        file_bytes=file_bytes,
+        filename=file.filename or "batch_input.csv",
+    )
+
+
+@router.get(
+    "/projects/{project_id}/models/{model_id}/sample-row",
+    response_model=SampleRowResponse,
+    summary="Fetch representative feature values (median profile or random sample)",
+)
+def get_sample_row(
+    project_id: str,
+    model_id: str,
+    sample_type: str = "median",
+    prediction_service: PredictionService = Depends(get_prediction_service),
+) -> SampleRowResponse:
+    """Return median/mode or random row from dataset to pre-populate single prediction forms."""
+    return prediction_service.get_sample_row(
+        project_id=project_id,
+        model_id=model_id,
+        sample_type=sample_type,
+    )
 
 
 @router.get(

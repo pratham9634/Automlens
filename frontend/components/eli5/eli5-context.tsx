@@ -64,6 +64,36 @@ export const ELI5_DICTIONARY: Record<string, ELI5Definition> = {
     simple: "Cheat-Proof Exam Isolation",
     analogy: "Guarantees that test folds are strictly hidden until the model finishes training.",
   },
+  data_quality_score: {
+    academic: "Composite Data Quality Health Score",
+    simple: "Overall Data Cleanliness Score",
+    analogy: "A hygiene grade out of 100 based on missing values, duplicates, and outliers.",
+  },
+  iqr_outliers: {
+    academic: "Interquartile Range (IQR) Boundary Outliers",
+    simple: "Extreme Unusual Numbers",
+    analogy: "Data points far outside the normal middle 50% pack, reported without auto-deletion.",
+  },
+  constant_columns: {
+    academic: "Zero-Variance Constant Features",
+    simple: "Frozen Unchanging Columns",
+    analogy: "Columns where every single row has the identical value, offering zero clues to learn from.",
+  },
+  high_cardinality: {
+    academic: "High-Cardinality Categorical Feature",
+    simple: "Too Many Unique Category Names",
+    analogy: "A column with dozens of distinct text values that needs smart grouping or encoding.",
+  },
+  high_missingness: {
+    academic: "Severe Feature Missingness (>30%)",
+    simple: "Lots of Blank Holes",
+    analogy: "A column with more than 30% empty cells that needs automatic imputation or safe dropping.",
+  },
+  pearson_correlation: {
+    academic: "Pairwise Pearson Linear Correlation",
+    simple: "Directional Trend Lock",
+    analogy: "Measures whether two numbers go up together (+1.0) or opposite ways (-1.0).",
+  },
 };
 
 interface ELI5ContextType {

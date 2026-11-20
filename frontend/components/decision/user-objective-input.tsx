@@ -47,9 +47,9 @@ export function UserObjectiveInput({
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5 text-xs text-text-muted font-mono">
-          <Sparkles className="w-3.5 h-3.5 text-accent" />
-          <span className="text-[11px] font-bold text-accent">Google Gemini 2.0 Flash</span>
+        <div className="flex items-center gap-1.5 text-xs text-text-muted">
+          <Sparkles className="w-3.5 h-3.5 text-accent animate-pulse" />
+          <span className="font-marker font-bold text-sm text-accent">★ Gemini 2.0 Flash Copilot</span>
         </div>
       </div>
 
@@ -97,7 +97,9 @@ export function UserObjectiveInput({
           className="gap-2 bg-accent text-white hover:bg-accent-hover hover:shadow-[0_0_12px_rgba(6,182,212,0.45)]"
         >
           <Wand2 className="w-3.5 h-3.5 text-white" />
-          <span>{isStreaming ? "AI Reasoning in Progress..." : "Analyze Dataset & Plan Pipeline"}</span>
+          <span className="font-marker font-bold text-sm tracking-wide">
+            {isStreaming ? "AI Reasoning in Progress..." : "★ Analyze Dataset & Plan Pipeline"}
+          </span>
         </Button>
       </div>
     </Card>

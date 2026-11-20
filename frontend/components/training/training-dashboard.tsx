@@ -72,6 +72,9 @@ export function TrainingDashboard({
                     status: payload.status,
                     primary_metric_score: payload.score,
                     primary_metric_std: payload.std,
+                    train_score: payload.train_score,
+                    overfit_gap: payload.overfit_gap,
+                    overfit_risk: payload.overfit_risk,
                     all_metrics: payload.metrics,
                     train_time_seconds: payload.train_time_seconds,
                     error_message: payload.error_message,
@@ -208,6 +211,27 @@ export function TrainingDashboard({
     };
   }, [activeRun?.status]);
 
+  // Watchdog polling fallback: reconciles state if SSE disconnects or user refreshes
+  useEffect(() => {
+    if (!activeRun || activeRun.status !== "running") return;
+
+    const watchdog = setInterval(async () => {
+      try {
+        const freshRun = await apiClient.getTrainingRun(activeRun.id);
+        if (freshRun.status === "completed" || freshRun.status === "failed") {
+          setActiveRun(freshRun);
+          if (freshRun.status === "completed" && onTrainingCompleted) {
+            onTrainingCompleted();
+          }
+        }
+      } catch (err) {
+        console.warn("Training watchdog poll error:", err);
+      }
+    }, 5000);
+
+    return () => clearInterval(watchdog);
+  }, [activeRun?.id, activeRun?.status, onTrainingCompleted]);
+
   const handleStartTraining = async () => {
     if (!confirmedTarget) return;
 
@@ -220,10 +244,10 @@ export function TrainingDashboard({
       setActiveRun(runData);
       connectSSE(response.run_id);
     } catch (err) {
-      alert(
+      setError(
         err instanceof Error
           ? err.message
-          : "Failed to schedule parallel training run."
+          : "Failed to schedule parallel training run. Please check database connectivity."
       );
     } finally {
       setStarting(false);
@@ -279,6 +303,24 @@ export function TrainingDashboard({
 
   return (
     <div className="space-y-6">
+      {/* Inline Error Alert */}
+      {error && (
+        <Card className="p-4 border-2 border-danger/40 bg-danger/10 flex items-center justify-between gap-3 text-danger">
+          <div className="flex items-center gap-2.5">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            <span className="text-xs font-mono font-medium">{error}</span>
+          </div>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={handleStartTraining}
+            className="text-xs font-mono shrink-0"
+          >
+            Retry Launch
+          </Button>
+        </Card>
+      )}
+
       {/* Top Banner & Control Bar */}
       <Card className="p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-5">
         <div className="space-y-2">
@@ -287,9 +329,9 @@ export function TrainingDashboard({
               <Cpu className="w-5 h-5 text-accent" />
               <span>Parallel Multi-Model Training Engine</span>
             </h2>
-            <Badge variant="success" size="sm" className="gap-1 font-mono">
+            <Badge variant="success" size="sm" className="gap-1 font-marker font-bold text-xs -rotate-1">
               <ShieldCheck className="w-3 h-3" />
-              Rule 1 &amp; Rule 3 Compliant (5-Fold CV)
+              ★ Zero-Leakage Fold Isolated
             </Badge>
           </div>
 
@@ -310,7 +352,7 @@ export function TrainingDashboard({
             className="gap-2 font-mono text-xs"
           >
             {!starting && !isTrainingActive && <Play className="w-4 h-4 fill-current" />}
-            <span>
+            <span className="font-marker font-bold text-sm tracking-wide">
               {isTrainingActive
                 ? "Training In Progress..."
                 : activeRun
@@ -320,6 +362,47 @@ export function TrainingDashboard({
           </Button>
         </div>
       </Card>
+
+      {/* Active Multi-Core CPU Worker Telemetry Indicator */}
+      {isTrainingActive && (
+        <Card className="p-4 border border-accent/20 bg-accent/5 space-y-3">
+          <div className="flex items-center justify-between text-xs font-mono text-accent">
+            <span className="flex items-center gap-2 font-semibold">
+              <span className="w-2 h-2 rounded-full bg-accent animate-ping" />
+              Active Python ProcessPoolExecutor (4 Parallel CPU Workers)
+            </span>
+            <span className="text-text-muted">Spawn Mode • 5-Fold Stratified Isolation</span>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {[0, 1, 2, 3].map((coreIdx) => {
+              const activeCount =
+                activeRun?.model_runs.filter((m) => m.status === "training").length || 0;
+              const isCoreBusy = coreIdx < Math.max(1, activeCount);
+              return (
+                <div
+                  key={coreIdx}
+                  className={`p-2.5 rounded border text-xs font-mono flex items-center justify-between transition-all ${
+                    isCoreBusy
+                      ? "bg-surface border-accent/40 shadow-neo-sm"
+                      : "bg-surface-subtle/50 border-border opacity-60"
+                  }`}
+                >
+                  <span className="text-[11px] text-text-muted">Worker Core {coreIdx}</span>
+                  <span
+                    className={`text-[10px] px-1.5 py-0.5 rounded ${
+                      isCoreBusy
+                        ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-medium animate-pulse"
+                        : "bg-surface text-text-subtle"
+                    }`}
+                  >
+                    {isCoreBusy ? "FITTING FOLDS" : "IDLE"}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+      )}
 
       {/* Live Training Progress Panel */}
       {activeRun && (

@@ -21,7 +21,7 @@ settings = get_settings()
 class MemoryCacheClient:
     """Thread-safe, in-memory cache and event pub/sub fallback.
 
-    Guarantees 100% offline functionality for viva defense and unit tests
+    Guarantees 100% offline functionality for standalone deployments and unit tests
     when no live Redis daemon or Upstash connection is present.
     """
 

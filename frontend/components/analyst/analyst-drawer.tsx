@@ -15,30 +15,46 @@ import {
   BarChart3,
   Layers,
   GraduationCap,
+  Copy,
+  Check,
+  Compass,
+  Lock,
 } from "lucide-react";
+import { useUser } from "@clerk/nextjs";
 import { apiClient } from "@/lib/api-client";
 import { ChatMessage, ChatSuggestion } from "@/lib/types";
 
 interface AnalystDrawerProps {
   projectId: string;
+  projectName?: string;
   isOpen: boolean;
   onClose: () => void;
 }
 
-export function AnalystDrawer({ projectId, isOpen, onClose }: AnalystDrawerProps) {
+export function AnalystDrawer({
+  projectId,
+  projectName,
+  isOpen,
+  onClose,
+}: AnalystDrawerProps) {
+  const { user } = useUser();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const [suggestions, setSuggestions] = useState<ChatSuggestion[]>([]);
   const [hasCustomKey, setHasCustomKey] = useState(false);
+  const [activeModel, setActiveModel] = useState<string>("gemini-2.0-flash");
+  const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<(() => void) | null>(null);
 
-  // Check for local Gemini Key
+  // Check for local Gemini Key & Model
   useEffect(() => {
     if (typeof window !== "undefined") {
       const key = localStorage.getItem("automlens_gemini_key");
+      const model = localStorage.getItem("automlens_gemini_model") || "gemini-2.0-flash";
       setHasCustomKey(Boolean(key && key.trim()));
+      setActiveModel(model);
     }
   }, [isOpen]);
 
@@ -115,7 +131,7 @@ export function AnalystDrawer({ projectId, isOpen, onClose }: AnalystDrawerProps
             const updated = [...prev];
             const last = updated[updated.length - 1];
             if (last && last.role === "assistant") {
-              last.content = last.content || `⚠️ Analyst notice: ${err}`;
+              last.content = last.content || `⚠️ Lens notice: ${err}`;
             }
             return [...updated];
           });
@@ -141,20 +157,32 @@ export function AnalystDrawer({ projectId, isOpen, onClose }: AnalystDrawerProps
     setMessages([]);
   };
 
+  const copyMessage = (idx: number, text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedIndex(idx);
+    setTimeout(() => setCopiedIndex(null), 2000);
+  };
+
   const getCategoryIcon = (cat: string) => {
     switch (cat) {
+      case "guidance":
+        return <Compass className="w-3.5 h-3.5 text-sky-400" />;
+      case "security":
+        return <Lock className="w-3.5 h-3.5 text-emerald-400" />;
       case "quality":
         return <Lightbulb className="w-3.5 h-3.5 text-amber-400" />;
       case "models":
         return <BarChart3 className="w-3.5 h-3.5 text-cyan-400" />;
       case "features":
-        return <Layers className="w-3.5 h-3.5 text-emerald-400" />;
+        return <Layers className="w-3.5 h-3.5 text-purple-400" />;
       case "executive":
-        return <GraduationCap className="w-3.5 h-3.5 text-purple-400" />;
+        return <GraduationCap className="w-3.5 h-3.5 text-rose-400" />;
       default:
         return <Zap className="w-3.5 h-3.5 text-cyan-400" />;
     }
   };
+
+  const displayName = user?.firstName || user?.primaryEmailAddress?.emailAddress?.split("@")[0] || "Engineer";
 
   // Render markdown with headings, bold, code, and bullet lists
   const renderFormattedText = (content: string) => {
@@ -200,7 +228,6 @@ export function AnalystDrawer({ projectId, isOpen, onClose }: AnalystDrawerProps
   };
 
   const parseInline = (text: string) => {
-    // Basic inline code and bold parser
     const parts = text.split(/(`[^`]+`|\*\*[^*]+\*\*)/g);
     return parts.map((part, i) => {
       if (part.startsWith("`") && part.endsWith("`")) {
@@ -233,35 +260,38 @@ export function AnalystDrawer({ projectId, isOpen, onClose }: AnalystDrawerProps
 
       {/* Slide-over panel */}
       <aside
-        className={`fixed top-0 right-0 bottom-0 w-full sm:w-[480px] md:w-[540px] bg-surface border-l border-border shadow-2xl z-50 flex flex-col transition-transform duration-300 ease-in-out ${
+        className={`fixed top-0 right-0 bottom-0 w-full sm:w-[480px] md:w-[560px] bg-surface border-l border-border shadow-2xl z-50 flex flex-col transition-transform duration-300 ease-in-out ${
           isOpen ? "translate-x-0" : "translate-x-full"
         }`}
       >
         {/* Header */}
-        <div className="h-[60px] px-5 border-b border-border/80 flex items-center justify-between bg-surface-subtle/50">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
+        <div className="h-[64px] px-5 border-b border-border/80 flex items-center justify-between bg-surface-subtle/50">
+          <div className="flex items-center gap-3">
+            <div className="relative w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500/20 to-accent/20 border border-cyan-500/40 flex items-center justify-center text-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.2)]">
               <Sparkles className="w-4 h-4" />
+              <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-surface" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="font-semibold text-sm text-text-primary">Tabular AI Analyst</span>
-                <span className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
-                  <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
-                  {hasCustomKey ? "BYOK Active" : "Hybrid AI"}
+                <span className="font-bold text-sm text-text-primary tracking-tight">Lens</span>
+                <span className="px-1.5 py-0.2 rounded text-[10px] font-mono font-semibold bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
+                  ML Copilot
+                </span>
+                <span className="hidden sm:inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-mono bg-surface-muted text-text-muted border border-border">
+                  {hasCustomKey ? `${activeModel} (BYOK)` : "Lens Hybrid AI"}
                 </span>
               </div>
-              <p className="text-[11px] text-text-muted">Dataset insights, leaderboard analysis & viva copilot</p>
+              <p className="text-[11px] text-text-muted">Senior Staff ML Architect • Automated Tabular Intelligence</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1.5">
             {messages.length > 0 && (
               <button
                 type="button"
                 onClick={clearChat}
-                title="Clear chat history"
-                className="p-1.5 text-text-muted hover:text-text-primary hover:bg-surface rounded-md transition-colors"
+                title="Clear conversation"
+                className="p-1.5 text-text-muted hover:text-text-primary hover:bg-surface-subtle rounded-md transition-colors"
               >
                 <Trash2 className="w-4 h-4" />
               </button>
@@ -269,51 +299,67 @@ export function AnalystDrawer({ projectId, isOpen, onClose }: AnalystDrawerProps
             <button
               type="button"
               onClick={onClose}
-              className="p-1.5 text-text-muted hover:text-text-primary hover:bg-surface rounded-md transition-colors"
+              title="Close drawer (Esc)"
+              className="p-1.5 text-text-muted hover:text-text-primary hover:bg-surface-subtle rounded-md transition-colors"
             >
               <X className="w-4 h-4" />
             </button>
           </div>
         </div>
 
+        {/* Security & Workspace Context Sub-banner */}
+        <div className="px-5 py-2 border-b border-border/60 bg-surface-subtle/30 flex items-center justify-between text-[11px] font-mono text-text-muted">
+          <div className="flex items-center gap-1.5 truncate max-w-[65%]">
+            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 shrink-0" />
+            <span className="truncate text-text-secondary">{projectName || "Workspace"}</span>
+          </div>
+
+          <div className="flex items-center gap-1.5 text-[10px] text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+            <ShieldCheck className="w-3 h-3 shrink-0" />
+            <span className="truncate">Tenant: {displayName}</span>
+          </div>
+        </div>
+
         {/* Message Feed */}
         <div className="flex-1 overflow-y-auto p-5 space-y-4">
           {messages.length === 0 ? (
-            <div className="h-full flex flex-col justify-center items-center text-center px-4 py-8">
-              <div className="w-12 h-12 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400 mb-3 shadow-[0_0_20px_rgba(6,182,212,0.15)]">
-                <Bot className="w-6 h-6" />
+            <div className="h-full flex flex-col justify-center items-center text-center px-2 py-6">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-cyan-500/10 via-cyan-500/20 to-accent/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 mb-3 shadow-[0_0_25px_rgba(6,182,212,0.18)]">
+                <Bot className="w-7 h-7" />
               </div>
-              <h3 className="font-semibold text-text-primary text-sm mb-1">
-                Ask anything about your data & models
+              <h3 className="font-bold text-text-primary text-base mb-1 tracking-tight">
+                Greetings, {displayName}. I am Lens.
               </h3>
               <p className="text-xs text-text-muted max-w-sm mb-6 leading-relaxed">
-                I have real-time visibility into your statistical profiles, data quality warnings, 
-                leaderboard metrics, and SHAP feature importances.
+                Your dedicated Staff Machine Learning Architect. I have live visibility into your dataset telemetry, cross-validation tournaments, overfit diagnostics, and audit logs.
               </p>
 
               {/* Suggested Questions */}
               {suggestions.length > 0 && (
                 <div className="w-full space-y-2 text-left">
-                  <span className="text-[11px] font-mono uppercase tracking-wider text-text-muted block mb-1">
-                    Suggested Questions
-                  </span>
+                  <div className="flex items-center justify-between text-[11px] font-mono uppercase tracking-wider text-text-muted px-1">
+                    <span>Context-Aware Actions</span>
+                    <span className="text-[10px] text-cyan-400">Step-by-step</span>
+                  </div>
                   {suggestions.map((s, idx) => (
                     <button
                       key={idx}
                       type="button"
                       onClick={() => handleSend(s.prompt)}
-                      className="w-full text-left p-3 rounded-lg border border-border/80 bg-surface-subtle/70 hover:bg-surface-subtle hover:border-cyan-500/40 transition-all flex items-start gap-2.5 group"
+                      className="w-full text-left p-3 rounded-lg border border-border/80 bg-surface-subtle/70 hover:bg-surface-subtle hover:border-cyan-500/50 hover:shadow-xs transition-all flex items-start gap-2.5 group cursor-pointer"
                     >
-                      <div className="mt-0.5">{getCategoryIcon(s.category)}</div>
+                      <div className="mt-0.5 p-1 rounded bg-surface border border-border-subtle group-hover:scale-110 transition-transform">
+                        {getCategoryIcon(s.category)}
+                      </div>
                       <div className="flex-1 min-w-0">
-                        <div className="text-xs font-medium text-text-primary group-hover:text-cyan-400 transition-colors">
+                        <div className="text-xs font-semibold text-text-primary group-hover:text-cyan-400 transition-colors">
                           {s.title}
                         </div>
                         <div className="text-[11px] text-text-muted truncate mt-0.5">
                           {s.prompt}
                         </div>
                       </div>
-                      <ChevronRight className="w-3.5 h-3.5 text-text-muted group-hover:text-cyan-400 transition-colors mt-1" />
+                      <ChevronRight className="w-3.5 h-3.5 text-text-muted group-hover:text-cyan-400 transition-colors mt-1 shrink-0" />
                     </button>
                   ))}
                 </div>
@@ -323,18 +369,18 @@ export function AnalystDrawer({ projectId, isOpen, onClose }: AnalystDrawerProps
             messages.map((msg, i) => (
               <div
                 key={i}
-                className={`flex gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+                className={`flex gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"} group`}
               >
                 {msg.role === "assistant" && (
-                  <div className="w-7 h-7 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex-shrink-0 flex items-center justify-center text-cyan-400 mt-1">
-                    <Sparkles className="w-3.5 h-3.5" />
+                  <div className="w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-500/30 flex-shrink-0 flex items-center justify-center text-cyan-400 mt-1 shadow-xs">
+                    <Sparkles className="w-4 h-4" />
                   </div>
                 )}
                 <div
-                  className={`max-w-[85%] rounded-xl px-4 py-3 text-xs leading-relaxed ${
+                  className={`max-w-[85%] rounded-xl px-4 py-3 text-xs leading-relaxed relative ${
                     msg.role === "user"
                       ? "bg-cyan-500 text-white shadow-sm"
-                      : "bg-surface-subtle border border-border/80 text-text-primary"
+                      : "bg-surface-subtle border border-border/80 text-text-primary shadow-xs"
                   }`}
                 >
                   {msg.role === "assistant" ? (
@@ -343,23 +389,43 @@ export function AnalystDrawer({ projectId, isOpen, onClose }: AnalystDrawerProps
                       {isStreaming && i === messages.length - 1 && (
                         <span className="inline-block w-1.5 h-3.5 ml-1 bg-cyan-400 animate-pulse align-middle" />
                       )}
+
+                      {/* Assistant footer with timestamp and copy button */}
+                      <div className="mt-2.5 pt-2 border-t border-border-subtle/60 flex items-center justify-between text-[10px] text-text-muted font-mono">
+                        <span>{msg.timestamp || "Lens"}</span>
+                        <button
+                          onClick={() => copyMessage(i, msg.content)}
+                          title="Copy response"
+                          className="hover:text-text-primary flex items-center gap-1 cursor-pointer transition-colors"
+                        >
+                          {copiedIndex === i ? (
+                            <>
+                              <Check className="w-3 h-3 text-success" />
+                              <span className="text-success">Copied</span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-3 h-3" />
+                              <span>Copy</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
                     </div>
                   ) : (
-                    <p className="whitespace-pre-wrap">{msg.content}</p>
-                  )}
-                  {msg.timestamp && (
-                    <span
-                      className={`block text-[10px] mt-1.5 text-right ${
-                        msg.role === "user" ? "text-white/70" : "text-text-muted"
-                      }`}
-                    >
-                      {msg.timestamp}
-                    </span>
+                    <div>
+                      <p className="whitespace-pre-wrap">{msg.content}</p>
+                      {msg.timestamp && (
+                        <span className="block text-[10px] mt-1.5 text-right text-white/70 font-mono">
+                          {msg.timestamp}
+                        </span>
+                      )}
+                    </div>
                   )}
                 </div>
                 {msg.role === "user" && (
-                  <div className="w-7 h-7 rounded-lg bg-surface-subtle border border-border flex-shrink-0 flex items-center justify-center text-text-secondary mt-1">
-                    <User className="w-3.5 h-3.5" />
+                  <div className="w-8 h-8 rounded-lg bg-surface-subtle border border-border flex-shrink-0 flex items-center justify-center text-text-secondary mt-1 shadow-xs">
+                    <User className="w-4 h-4" />
                   </div>
                 )}
               </div>
@@ -369,7 +435,7 @@ export function AnalystDrawer({ projectId, isOpen, onClose }: AnalystDrawerProps
         </div>
 
         {/* Input Bar */}
-        <div className="p-4 border-t border-border/80 bg-surface-subtle/30">
+        <div className="p-4 border-t border-border/80 bg-surface-subtle/40 space-y-2">
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -377,27 +443,30 @@ export function AnalystDrawer({ projectId, isOpen, onClose }: AnalystDrawerProps
             }}
             className="flex items-end gap-2"
           >
-            <div className="flex-1 relative rounded-lg border border-border bg-surface focus-within:border-cyan-500/50 transition-colors">
+            <div className="flex-1 relative rounded-lg border border-border bg-surface focus-within:border-cyan-500/60 focus-within:ring-1 focus-within:ring-cyan-500/20 transition-all shadow-inner">
               <textarea
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !e.shiftKey) {
+                    if (e.nativeEvent.isComposing || (e as unknown as { keyCode?: number }).keyCode === 229) {
+                      return;
+                    }
                     e.preventDefault();
                     handleSend();
                   }
                 }}
-                placeholder="Ask about data quality, models, or SHAP..."
+                placeholder="Ask Lens about data quality, models, overfit risk, or guidance..."
                 rows={2}
                 disabled={isStreaming}
-                className="w-full bg-transparent px-3 py-2 text-xs text-text-primary placeholder:text-text-muted resize-none focus:outline-none"
+                className="w-full bg-transparent px-3.5 py-2.5 text-xs text-text-primary placeholder:text-text-muted resize-none focus:outline-none leading-relaxed"
               />
             </div>
             {isStreaming ? (
               <button
                 type="button"
                 onClick={handleStop}
-                className="h-9 px-3 rounded-lg bg-danger/10 text-danger border border-danger/30 hover:bg-danger/20 text-xs font-medium transition-colors flex items-center gap-1.5"
+                className="h-10 px-3.5 rounded-lg bg-danger/10 text-danger border border-danger/30 hover:bg-danger/20 text-xs font-mono font-medium transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
               >
                 <span>Stop</span>
               </button>
@@ -405,16 +474,17 @@ export function AnalystDrawer({ projectId, isOpen, onClose }: AnalystDrawerProps
               <button
                 type="submit"
                 disabled={!input.trim()}
-                className="h-9 px-3.5 rounded-lg bg-cyan-500 text-white hover:bg-cyan-600 disabled:opacity-40 disabled:pointer-events-none text-xs font-medium transition-colors flex items-center justify-center shadow-sm"
+                className="h-10 px-4 rounded-lg bg-cyan-500 text-white hover:bg-cyan-600 disabled:opacity-40 disabled:pointer-events-none text-xs font-medium transition-colors flex items-center justify-center shadow-sm cursor-pointer"
               >
                 <Send className="w-3.5 h-3.5" />
               </button>
             )}
           </form>
-          <div className="mt-2 flex items-center justify-between text-[10px] text-text-muted font-sans px-1">
+
+          <div className="flex items-center justify-between text-[10px] text-text-muted font-mono px-1">
             <span className="flex items-center gap-1">
               <ShieldCheck className="w-3 h-3 text-cyan-400" />
-              Dataset remains confidential
+              <span>Multi-tenant session • No data leaves workspace</span>
             </span>
             <span>Enter to send • Shift+Enter for newline</span>
           </div>
