@@ -1,5 +1,6 @@
 import {
   BatchPredictionResponse,
+  BatchValidationResponse,
   ChatMessage,
   ChatSuggestion,
   ConfirmedTargetResponse,
@@ -15,6 +16,7 @@ import {
   LocalExplanationResponse,
   ModelDetailResponse,
   Project,
+  SampleRowResponse,
   SinglePredictionResponse,
   StartTrainingResponse,
   SystemHealth,
@@ -385,6 +387,27 @@ export const apiClient = {
       }
     );
   },
+
+  validateBatch: (projectId: string, modelId: string, file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    return request<BatchValidationResponse>(
+      `/projects/${projectId}/models/${modelId}/predict/batch/validate`,
+      {
+        method: "POST",
+        body: formData,
+      }
+    );
+  },
+
+  getSampleRow: (
+    projectId: string,
+    modelId: string,
+    sampleType: "median" | "random" = "median"
+  ) =>
+    request<SampleRowResponse>(
+      `/projects/${projectId}/models/${modelId}/sample-row?sample_type=${sampleType}`
+    ),
 
   getConfusionMatrix: (projectId: string, modelId: string) =>
     request<ConfusionMatrixResponse>(

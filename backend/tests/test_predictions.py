@@ -127,3 +127,73 @@ def test_model_download_endpoint(client: TestClient) -> None:
     assert res.status_code == 200
     assert res.headers["content-type"] == "application/octet-stream"
     assert len(res.content) > 100
+
+
+def test_batch_validation_and_distribution_metrics(client: TestClient) -> None:
+    """Verify pre-flight batch CSV validation and output distribution metrics."""
+    project_id, model_id = _create_trained_project(client)
+
+    # 1. Valid batch CSV
+    valid_csv = b"Age,Salary,Department\n25,50000,Engineering\n35,70000,Sales\n"
+    val_res = client.post(
+        f"/api/v1/projects/{project_id}/models/{model_id}/predict/batch/validate",
+        files={"file": ("valid.csv", valid_csv, "text/csv")},
+    )
+    assert val_res.status_code == 200
+    val_data = val_res.json()
+    assert val_data["valid"] is True
+    assert val_data["total_rows"] == 2
+    assert "Age" in val_data["matched_features"]
+    assert len(val_data["missing_features"]) == 0
+
+    # 2. Invalid batch CSV (missing 'Salary' column)
+    invalid_csv = b"Age,Department\n25,Engineering\n35,Sales\n"
+    inval_res = client.post(
+        f"/api/v1/projects/{project_id}/models/{model_id}/predict/batch/validate",
+        files={"file": ("invalid.csv", invalid_csv, "text/csv")},
+    )
+    assert inval_res.status_code == 200
+    inval_data = inval_res.json()
+    assert inval_data["valid"] is False
+    assert "Salary" in inval_data["missing_features"]
+
+    # 3. Batch prediction includes distribution_summary
+    pred_res = client.post(
+        f"/api/v1/projects/{project_id}/models/{model_id}/predict/batch",
+        files={"file": ("valid.csv", valid_csv, "text/csv")},
+    )
+    assert pred_res.status_code == 200
+    pred_data = pred_res.json()
+    assert "distribution_summary" in pred_data
+    dist = pred_data["distribution_summary"]
+    assert dist["type"] == "classification"
+    assert "class_counts" in dist
+    assert "class_percentages" in dist
+
+
+def test_sample_row_generation(client: TestClient) -> None:
+    """Verify sample row helper returns median profile and random representative rows."""
+    project_id, model_id = _create_trained_project(client)
+
+    # Median typical profile
+    res_med = client.get(
+        f"/api/v1/projects/{project_id}/models/{model_id}/sample-row?sample_type=median"
+    )
+    assert res_med.status_code == 200
+    med_data = res_med.json()
+    assert med_data["sample_type"] == "median"
+    assert "Age" in med_data["values"]
+    assert "Salary" in med_data["values"]
+    assert "Department" in med_data["values"]
+    assert med_data["target_column"] == "Target"
+
+    # Random real observation
+    res_rand = client.get(
+        f"/api/v1/projects/{project_id}/models/{model_id}/sample-row?sample_type=random"
+    )
+    assert res_rand.status_code == 200
+    rand_data = res_rand.json()
+    assert rand_data["sample_type"] == "random"
+    assert "Age" in rand_data["values"]
+    assert rand_data["target_value"] is not None
+

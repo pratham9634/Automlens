@@ -36,8 +36,33 @@ class SinglePredictionResponse(BaseModel):
     confidence: float | None = None
 
 
+class BatchValidationResponse(BaseModel):
+    """Pre-flight schema validation for batch inference upload."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    valid: bool
+    total_rows: int
+    required_features: list[str]
+    matched_features: list[str]
+    missing_features: list[str]
+    extra_features: list[str]
+    message: str
+
+
+class SampleRowResponse(BaseModel):
+    """Representative feature values for quick single-prediction pre-filling."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    sample_type: str
+    values: dict[str, Any]
+    target_column: str
+    target_value: Any | None = None
+
+
 class BatchPredictionResponse(BaseModel):
-    """Summary and 10-row preview of batch inference results."""
+    """Summary, distribution metrics, and preview of batch inference results."""
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -48,6 +73,7 @@ class BatchPredictionResponse(BaseModel):
     total_rows: int
     preview_rows: list[dict[str, Any]]
     download_url: str
+    distribution_summary: dict[str, Any] | None = None
 
 
 class ConfusionMatrixResponse(BaseModel):

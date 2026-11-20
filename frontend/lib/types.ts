@@ -325,6 +325,23 @@ export interface SinglePredictionResponse {
   confidence?: number | null;
 }
 
+export interface BatchValidationResponse {
+  valid: boolean;
+  total_rows: number;
+  required_features: string[];
+  matched_features: string[];
+  missing_features: string[];
+  extra_features: string[];
+  message: string;
+}
+
+export interface SampleRowResponse {
+  sample_type: "median" | "random" | string;
+  values: Record<string, any>;
+  target_column: string;
+  target_value?: any;
+}
+
 export interface BatchPredictionResponse {
   model_id: string;
   model_name: string;
@@ -333,6 +350,7 @@ export interface BatchPredictionResponse {
   total_rows: number;
   preview_rows: Record<string, string | number | boolean | null>[];
   download_url: string;
+  distribution_summary?: Record<string, any> | null;
 }
 
 export interface PerClassMetric {

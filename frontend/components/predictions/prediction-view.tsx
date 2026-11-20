@@ -4,7 +4,9 @@ import { useEffect, useState } from "react";
 import {
   ConfirmedTargetResponse,
   DatasetPreviewResponse,
+  DatasetProfileResponse,
   ModelRun,
+  TrainingRun,
 } from "@/lib/types";
 import { apiClient } from "@/lib/api-client";
 import { SinglePredictionForm } from "./single-prediction-form";
@@ -43,6 +45,7 @@ export function PredictionView({
   const [error, setError] = useState<string | null>(null);
 
   const [datasetPreview, setDatasetPreview] = useState<DatasetPreviewResponse | null>(null);
+  const [profile, setProfile] = useState<DatasetProfileResponse | null>(null);
   const [confirmedTarget, setConfirmedTarget] = useState<ConfirmedTargetResponse | null>(null);
   const [models, setModels] = useState<ModelRun[]>([]);
   const [selectedModelId, setSelectedModelId] = useState<string>("");
@@ -55,17 +58,21 @@ export function PredictionView({
 
     async function loadData() {
       try {
-        const [dsData, targetData, runsData] = await Promise.all([
+        const [dsData, targetData, runsData, profData] = await Promise.all([
           apiClient.getDataset(projectId),
           apiClient.getConfirmedTarget(projectId),
           apiClient.listTrainingRuns(projectId),
+          apiClient.getProfile(projectId).catch(() => null),
         ]);
 
         if (!mounted) return;
         setDatasetPreview(dsData);
+        setProfile(profData);
         setConfirmedTarget(targetData);
 
-        const completedRuns = runsData.filter((r) => r.status === "completed");
+        const completedRuns = (runsData as TrainingRun[]).filter(
+          (r: TrainingRun) => r.status === "completed"
+        );
         if (completedRuns.length > 0) {
           const latestRun = completedRuns[0];
           setModels(latestRun.model_runs);
@@ -249,6 +256,7 @@ export function PredictionView({
           modelId={selectedModelId}
           columns={datasetPreview.dataset.columns}
           targetColumn={confirmedTarget.target_column}
+          profile={profile}
         />
       ) : subTab === "batch" ? (
         <BatchPredictionZone
@@ -262,6 +270,8 @@ export function PredictionView({
           modelId={selectedModelId}
           columns={datasetPreview.dataset.columns}
           targetColumn={confirmedTarget.target_column}
+          profile={profile}
+          modelName={selectedModel?.model_name}
         />
       )}
     </div>
