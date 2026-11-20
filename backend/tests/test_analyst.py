@@ -74,7 +74,14 @@ def test_analyst_deterministic_rules_coverage() -> None:
                 "total_columns": 12,
                 "quality_score": 88.5,
                 "duplicate_rows_pct": 0.0,
-                "warnings": [{"code": "HIGH_MISSINGNESS", "severity": "high", "col": "Age", "msg": "Missing values"}],
+                "warnings": [
+                    {
+                        "code": "HIGH_MISSINGNESS",
+                        "severity": "high",
+                        "col": "Age",
+                        "msg": "Missing values",
+                    }
+                ],
                 "numeric_cols": ["Age", "Fare"],
                 "categorical_cols": ["Sex", "Embarked"],
             },
@@ -98,10 +105,56 @@ def test_analyst_deterministic_rules_coverage() -> None:
         assert "Random Forest" in ans_m
 
         # Feature question
-        ans_f = service._generate_deterministic_response("What are the key predictive features?", mock_ctx)
+        ans_f = service._generate_deterministic_response(
+            "What are the key predictive features?", mock_ctx
+        )
         assert "Predictive Features" in ans_f
         assert "Fare" in ans_f
 
         # Executive summary question
         ans_v = service._generate_deterministic_response("Give me an executive summary", mock_ctx)
         assert "AutoMLens Executive Summary" in ans_v
+
+        # Plain-English pipeline journey question
+        ans_p = service._generate_deterministic_response(
+            "Explain the whole pipeline in simple words", mock_ctx
+        )
+        assert "Journey of Your Dataset" in ans_p
+        assert "Safe Data Ingestion" in ans_p
+
+        # Senior ML Overfitting and Generalization Audit
+        ans_o = service._generate_deterministic_response(
+            "Senior ML Engineer audit on overfitting and generalization", mock_ctx
+        )
+        assert "Senior ML Engineer Generalization & Overfit Audit" in ans_o
+
+
+def test_analyst_build_context_with_audit_events(client: TestClient) -> None:
+    """Verify build_context retrieves audit events from DB and formats timeline."""
+    from app.db.models import AuditEvent
+    from app.db.repositories.audit import AuditRepository
+
+    unique_name = f"AuditContext {uuid.uuid4().hex[:8]}"
+    create_res = client.post("/api/v1/projects", json={"name": unique_name})
+    project_id = create_res.json()["id"]
+
+    with SessionLocal() as db:
+        audit_repo = AuditRepository(db)
+        audit_repo.create(
+            AuditEvent(
+                project_id=project_id,
+                action="upload_completed",
+                reason="User uploaded clean CSV dataset.",
+                evidence={"rows": 100, "columns": 5},
+                result="dataset_stored",
+            )
+        )
+
+        service = AnalystService(db)
+        ctx = service.build_context(project_id)
+        assert "audit_timeline" in ctx
+        assert len(ctx["audit_timeline"]) >= 2
+        actions = [e["action"] for e in ctx["audit_timeline"]]
+        assert "project_created" in actions
+        assert "upload_completed" in actions
+

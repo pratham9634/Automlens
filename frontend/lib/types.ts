@@ -270,6 +270,9 @@ export interface ModelRun {
   primary_metric_name: string;
   primary_metric_score?: number | null;
   primary_metric_std?: number | null;
+  train_score?: number | null;
+  overfit_gap?: number | null;
+  overfit_risk?: "low" | "moderate" | "high" | null;
   all_metrics?: Record<string, MetricAggregation> | null;
   train_time_seconds?: number | null;
   artifact_path?: string | null;

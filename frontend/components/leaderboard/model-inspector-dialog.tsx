@@ -12,6 +12,8 @@ import {
   Download,
   Loader2,
   ShieldCheck,
+  AlertCircle,
+  RefreshCw,
 } from "lucide-react";
 import {
   Dialog,
@@ -52,41 +54,40 @@ export function ModelInspectorDialog({
   const [details, setDetails] = useState<ModelDetailResponse | null>(null);
   const [confusionMatrix, setConfusionMatrix] = useState<ConfusionMatrixResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"folds" | "confusion">("folds");
 
   const isClassification = taskType !== "regression";
 
+  const fetchData = async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const detailData = await apiClient.getModelDetails(projectId, model.model_id);
+      setDetails(detailData);
+
+      if (isClassification) {
+        try {
+          const cmData = await apiClient.getConfusionMatrix(projectId, model.model_id);
+          setConfusionMatrix(cmData);
+        } catch (cmErr) {
+          console.error("Could not fetch confusion matrix:", cmErr);
+        }
+      }
+    } catch (err) {
+      console.error("Error fetching model inspection details:", err);
+      setError(
+        err instanceof Error ? err.message : "Failed to load detailed model fold metrics."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (!isOpen) return;
-
-    let mounted = true;
-    setLoading(true);
-
-    async function fetchData() {
-      try {
-        const detailData = await apiClient.getModelDetails(projectId, model.model_id);
-        if (mounted) setDetails(detailData);
-
-        if (isClassification) {
-          try {
-            const cmData = await apiClient.getConfusionMatrix(projectId, model.model_id);
-            if (mounted) setConfusionMatrix(cmData);
-          } catch (cmErr) {
-            console.error("Could not fetch confusion matrix:", cmErr);
-          }
-        }
-      } catch (err) {
-        console.error("Error fetching model inspection details:", err);
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    }
-
     fetchData();
-
-    return () => {
-      mounted = false;
-    };
   }, [projectId, model.model_id, isOpen, isClassification]);
 
   const downloadUrl = apiClient.getModelDownloadUrl(projectId, model.model_id);
@@ -158,11 +159,67 @@ export function ModelInspectorDialog({
               <Loader2 className="w-5 h-5 animate-spin text-accent" />
               <span className="text-xs font-mono text-text-muted">Loading model inspection report...</span>
             </div>
+          ) : error ? (
+            <div className="py-12 flex flex-col items-center justify-center space-y-3 text-center">
+              <AlertCircle className="w-8 h-8 text-danger" />
+              <div className="space-y-1">
+                <p className="text-sm font-semibold text-text-primary">Failed to Load Model Details</p>
+                <p className="text-xs font-mono text-text-muted">{error}</p>
+              </div>
+              <Button size="sm" variant="secondary" onClick={fetchData} className="gap-2 font-mono text-xs">
+                <RefreshCw className="w-3.5 h-3.5" />
+                <span>Retry</span>
+              </Button>
+            </div>
           ) : (
             <>
               {/* Tab 1: 5-Fold CV Breakdown Table */}
               {activeTab === "folds" && (
                 <div className="space-y-4">
+                  {/* Senior ML Generalization & Overfit Diagnostics */}
+                  <div className="p-3.5 rounded-card border border-border bg-surface-subtle grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs font-mono">
+                    <div>
+                      <div className="text-[10px] text-text-muted uppercase">Validation Mean</div>
+                      <div className="font-semibold text-text-primary tabular-nums mt-0.5">
+                        {model.primary_metric_score?.toFixed(4) ?? "—"}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] text-text-muted uppercase">Train Split Score</div>
+                      <div className="font-semibold text-text-primary tabular-nums mt-0.5">
+                        {model.train_score !== null && model.train_score !== undefined
+                          ? model.train_score.toFixed(4)
+                          : "—"}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] text-text-muted uppercase">Overfit Gap (Δ)</div>
+                      <div className="font-semibold text-text-primary tabular-nums mt-0.5">
+                        {model.overfit_gap !== null && model.overfit_gap !== undefined
+                          ? model.overfit_gap.toFixed(4)
+                          : "0.0000"}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] text-text-muted uppercase">Safety Rating</div>
+                      <div className="mt-0.5">
+                        {model.overfit_risk === "high" ? (
+                          <Badge variant="danger" size="sm" className="font-mono">
+                            High Risk
+                          </Badge>
+                        ) : model.overfit_risk === "moderate" ? (
+                          <Badge variant="warning" size="sm" className="font-mono">
+                            Moderate
+                          </Badge>
+                        ) : (
+                          <Badge variant="success" size="sm" className="font-mono">
+                            Low Risk
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
                   <div className="flex items-center justify-between text-xs font-mono text-text-muted">
                     <span>Performance evaluated across 5 stratified folds (Rule 3)</span>
                     <span className="tabular-nums">Train Time: {model.train_time_seconds?.toFixed(2)}s</span>

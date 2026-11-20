@@ -93,15 +93,35 @@ export function ModelLeaderboard({
   const baselineModel = latestRun?.model_runs.find((m) => m.is_baseline);
   const baselineScore = baselineModel?.primary_metric_score ?? null;
 
-  // Sorted models list
+  const lowerIsBetter = useMemo(() => {
+    if (!latestRun) return false;
+    const metric = latestRun.primary_metric.toLowerCase();
+    return ["rmse", "mae", "loss", "error"].some((term) => metric.includes(term));
+  }, [latestRun]);
+
+  const getFriendlyMetricLabel = (metric: string) => {
+    const m = metric.toLowerCase();
+    if (m.includes("f1")) return "Balanced Reliability Score (F1 Macro)";
+    if (m.includes("accuracy") || m === "acc") return "Overall Accuracy Score";
+    if (m.includes("precision")) return "Precision (Positive Exactness)";
+    if (m.includes("recall")) return "Recall (Detection Coverage)";
+    if (m.includes("roc") || m.includes("auc")) return "Discriminative Separation (ROC-AUC)";
+    if (m.includes("rmse")) return "Average Mistake Margin (RMSE)";
+    if (m.includes("mae")) return "Median Mistake Margin (MAE)";
+    if (m.includes("r2")) return "Pattern Explaining Power (R²)";
+    return metric;
+  };
+
+  // Sorted models list respecting lower-is-better for error metrics
   const sortedModels = useMemo(() => {
     if (!latestRun) return [];
     const models = [...latestRun.model_runs];
 
     return models.sort((a, b) => {
+      const scoreA = a.primary_metric_score ?? (lowerIsBetter ? Infinity : -Infinity);
+      const scoreB = b.primary_metric_score ?? (lowerIsBetter ? Infinity : -Infinity);
+
       if (sortField === "score") {
-        const scoreA = a.primary_metric_score ?? -Infinity;
-        const scoreB = b.primary_metric_score ?? -Infinity;
         return sortDir === "asc" ? scoreA - scoreB : scoreB - scoreA;
       }
       if (sortField === "time") {
@@ -114,27 +134,26 @@ export function ModelLeaderboard({
           ? a.model_name.localeCompare(b.model_name)
           : b.model_name.localeCompare(a.model_name);
       }
-      const scoreA = a.primary_metric_score ?? -Infinity;
-      const scoreB = b.primary_metric_score ?? -Infinity;
-      return scoreB - scoreA;
+      // Default rank: if lower is better, ascending; else descending
+      return lowerIsBetter ? scoreA - scoreB : scoreB - scoreA;
     });
-  }, [latestRun, sortField, sortDir]);
+  }, [latestRun, sortField, sortDir, lowerIsBetter]);
 
   const toggleSort = (field: SortField) => {
     if (sortField === field) {
       setSortDir((prev) => (prev === "asc" ? "desc" : "asc"));
     } else {
       setSortField(field);
-      setSortDir("desc");
+      setSortDir(lowerIsBetter && field === "score" ? "asc" : "desc");
     }
   };
 
   const comparisonChartData = useMemo(() => {
     if (!latestRun) return [];
     const byScore = latestRun.model_runs.toSorted((a, b) => {
-      const sA = a.primary_metric_score ?? -Infinity;
-      const sB = b.primary_metric_score ?? -Infinity;
-      return sB - sA;
+      const sA = a.primary_metric_score ?? (lowerIsBetter ? Infinity : -Infinity);
+      const sB = b.primary_metric_score ?? (lowerIsBetter ? Infinity : -Infinity);
+      return lowerIsBetter ? sA - sB : sB - sA;
     });
 
     return byScore
@@ -148,7 +167,37 @@ export function ModelLeaderboard({
         rank: idx + 1,
       }))
       .toReversed();
-  }, [latestRun]);
+  }, [latestRun, lowerIsBetter]);
+
+  const winnerModel = sortedModels[0];
+
+  const liftData = useMemo(() => {
+    if (
+      !winnerModel ||
+      baselineScore === null ||
+      winnerModel.primary_metric_score === null ||
+      winnerModel.primary_metric_score === undefined
+    ) {
+      return null;
+    }
+    const winScore = winnerModel.primary_metric_score;
+    if (lowerIsBetter) {
+      const reduction =
+        ((baselineScore - winScore) / Math.max(Math.abs(baselineScore), 1e-6)) * 100;
+      return {
+        percent: reduction,
+        text: `${reduction >= 0 ? "+" : ""}${reduction.toFixed(1)}% error reduction vs baseline`,
+        isPositive: reduction > 0,
+      };
+    }
+    const lift =
+      ((winScore - baselineScore) / Math.max(Math.abs(baselineScore), 1e-6)) * 100;
+    return {
+      percent: lift,
+      text: `${lift >= 0 ? "+" : ""}${lift.toFixed(1)}% predictive lift vs baseline`,
+      isPositive: lift > 0,
+    };
+  }, [winnerModel, baselineScore, lowerIsBetter]);
 
   if (loading) {
     return (
@@ -185,48 +234,102 @@ export function ModelLeaderboard({
     );
   }
 
-  const winnerModel = sortedModels[0];
-
   return (
     <div className="space-y-6">
-      {/* Top Highlight Banner: Winner & Primary Metric */}
+      {/* Executive Story Hero Banner: Winner & Primary Metric */}
       {winnerModel && (
-        <Card className="p-4 sm:p-5 border-2 border-border bg-emerald-50 dark:bg-emerald-950/40 shadow-neo flex flex-col md:flex-row md:items-center justify-between gap-5">
-          <div className="flex items-start gap-4">
-            <div className="w-12 h-12 rounded-card bg-yellow-200 dark:bg-yellow-900/60 border-2 border-border shadow-neo-sm text-yellow-950 dark:text-yellow-200 flex items-center justify-center shrink-0 mt-0.5">
-              <Trophy className="w-6 h-6" />
-            </div>
-            <div className="space-y-1">
-              <div className="text-sm font-bold text-text-primary flex items-center gap-2 flex-wrap">
-                <span>Top by {latestRun.primary_metric}:</span>
-                <span className="text-emerald-700 dark:text-emerald-300 font-mono font-black">{winnerModel.model_name}</span>
-                <Badge variant="optimal" size="sm" className="font-marker font-bold text-xs">
-                  ★ Rank #1 Champion
-                </Badge>
+        <Card className="p-5 border-2 border-border bg-emerald-50/60 dark:bg-emerald-950/20 shadow-neo space-y-4">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-card bg-yellow-200 dark:bg-yellow-900/60 border-2 border-border shadow-neo-sm text-yellow-950 dark:text-yellow-200 flex items-center justify-center shrink-0">
+                <Trophy className="w-6 h-6" />
               </div>
-              <p className="text-xs text-text-muted leading-relaxed font-medium">
-                Primary Metric: <span className="font-mono text-text-primary font-bold uppercase">{latestRun.primary_metric}</span> • Score:{" "}
-                <span className="font-mono text-text-primary font-black tabular-nums">
+              <div className="space-y-1">
+                <div className="text-sm font-bold text-text-primary flex items-center gap-2 flex-wrap">
+                  <span>Winning Estimator:</span>
+                  <span className="text-emerald-700 dark:text-emerald-400 font-mono font-black text-base">
+                    {winnerModel.model_name}
+                  </span>
+                  <Badge variant="optimal" size="sm" className="font-marker font-bold text-xs">
+                    ★ Rank #1 Champion
+                  </Badge>
+                  {winnerModel.overfit_risk === "high" ? (
+                    <Badge variant="danger" size="sm" className="font-mono">
+                      High Overfit Risk
+                    </Badge>
+                  ) : winnerModel.overfit_risk === "moderate" ? (
+                    <Badge variant="warning" size="sm" className="font-mono">
+                      Moderate Overfit
+                    </Badge>
+                  ) : (
+                    <Badge variant="success" size="sm" className="font-mono">
+                      🟢 Low Overfit Risk
+                    </Badge>
+                  )}
+                </div>
+                <p className="text-xs text-text-muted leading-relaxed">
+                  Evaluated via <strong>5-Fold Cross-Validation</strong> • Metric:{" "}
+                  <strong className="text-text-primary">{getFriendlyMetricLabel(latestRun.primary_metric)}</strong>
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 self-end md:self-auto">
+              <div className="text-right">
+                <div className="text-[10px] font-mono uppercase text-text-muted">Champion Score</div>
+                <div className="text-lg font-mono font-black text-text-primary tabular-nums">
                   {winnerModel.primary_metric_score?.toFixed(4)}
-                </span>
-                {winnerModel.primary_metric_std !== null && winnerModel.primary_metric_std !== undefined && (
-                  <span className="font-mono text-text-muted tabular-nums font-bold"> ± {winnerModel.primary_metric_std.toFixed(4)} std</span>
-                )}
-              </p>
+                  {winnerModel.primary_metric_std !== null && winnerModel.primary_metric_std !== undefined && (
+                    <span className="text-xs text-text-muted font-normal"> ±{winnerModel.primary_metric_std.toFixed(3)}</span>
+                  )}
+                </div>
+              </div>
+              {onNavigateToPredict && (
+                <Button
+                  variant="primary"
+                  onClick={() => onNavigateToPredict(winnerModel.model_id)}
+                  className="gap-2 font-mono text-xs font-bold"
+                >
+                  <span>Predict with Winner</span>
+                  <Play className="w-3.5 h-3.5 fill-current" />
+                </Button>
+              )}
             </div>
           </div>
 
-          <div className="flex items-center gap-2 self-end md:self-auto">
-            {onNavigateToPredict && (
-              <Button
-                variant="primary"
-                onClick={() => onNavigateToPredict(winnerModel.model_id)}
-                className="gap-2 font-mono text-xs font-bold"
-              >
-                <span>Predict with Best Model</span>
-                <Play className="w-3.5 h-3.5 fill-current" />
-              </Button>
-            )}
+          {/* Senior ML Executive Debrief (Simple words for non-tech users) */}
+          <div className="pt-3 border-t border-border/40 grid grid-cols-1 md:grid-cols-3 gap-3 text-xs font-mono">
+            <div className="p-2.5 rounded bg-surface border border-border flex items-center gap-2.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+              <div>
+                <div className="text-[10px] text-text-muted uppercase">Baseline Comparison (Rule 4)</div>
+                <div className="font-semibold text-text-primary">
+                  {liftData ? liftData.text : "Baseline established"}
+                </div>
+              </div>
+            </div>
+
+            <div className="p-2.5 rounded bg-surface border border-border flex items-center gap-2.5">
+              <span className="w-2 h-2 rounded-full bg-blue-500 shrink-0" />
+              <div>
+                <div className="text-[10px] text-text-muted uppercase">Generalization Safety</div>
+                <div className="font-semibold text-text-primary">
+                  {winnerModel.overfit_gap !== undefined && winnerModel.overfit_gap !== null
+                    ? `Train vs Val Gap: ${winnerModel.overfit_gap.toFixed(3)}`
+                    : "Zero Data Leakage (Rule 1)"}
+                </div>
+              </div>
+            </div>
+
+            <div className="p-2.5 rounded bg-surface border border-border flex items-center gap-2.5">
+              <span className="w-2 h-2 rounded-full bg-purple-500 shrink-0" />
+              <div>
+                <div className="text-[10px] text-text-muted uppercase">Production Readyness</div>
+                <div className="font-semibold text-text-primary">
+                  Joblib pipeline persisted ({winnerModel.train_time_seconds?.toFixed(2)}s fit)
+                </div>
+              </div>
+            </div>
           </div>
         </Card>
       )}
@@ -424,7 +527,8 @@ export function ModelLeaderboard({
                   <ArrowUpDown className="w-3 h-3 text-text-muted" />
                 </div>
               </TableHead>
-              <TableHead className="text-right">Lift over Baseline</TableHead>
+              <TableHead className="text-right">Overfit Risk</TableHead>
+              <TableHead className="text-right">Lift vs Baseline</TableHead>
               <TableHead
                 onClick={() => toggleSort("time")}
                 className="cursor-pointer hover:text-text-primary transition-colors text-right"
@@ -441,10 +545,23 @@ export function ModelLeaderboard({
             {sortedModels.map((model, idx) => {
               const rank = idx + 1;
               const isWinner = rank === 1;
-              const lift =
-                baselineScore !== null && model.primary_metric_score !== null && model.primary_metric_score !== undefined
-                  ? model.primary_metric_score - baselineScore
-                  : null;
+
+              let liftPct: number | null = null;
+              let isLiftPositive = false;
+              if (
+                baselineScore !== null &&
+                model.primary_metric_score !== null &&
+                model.primary_metric_score !== undefined
+              ) {
+                const s = model.primary_metric_score;
+                if (lowerIsBetter) {
+                  liftPct = ((baselineScore - s) / Math.max(Math.abs(baselineScore), 1e-6)) * 100;
+                  isLiftPositive = liftPct > 0;
+                } else {
+                  liftPct = ((s - baselineScore) / Math.max(Math.abs(baselineScore), 1e-6)) * 100;
+                  isLiftPositive = liftPct > 0;
+                }
+              }
 
               return (
                 <TableRow
@@ -493,21 +610,34 @@ export function ModelLeaderboard({
                     )}
                   </TableCell>
 
+                  {/* Overfit Risk Badge */}
+                  <TableCell className="text-right font-mono">
+                    {model.overfit_risk === "high" ? (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-mono px-1.5 py-0.5 rounded bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 font-medium">
+                        🔴 High Risk
+                      </span>
+                    ) : model.overfit_risk === "moderate" ? (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 font-medium">
+                        🟡 Moderate
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 font-medium">
+                        🟢 Low Risk
+                      </span>
+                    )}
+                  </TableCell>
+
                   {/* Lift over Baseline */}
                   <TableCell className="text-right font-mono tabular-nums">
                     {model.is_baseline ? (
-                      <span className="text-text-muted text-[11px]">0.0000 (Control)</span>
-                    ) : lift !== null ? (
+                      <span className="text-text-muted text-[11px]">Control (Rule 4)</span>
+                    ) : liftPct !== null ? (
                       <span
                         className={`font-semibold ${
-                          lift > 0
-                            ? "text-success"
-                            : lift < 0
-                            ? "text-danger"
-                            : "text-text-muted"
+                          isLiftPositive ? "text-success" : "text-danger"
                         }`}
                       >
-                        {lift > 0 ? `+${lift.toFixed(4)}` : lift.toFixed(4)}
+                        {isLiftPositive ? `+${liftPct.toFixed(1)}%` : `${liftPct.toFixed(1)}%`}
                       </span>
                     ) : (
                       <span className="text-text-muted">—</span>

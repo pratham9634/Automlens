@@ -11,9 +11,12 @@ from fastapi.testclient import TestClient
 from app.ml.metrics import (
     aggregate_cv_metrics,
     compute_classification_metrics,
+    is_error_metric,
+    normalize_primary_metric,
 )
 from app.ml.pipeline_factory import create_pipeline, get_estimator
 from app.ml.task_detection import TaskType
+from app.services.training import _train_single_model_worker
 
 
 def test_pipeline_factory_dummy_baseline_rule_4() -> None:
@@ -139,3 +142,121 @@ def test_training_flow_end_to_end(client: TestClient) -> None:
 
     # Verify Rule 8: Persisted Joblib file exists on disk
     assert os.path.exists(baseline_run["artifact_path"])
+
+
+def test_metric_normalization_and_error_detection() -> None:
+    """Verify that metric aliases normalize correctly and error metrics are flagged."""
+    assert normalize_primary_metric("neg_root_mean_squared_error") == "rmse"
+    assert normalize_primary_metric("RMSE") == "rmse"
+    assert normalize_primary_metric("neg_mean_absolute_error") == "mae"
+    assert normalize_primary_metric("macro_f1") == "f1_macro"
+    assert normalize_primary_metric("accuracy") == "accuracy"
+
+    assert is_error_metric("rmse") is True
+    assert is_error_metric("neg_root_mean_squared_error") is True
+    assert is_error_metric("mae") is True
+    assert is_error_metric("f1_macro") is False
+    assert is_error_metric("accuracy") is False
+    assert is_error_metric("r2") is False
+
+
+def test_training_worker_diagnostics_calculation(tmp_path: object) -> None:
+    """Verify _train_single_model_worker produces train score, overfit gap, and risk."""
+    df = pd.DataFrame(
+        {
+            "feat1": [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0],
+            "feat2": [2.0, 4.0, 6.0, 8.0, 10.0, 12.0, 14.0, 16.0, 18.0, 20.0],
+            "target": [0, 0, 0, 0, 0, 1, 1, 1, 1, 1],
+        }
+    )
+    X = df[["feat1", "feat2"]]
+    y = df["target"]
+    cv_splits = [
+        (list(range(0, 8)), list(range(8, 10))),
+        (list(range(2, 10)), list(range(0, 2))),
+    ]
+    art_path = str(tmp_path / "model.joblib")
+
+    args = {
+        "model_id": "logistic_regression",
+        "model_name": "Logistic Regression",
+        "is_baseline": False,
+        "task_type": "binary_classification",
+        "primary_metric": "f1_macro",
+        "X_df": X,
+        "y_series": y,
+        "numeric_cols": ["feat1", "feat2"],
+        "categorical_cols": [],
+        "preprocessing_plan": [],
+        "engineered_features": [],
+        "enable_pca": False,
+        "pca_n_components": None,
+        "cv_splits": cv_splits,
+        "random_state": 42,
+        "save_artifact_path": art_path,
+    }
+    res = _train_single_model_worker(args)
+
+    assert res["status"] == "completed"
+    assert os.path.exists(art_path)
+    assert "train_score" in res
+    assert "overfit_gap" in res
+    assert res["overfit_risk"] in ("low", "moderate", "high")
+    assert "_diagnostics" in res["metrics"]
+    diag = res["metrics"]["_diagnostics"]
+    assert "train_score" in diag
+    assert "val_score" in diag
+    assert "overfit_gap" in diag
+
+
+def test_regression_training_lower_is_better_ranking(client: TestClient) -> None:
+    """Verify regression training correctly sorts leaderboard by lowest error (Rule 9)."""
+    proj_name = f"Regression Test {uuid.uuid4().hex[:8]}"
+    res = client.post("/api/v1/projects", json={"name": proj_name})
+    assert res.status_code == 201
+    project_id = res.json()["id"]
+
+    # Upload continuous target dataset
+    csv_rows = ["Feature1,Feature2,Salary"]
+    for i in range(25):
+        sal = 30000.0 + i * 2000.0 + (i % 3) * 500.0
+        csv_rows.append(f"{i * 1.5},{i * 0.8},{sal}")
+    csv_content = "\n".join(csv_rows).encode("utf-8")
+
+    files = {"file": ("salary.csv", csv_content, "text/csv")}
+    upload_res = client.post(f"/api/v1/projects/{project_id}/dataset/upload", files=files)
+    assert upload_res.status_code == 201
+
+    # Confirm target with negative RMSE as primary metric
+    confirm_payload = {
+        "target_column": "Salary",
+        "task_type": "regression",
+        "selected_models": ["dummy_regressor", "ridge_regression"],
+        "primary_metric": "neg_root_mean_squared_error",
+    }
+    confirm_res = client.post(f"/api/v1/projects/{project_id}/target/confirm", json=confirm_payload)
+    assert confirm_res.status_code == 200
+
+    # Start training
+    start_res = client.post(f"/api/v1/projects/{project_id}/training/start")
+    assert start_res.status_code == 202
+    run_id = start_res.json()["run_id"]
+
+    completed = False
+    for _ in range(20):
+        time.sleep(0.5)
+        run_res = client.get(f"/api/v1/runs/{run_id}")
+        assert run_res.status_code == 200
+        run_data = run_res.json()
+        if run_data["status"] == "completed":
+            completed = True
+            break
+
+    assert completed, f"Regression run failed or timed out: {run_data['status']}"
+    assert run_data["completed_models"] == 2
+    # Verify best score is a real non-negative error metric value
+    assert run_data["best_score"] is not None
+    assert run_data["best_score"] > 0
+    # Ridge regression should beat Dummy regressor on this synthetic linear data
+    assert run_data["best_model_id"] == "ridge_regression"
+
