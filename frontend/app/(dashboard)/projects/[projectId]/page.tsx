@@ -752,7 +752,7 @@ export default function ProjectWorkspacePage() {
       )}
 
       {/* Floating Tabular AI Analyst Trigger & Drawer */}
-      <AnalystTrigger projectId={project.id} />
+      <AnalystTrigger projectId={project.id} projectName={project.name} />
 
       {/* Explicit Delete Confirmation Dialog */}
       <Dialog

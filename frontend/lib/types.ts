@@ -474,7 +474,7 @@ export interface ChatMessage {
 export interface ChatSuggestion {
   title: string;
   prompt: string;
-  category: "quality" | "models" | "features" | "executive";
+  category: "quality" | "models" | "features" | "executive" | "guidance" | "security" | string;
 }
 
 // Advanced XAI Counterfactual Types (Phase 4)

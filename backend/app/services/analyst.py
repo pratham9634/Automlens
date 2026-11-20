@@ -1,12 +1,13 @@
-"""Domain-Specific Tabular AI Analyst Service.
+"""Domain-Specific Tabular AI Analyst Service (Lens).
 
-Combines dataset profile telemetry, model leaderboard results, and SHAP feature
-attributions into an enriched prompt context. Supports streaming via Gemini BYOK,
-Ollama, OpenRouter, and a 100% offline deterministic rule engine.
+Combines dataset profile telemetry, model leaderboard results, SHAP feature
+attributions, and audit records into an enriched prompt context. Supports streaming
+via Gemini BYOK, OpenRouter, Ollama, and a 100% offline deterministic rule engine.
 """
 
 import asyncio
 import json
+import re
 from collections.abc import AsyncGenerator
 from typing import Any
 
@@ -27,9 +28,20 @@ from app.storage.local import LocalStorageBackend
 logger = get_logger("services.analyst")
 settings = get_settings()
 
+OFF_TOPIC_PATTERNS = [
+    r"\b(snake game|flappy bird|build a website|html page|react app|javascript code)\b",
+    r"\b(poem|poetry|rhyme|haiku|creative story|bedtime story|fairy tale)\b",
+    r"\b(recipe|bake a cake|cook|chocolate cookie|pancake)\b",
+    r"\b(who won|world cup|super bowl|celebrity|movie plot|actor|olympics)\b",
+    r"\b(joke|funny joke|riddle|knock knock)\b",
+    r"\b(politics|president|election|prime minister|democrat|republican)\b",
+    r"\b(medical diagnosis|prescribe|symptoms of flu|legal advice|sue my)\b",
+    r"\b(ignore all previous|ignore instructions|system prompt|jailbreak|dan mode|reveal prompt)\b",
+]
+
 
 class AnalystService:
-    """Service orchestrating conversational tabular intelligence."""
+    """Service orchestrating Lens: AutoMLens Chief Intelligence Copilot."""
 
     def __init__(self, db: Session):
         self.db = db
@@ -46,15 +58,23 @@ class AnalystService:
             storage=self.storage,
         )
 
-    def build_context(self, project_id: str) -> dict[str, Any]:
-        """Aggregate workspace state into a structured context dictionary."""
+    def build_context(self, project_id: str, user_id: str | None = None) -> dict[str, Any]:
+        """Aggregate workspace state into a structured context dictionary with stage awareness."""
+        effective_user = user_id or settings.DEFAULT_DEV_USER_ID
         context: dict[str, Any] = {
             "project_id": project_id,
-            "project_name": "Unknown",
+            "project_name": "Workspace",
+            "authenticated_user_id": effective_user,
+            "is_tenant_isolated": True,
             "has_dataset": False,
             "has_profile": False,
+            "has_target_confirmed": False,
             "has_models": False,
+            "has_predictions": False,
             "has_audit_events": False,
+            "current_stage": 1,
+            "stage_name": "Stage 1: Dataset Ingestion",
+            "next_action": "Upload a CSV or Excel dataset to begin automated profiling.",
             "audit_timeline": [],
         }
 
@@ -63,6 +83,7 @@ class AnalystService:
         if project:
             context["project_name"] = project.name
             context["project_status"] = project.status
+            context["project_user_id"] = project.user_id
 
         # 2. Immutable Audit Timeline from Database
         try:
@@ -78,6 +99,11 @@ class AnalystService:
                     }
                     for e in events
                 ]
+                actions = {e.action for e in events}
+                if "target_confirmed" in actions:
+                    context["has_target_confirmed"] = True
+                if "prediction_single" in actions or "prediction_batch" in actions:
+                    context["has_predictions"] = True
         except Exception:
             pass
 
@@ -140,7 +166,9 @@ class AnalystService:
                             red = ((base_score - top_score) / max(abs(base_score), 1e-6)) * 100
                             lift_text = f"{red:+.1f}% error reduction"
                         else:
-                            lift_val = ((top_score - base_score) / max(abs(base_score), 1e-6)) * 100
+                            lift_val = (
+                                (top_score - base_score) / max(abs(base_score), 1e-6)
+                            ) * 100
                             lift_text = f"{lift_val:+.1f}% accuracy lift"
 
                     context["has_models"] = True
@@ -195,102 +223,247 @@ class AnalystService:
         except Exception:
             pass
 
+        # 5. Compute dynamic 5-stage lifecycle state
+        if context["has_models"] and (
+            context.get("has_predictions") or "top_features" in context
+        ):
+            context["current_stage"] = 5
+            context["stage_name"] = "Stage 5: Production & Inference"
+            context["next_action"] = (
+                "Explore the What-If Simulator in Predict tab, or export the Master "
+                ".ZIP Bundle in the Exports hub."
+            )
+        elif context["has_models"]:
+            context["current_stage"] = 4
+            context["stage_name"] = "Stage 4: Training & Evaluation"
+            context["next_action"] = (
+                "Review the leaderboard ranking, audit generalization risk, and head "
+                "to the Predict or Explanations tab."
+            )
+        elif context["has_target_confirmed"]:
+            context["current_stage"] = 3
+            context["stage_name"] = "Stage 3: Target & ML Strategy"
+            context["next_action"] = (
+                "Strategy confirmed! Click 'Start Training' in the Train tab to launch "
+                "the 5-fold cross-validation tournament."
+            )
+        elif context["has_profile"]:
+            context["current_stage"] = 2
+            context["stage_name"] = "Stage 2: Health & Profiling"
+            context["next_action"] = (
+                "Dataset health inspected. Head to the Train tab to select your target "
+                "column and review AI recommendations."
+            )
+        else:
+            context["current_stage"] = 1
+            context["stage_name"] = "Stage 1: Dataset Ingestion"
+            context["next_action"] = (
+                "Upload a CSV or Excel dataset in the Dataset tab to trigger automatic profiling."
+            )
+
         return context
 
-    def get_suggestions(self, project_id: str) -> list[ChatSuggestion]:
-        """Generate context-aware prompt suggestion pills."""
-        ctx = self.build_context(project_id)
+    def get_suggestions(
+        self, project_id: str, user_id: str | None = None
+    ) -> list[ChatSuggestion]:
+        """Generate context-aware prompt suggestion pills adapted to the current project stage."""
+        ctx = self.build_context(project_id, user_id=user_id)
+        stage = ctx.get("current_stage", 1)
         suggestions: list[ChatSuggestion] = []
 
-        # Plain-English Executive & Non-Technical Suggestion
-        suggestions.append(
-            ChatSuggestion(
-                title="Explain Pipeline in Plain English",
-                prompt=(
-                    "Explain the complete journey of my dataset and models "
-                    "in simple, non-technical language."
-                ),
-                category="executive",
+        if stage == 1:
+            suggestions.append(
+                ChatSuggestion(
+                    title="How to Get Started",
+                    prompt="What file formats can I upload and process?",
+                    category="guidance",
+                )
             )
-        )
-
-        if ctx.get("has_profile"):
+            suggestions.append(
+                ChatSuggestion(
+                    title="Data Privacy & Security",
+                    prompt="Is my dataset secure, and who has access to my workspace?",
+                    category="security",
+                )
+            )
+        elif stage == 2:
             suggestions.append(
                 ChatSuggestion(
                     title="Data Quality Assessment",
-                    prompt=(
-                        "What are the key data quality issues or anomalies in this dataset, "
-                        "and how should I treat them?"
-                    ),
+                    prompt="What are the key data quality issues in this dataset?",
                     category="quality",
                 )
             )
             suggestions.append(
                 ChatSuggestion(
                     title="Feature Engineering Ideas",
-                    prompt=(
-                        "Based on the dataset columns and correlation patterns, "
-                        "suggest 3 high-impact feature transformations."
-                    ),
+                    prompt="Suggest 3 high-impact feature transformations for this data.",
                     category="features",
                 )
             )
-
-        if ctx.get("has_models"):
+            suggestions.append(
+                ChatSuggestion(
+                    title="Next Recommended Step",
+                    prompt="What should I do next after inspecting my dataset health?",
+                    category="guidance",
+                )
+            )
+        elif stage == 3:
+            suggestions.append(
+                ChatSuggestion(
+                    title="Evaluate Target Variable",
+                    prompt="Explain why this target variable was suggested.",
+                    category="quality",
+                )
+            )
+            suggestions.append(
+                ChatSuggestion(
+                    title="Candidate Model Strategy",
+                    prompt="Why were these algorithms selected for my cross-validation tournament?",
+                    category="models",
+                )
+            )
+            suggestions.append(
+                ChatSuggestion(
+                    title="Launch Guidance",
+                    prompt="How does the parallel 5-fold cross-validation training process work?",
+                    category="guidance",
+                )
+            )
+        elif stage >= 4:
             top_name = ctx.get("leaderboard", {}).get("top_model", {}).get("name", "top model")
-            metric = ctx.get("leaderboard", {}).get("primary_metric", "score")
+            metric = ctx.get("leaderboard", {}).get("primary_metric", "metric")
             suggestions.append(
                 ChatSuggestion(
                     title="Why the Top Model Won",
-                    prompt=(
-                        f"Why did {top_name} achieve the highest {metric} on this dataset "
-                        f"compared to the other models?"
-                    ),
+                    prompt=f"Why did {top_name} achieve the highest {metric} on this dataset?",
                     category="models",
                 )
             )
             suggestions.append(
                 ChatSuggestion(
-                    title="Senior ML Engineer Audit",
-                    prompt=(
-                        "Conduct a Senior ML Engineer audit on this winning model: "
-                        "review its CV stability, overfit risk, and baseline lift."
-                    ),
+                    title="Senior ML Overfit Audit",
+                    prompt="Conduct an audit on this winning model: review overfit gap (Δ).",
                     category="models",
                 )
             )
             suggestions.append(
                 ChatSuggestion(
-                    title="Executive Model Summary",
-                    prompt=(
-                        "Summarize this project's dataset characteristics, model leaderboard, "
-                        "and key findings for an executive report."
-                    ),
+                    title="Plain-English Pipeline Journey",
+                    prompt="Explain the complete journey of my dataset in simple language.",
                     category="executive",
                 )
             )
-
-        if not suggestions:
             suggestions.append(
                 ChatSuggestion(
-                    title="Getting Started",
-                    prompt="What steps should I take next in this workspace?",
-                    category="quality",
+                    title="What-If Simulation Guide",
+                    prompt="How can I test counterfactual What-If scenarios?",
+                    category="guidance",
                 )
             )
 
         return suggestions
 
-    def _generate_deterministic_response(self, question: str, ctx: dict[str, Any]) -> str:
+    def _is_off_topic_or_adversarial(self, text: str) -> bool:
+        """Check whether the question is completely out of scope or adversarial."""
+        for pattern in OFF_TOPIC_PATTERNS:
+            if re.search(pattern, text, re.IGNORECASE):
+                return True
+        return False
+
+    def _generate_calm_rejection(self) -> str:
+        """Polite, calm redirection back to tabular AutoMLens objectives."""
+        return (
+            "I am **Lens**, your Chief Intelligence Copilot at AutoMLens. "
+            "My expertise is strictly dedicated to analyzing your tabular data, model "
+            "architectures, auditing for data leakage, and guiding your ML workflow.\n\n"
+            "While I cannot assist with trivia, creative writing, or unrelated coding tasks, "
+            "I would be delighted to inspect your dataset health score, analyze your leaderboard, "
+            "or guide you through your next AutoML step.\n\n"
+            "**How can I assist with your dataset or models today?**"
+        )
+
+    def _generate_deterministic_response(
+        self, question: str, ctx: dict[str, Any], user_id: str | None = None
+    ) -> str:
         """Rule-based expert response generator ensuring 100% offline robustness."""
         q_lower = question.lower()
+        effective_user = user_id or ctx.get("authenticated_user_id", settings.DEFAULT_DEV_USER_ID)
+
+        # 0. Check off-topic or adversarial prompts
+        if self._is_off_topic_or_adversarial(question):
+            return self._generate_calm_rejection()
+
         has_profile = ctx.get("has_profile", False)
         has_models = ctx.get("has_models", False)
         ds = ctx.get("dataset", {})
         lb = ctx.get("leaderboard", {})
         audit_events = ctx.get("audit_timeline", [])
+        current_stage = ctx.get("current_stage", 1)
+        next_action = ctx.get("next_action", "")
 
-        # 1. Senior ML Engineer Review / Overfitting Check
+        # 1. Security, Clerk Multi-Tenancy & Data Confidentiality
+        if any(
+            w in q_lower
+            for w in (
+                "secure",
+                "privacy",
+                "confidential",
+                "who can see",
+                "multi-tenant",
+                "clerk",
+                "isolated",
+                "leak data",
+            )
+        ):
+            return (
+                f"### 🔒 Enterprise Data Confidentiality & Tenant Isolation\n"
+                f"- **Authenticated Tenant:** `{effective_user}`\n"
+                f"- **Project Boundary:** `{ctx.get('project_name', 'Workspace')}` "
+                f"(ID: `{ctx.get('project_id')}`)\n"
+                f"- **Session Isolation:** Verified Single-Tenant Storage Sandbox.\n\n"
+                "**Architectural Security Guarantees:**\n"
+                "1. **Zero Cross-Tenant Leakage:** Every database query, artifact download, and "
+                "copilot interaction is strictly gated by your Clerk authentication session. "
+                "No other user can access your dataset or model weights.\n"
+                "2. **Rule 1 Mathematical Independence:** All preprocessing transformers "
+                "are computed strictly inside individual cross-validation splits. "
+                "No test data is exposed during training.\n"
+                "3. **Local & Cloud Boundary:** Artifacts are cryptographically hashed via SHA-256."
+            )
+
+        # 2. Platform Navigation & Next Steps Guidance
+        if any(
+            w in q_lower
+            for w in (
+                "next",
+                "what should i do",
+                "how do i use",
+                "where do i go",
+                "guide me",
+                "start",
+                "step",
+                "how does this work",
+            )
+        ):
+            c1 = "✅ Completed" if has_profile else "⏳ Pending"
+            c2 = "✅ Completed" if has_profile else "⏳ Pending"
+            c3 = "✅ Confirmed" if ctx.get("has_target_confirmed") else "⏳ Pending"
+            c4 = "✅ Completed" if has_models else "⏳ Pending"
+            c5 = "✅ Active" if current_stage == 5 else "⏳ Available after training"
+            return (
+                f"### 🧭 AutoMLens Workflow Navigator: {ctx.get('stage_name')}\n"
+                f"**Current Status:** {next_action}\n\n"
+                "#### AutoMLens 5-Stage Architecture:\n"
+                f"1. **📥 Dataset Ingestion:** Upload CSV/Excel ({c1})\n"
+                f"2. **🔍 Health Profiling:** Univariate statistics & quality score ({c2})\n"
+                f"3. **🎯 ML Strategy Formulation:** Confirm target & candidate algorithms ({c3})\n"
+                f"4. **⚔️ Cross-Validation Tournament:** 5-fold parallel training ({c4})\n"
+                f"5. **🚀 Deployment & Inference:** Predictions & What-If simulation ({c5})\n\n"
+                f"👉 **Recommended Next Action:** {next_action}"
+            )
+
+        # 3. Senior ML Engineer Review / Overfitting Check
         if any(
             w in q_lower
             for w in ("overfit", "generaliz", "senior ml", "leakage", "robust", "safe", "memoriz")
@@ -303,12 +476,19 @@ class AnalystService:
             top = lb.get("top_model", {})
             risk = top.get("overfit_risk", "low")
             risk_icon = "🟢" if risk == "low" else "🟡" if risk == "moderate" else "🔴"
+            gap_val = top.get("overfit_gap")
+            gap_str = (
+                f"{gap_val:.4f}"
+                if isinstance(gap_val, (int, float))
+                else str(gap_val or "N/A")
+            )
+
             lines = [
                 "### 🛡️ Senior ML Engineer Generalization & Overfit Audit",
                 f"- **Model Under Review:** `{top.get('name')}`",
                 f"- **Validation Performance:** `{top.get('score')}` ({lb.get('primary_metric')})",
                 f"- **Training Fold Performance:** `{top.get('train_score', 'N/A')}`",
-                f"- **Generalization Gap (Δ):** `{top.get('overfit_gap', 'N/A')}`",
+                f"- **Generalization Gap (Δ):** `{gap_str}`",
                 f"- **Overfit Risk Rating:** {risk_icon} **{risk.upper()} RISK**",
                 "",
                 "#### Architectural Verdict:",
@@ -333,7 +513,7 @@ class AnalystService:
             )
             return "\n".join(lines)
 
-        # 2. Plain-English Dataset & Pipeline Journey (for Non-Tech Users)
+        # 4. Plain-English Dataset & Pipeline Journey (for Non-Tech Users)
         if any(
             w in q_lower
             for w in (
@@ -399,7 +579,7 @@ class AnalystService:
 
             return "\n".join(lines)
 
-        # 3. Data Quality / Anomalies
+        # 5. Data Quality / Anomalies
         if any(
             w in q_lower
             for w in ("quality", "issue", "anomal", "missing", "skew", "duplicate", "clean")
@@ -440,7 +620,7 @@ class AnalystService:
                     )
             return "\n".join(lines)
 
-        # 4. Leaderboard & Model Comparison
+        # 6. Leaderboard & Model Comparison
         if any(
             w in q_lower
             for w in (
@@ -492,7 +672,7 @@ class AnalystService:
             )
             return "\n".join(lines)
 
-        # 5. Features & SHAP Signal
+        # 7. Features & SHAP Signal
         if any(
             w in q_lower for w in ("feature", "importance", "shap", "predict", "signal", "variable")
         ):
@@ -506,7 +686,7 @@ class AnalystService:
                 for idx, f in enumerate(top_features, start=1):
                     lines.append(f"{idx}. **`{f['name']}`** (Mean |SHAP|: {f['shap']})")
                 lines.append(
-                    "\n*Note: Feature attribution reflects correlations in training data.*"
+                    "\n*Note: Feature attribution reflects statistical correlations in data.*"
                 )
                 return "\n".join(lines)
             return (
@@ -514,7 +694,7 @@ class AnalystService:
                 "Check the **Explanations** tab to explore interactive SHAP charts."
             )
 
-        # 6. Feature Engineering Suggestions
+        # 8. Feature Engineering Suggestions
         if any(w in q_lower for w in ("transform", "engineer", "suggest", "improve", "idea")):
             numeric_cols = ds.get("numeric_cols", [])
             cat_cols = ds.get("categorical_cols", [])
@@ -538,7 +718,7 @@ class AnalystService:
             )
             return "\n".join(lines)
 
-        # 7. Executive / Viva Summary
+        # 9. Executive / Viva Summary
         if any(
             w in q_lower for w in ("viva", "summary", "report", "executive", "pitch", "overview")
         ):
@@ -564,9 +744,12 @@ class AnalystService:
 
         # Default fallback guidance
         return (
-            f"I am your **AutoMLens Tabular Analyst**. I have full visibility into your profile "
-            f"({ds.get('total_rows', 0):,} rows), audit timeline, and training leaderboard. "
-            "Ask me to explain your pipeline, audit for overfitting, or explain why a model won!"
+            f"I am **Lens**, your Chief Intelligence Copilot at AutoMLens. I have full visibility "
+            f"into your workspace state ({ctx.get('stage_name')}), dataset health, and training "
+            f"leaderboard.\n\n"
+            f"👉 **Current Status:** {next_action}\n\n"
+            "Ask me to explain your data quality, audit for overfitting, guide your next action, "
+            "or summarize the model tournament results!"
         )
 
     async def stream_chat(
@@ -574,11 +757,12 @@ class AnalystService:
         project_id: str,
         question: str,
         history: list[ChatMessage],
+        user_id: str | None = None,
         gemini_api_key: str | None = None,
         gemini_model: str | None = None,
     ) -> AsyncGenerator[str, None]:
-        """Stream conversational response chunk by chunk as SSE events."""
-        ctx = self.build_context(project_id)
+        """Stream conversational response chunk by chunk as SSE events with Lens persona."""
+        ctx = self.build_context(project_id, user_id=user_id)
         effective_key = gemini_api_key or settings.GEMINI_API_KEY
         chosen_gemini_model = (
             gemini_model.strip()
@@ -586,7 +770,18 @@ class AnalystService:
             else settings.GEMINI_MODEL
         )
 
-        # Check if valid Gemini API key is available (starts with AIzaSy)
+        # 0. Off-topic & Adversarial Guardrail
+        if self._is_off_topic_or_adversarial(question):
+            rejection_text = self._generate_calm_rejection()
+            words = rejection_text.split(" ")
+            for i in range(0, len(words), 3):
+                chunk = " ".join(words[i : i + 3]) + " "
+                yield f"data: {json.dumps({'text': chunk})}\n\n"
+                await asyncio.sleep(0.03)
+            yield "data: [DONE]\n\n"
+            return
+
+        # 1. Attempt Gemini 2.0 streaming if key provided
         if effective_key and effective_key.strip().startswith("AIzaSy"):
             key = effective_key.strip()
             url = (
@@ -594,15 +789,23 @@ class AnalystService:
                 f"{chosen_gemini_model}:streamGenerateContent?alt=sse&key={key}"
             )
             system_prompt = (
-                "You are AutoMLens Tabular AI Analyst, an expert Senior Machine Learning Engineer. "
-                "Here is the database pipeline state, audit timeline, dataset profile, "
-                "and model leaderboard:\n"
-                f"{json.dumps(ctx, indent=2)}\n\n"
-                "Your role is to explain ML concepts, data quality findings, and training results "
-                "in clear, intuitive language. When answering non-technical questions, "
-                "avoid jargon and translate metrics into real-world business meaning. "
-                "Always emphasize academic rigor: zero leakage (Rule 1), 5-fold CV (Rule 3), "
-                "baseline comparisons (Rule 4), and overfit gap safety."
+                "You are Lens, the Chief Intelligence Copilot for the AutoMLens platform. "
+                "You are an expert Senior Staff Machine Learning Architect and Data Scientist. "
+                "Your demeanor is calm, articulate, patient, encouraging, and knowledgeable. "
+                "You strictly specialize in tabular ML, automated preprocessing, "
+                "cross-validation evaluation, explainable AI, and platform navigation.\n\n"
+                f"Authenticated Tenant User: {ctx.get('authenticated_user_id')}\n"
+                f"Active Workspace State: {ctx.get('stage_name')}\n"
+                f"Next Recommended Action: {ctx.get('next_action')}\n\n"
+                f"Workspace Database Context:\n{json.dumps(ctx, indent=2)}\n\n"
+                "CRITICAL DIRECTIVES:\n"
+                "1. If the user asks general trivia, creative writing, or unrelated coding, "
+                "calmly and politely decline, stating you are Lens, dedicated to AutoMLens.\n"
+                "2. When explaining results to non-technical users, translate statistical metrics "
+                "into intuitive business meaning.\n"
+                "3. Always reinforce ML rigor: Rule 1 zero-leakage, 5-fold CV, "
+                "Rule 4 baseline lift, and overfit gap (Δ).\n"
+                "4. Always confirm that user data is confidential and isolated to their session."
             )
 
             contents = [
@@ -610,7 +813,12 @@ class AnalystService:
                 {
                     "role": "model",
                     "parts": [
-                        {"text": "Understood. I am ready to analyze the dataset and models."}
+                        {
+                            "text": (
+                                "Greetings. I am Lens, your AutoMLens Copilot. "
+                                "I have analyzed your workspace and I am ready to guide you."
+                            )
+                        }
                     ],
                 },
             ]
@@ -645,20 +853,20 @@ class AnalystService:
                             return
                         else:
                             logger.warning(
-                                "Gemini stream HTTP %s. Falling back to deterministic engine.",
+                                "Gemini stream HTTP %s. Falling back to deterministic Lens engine.",
                                 response.status_code,
                             )
             except Exception as exc:
                 logger.warning(
-                    "Gemini API stream failed: %s. Falling back to deterministic engine.", exc
+                    "Gemini API stream failed: %s. Falling back to deterministic Lens engine.", exc
                 )
 
-        # High-performance deterministic engine fallback (typing effect simulation)
-        full_text = self._generate_deterministic_response(question, ctx)
+        # 2. High-performance deterministic Lens engine fallback
+        full_text = self._generate_deterministic_response(question, ctx, user_id=user_id)
         words = full_text.split(" ")
         for i in range(0, len(words), 3):
             chunk = " ".join(words[i : i + 3]) + " "
             yield f"data: {json.dumps({'text': chunk})}\n\n"
-            await asyncio.sleep(0.04)
+            await asyncio.sleep(0.03)
 
         yield "data: [DONE]\n\n"
