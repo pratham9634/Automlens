@@ -49,7 +49,7 @@ export function UserObjectiveInput({
 
         <div className="flex items-center gap-1.5 text-xs text-text-muted">
           <Sparkles className="w-3.5 h-3.5 text-accent animate-pulse" />
-          <span className="font-marker font-bold text-sm text-accent">★ Gemini 2.0 Flash Copilot</span>
+          <span className="font-marker font-bold text-sm text-accent">★ Gemini Copilot</span>
         </div>
       </div>
 

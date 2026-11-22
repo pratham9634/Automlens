@@ -62,7 +62,7 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
     if (geminiKey) {
       headers["X-Gemini-API-Key"] = geminiKey;
     }
-    const geminiModel = localStorage.getItem("automlens_gemini_model") || "gemini-2.0-flash";
+    const geminiModel = localStorage.getItem("automlens_gemini_model") || "gemini-3.5-flash-lite";
     headers["X-Gemini-Model"] = geminiModel;
   }
 
@@ -256,7 +256,8 @@ export const apiClient = {
       onReasoningCompleted?: (text: string) => void;
       onPipelineReady: (response: DecisionEngineResponse) => void;
       onError: (err: string) => void;
-    }
+    },
+    signal?: AbortSignal
   ): Promise<void> => {
     try {
       const headers: Record<string, string> = {
@@ -267,7 +268,7 @@ export const apiClient = {
         if (key && key.trim()) {
           headers["X-Gemini-API-Key"] = key.trim();
         }
-        const model = localStorage.getItem("automlens_gemini_model") || "gemini-2.0-flash";
+        const model = localStorage.getItem("automlens_gemini_model") || "gemini-3.5-flash-lite";
         headers["X-Gemini-Model"] = model;
       }
 
@@ -275,6 +276,7 @@ export const apiClient = {
         method: "POST",
         headers,
         body: JSON.stringify(data),
+        signal,
       });
 
       if (!response.ok) {
@@ -290,6 +292,13 @@ export const apiClient = {
       let buffer = "";
 
       while (true) {
+        if (signal?.aborted) {
+          try {
+            await reader.cancel();
+          } catch {}
+          break;
+        }
+
         const { value, done } = await reader.read();
         if (done) break;
 
@@ -298,6 +307,13 @@ export const apiClient = {
         buffer = events.pop() || "";
 
         for (const eventBlock of events) {
+          if (signal?.aborted) {
+            try {
+              await reader.cancel();
+            } catch {}
+            return;
+          }
+
           if (!eventBlock.trim()) continue;
 
           let eventName = "message";
@@ -334,6 +350,10 @@ export const apiClient = {
         }
       }
     } catch (err) {
+      if (signal?.aborted || (err instanceof DOMException && err.name === "AbortError")) {
+        // Stream aborted intentionally due to target switch or cancel
+        return;
+      }
       callbacks.onError(err instanceof Error ? err.message : String(err));
     }
   },
@@ -505,7 +525,7 @@ export const apiClient = {
         if (geminiKey && geminiKey.trim()) {
           headers["X-Gemini-API-Key"] = geminiKey.trim();
         }
-        const geminiModel = localStorage.getItem("automlens_gemini_model") || "gemini-2.0-flash";
+        const geminiModel = localStorage.getItem("automlens_gemini_model") || "gemini-3.5-flash-lite";
         headers["X-Gemini-Model"] = geminiModel;
       }
 

@@ -11,6 +11,7 @@ import {
   Zap,
   Check,
   Cpu,
+  Sliders,
 } from "lucide-react";
 import {
   Dialog,
@@ -25,7 +26,7 @@ import { Badge } from "@/components/ui/badge";
 
 export const GEMINI_KEY_STORAGE_NAME = "automlens_gemini_key";
 export const GEMINI_MODEL_STORAGE_NAME = "automlens_gemini_model";
-export const DEFAULT_GEMINI_MODEL = "gemini-2.0-flash";
+export const DEFAULT_GEMINI_MODEL = "gemini-3.5-flash-lite";
 
 export interface GeminiModelOption {
   id: string;
@@ -41,64 +42,124 @@ export interface GeminiModelOption {
 
 export const GEMINI_MODELS: GeminiModelOption[] = [
   {
-    id: "gemini-2.0-flash",
-    name: "Gemini 2.0 Flash",
+    id: "gemini-3.5-flash-lite",
+    name: "Gemini 3.5 Flash-Lite",
     tier: "free",
     tierLabel: "Free Tier",
     badge: "Free • Recommended",
-    description: "High speed, next-gen multimodal reasoning. Zero cost with free AI Studio key.",
+    description: "Lightweight, instant token streaming with high availability and zero 503 capacity spikes.",
     contextWindow: "1M tokens",
-    rateLimit: "15 RPM Free",
+    rateLimit: "30 RPM Free",
     recommended: true,
   },
   {
-    id: "gemini-2.0-flash-lite",
-    name: "Gemini 2.0 Flash-Lite",
+    id: "gemini-3.1-flash-lite",
+    name: "Gemini 3.1 Flash-Lite",
     tier: "free",
     tierLabel: "Free Tier",
     badge: "Free • Ultra-Fast",
-    description: "Lowest latency with doubled throughput for real-time explanations.",
+    description: "Economical, fast inference with high server availability for tabular strategy streaming.",
     contextWindow: "1M tokens",
     rateLimit: "30 RPM Free",
   },
   {
-    id: "gemini-1.5-flash",
-    name: "Gemini 1.5 Flash",
+    id: "gemini-3.8-flash",
+    name: "Gemini 3.8 Flash",
     tier: "free",
     tierLabel: "Free Tier",
-    badge: "Free • Stable",
-    description: "Proven stable workhorse for structured tabular suggestions and profiling.",
+    badge: "Free • Advanced Reasoning",
+    description: "Advanced reasoning and coding. May experience temporary 503 high-demand spikes under peak load.",
     contextWindow: "1M tokens",
     rateLimit: "15 RPM Free",
   },
   {
-    id: "gemini-1.5-pro",
-    name: "Gemini 1.5 Pro",
-    tier: "paid",
-    tierLabel: "Paid Tier",
-    badge: "Paid / High-Capacity",
-    description: "Complex tabular multi-hop reasoning with deep context awareness.",
-    contextWindow: "2M tokens",
-    rateLimit: "High Quota",
+    id: "gemini-3.7-flash",
+    name: "Gemini 3.7 Flash",
+    tier: "free",
+    tierLabel: "Free Tier",
+    badge: "Free • General-Purpose",
+    description: "Versatile general-purpose AI model balancing deep reasoning and low latency.",
+    contextWindow: "1M tokens",
+    rateLimit: "15 RPM Free",
+  },
+  {
+    id: "gemini-3.6-flash",
+    name: "Gemini 3.6 Flash",
+    tier: "free",
+    tierLabel: "Free Tier",
+    badge: "Free • Fast",
+    description: "Optimized for fast responses and fluid token streaming.",
+    contextWindow: "1M tokens",
+    rateLimit: "15 RPM Free",
+  },
+  {
+    id: "gemini-3.5-flash",
+    name: "Gemini 3.5 Flash",
+    tier: "free",
+    tierLabel: "Free Tier",
+    badge: "Free • Workhorse",
+    description: "High-throughput general-purpose tasks and tabular data profiling.",
+    contextWindow: "1M tokens",
+    rateLimit: "15 RPM Free",
+  },
+  {
+    id: "gemini-3.5-flash-lite",
+    name: "Gemini 3.5 Flash-Lite",
+    tier: "free",
+    tierLabel: "Free Tier",
+    badge: "Free • High-Volume",
+    description: "Lightweight, high-volume requests with rapid inference speeds.",
+    contextWindow: "1M tokens",
+    rateLimit: "30 RPM Free",
+  },
+  {
+    id: "gemini-3.1-flash-lite",
+    name: "Gemini 3.1 Flash-Lite",
+    tier: "free",
+    tierLabel: "Free Tier",
+    badge: "Free • Economical",
+    description: "Fast and economical inference for lightweight tabular summarization.",
+    contextWindow: "1M tokens",
+    rateLimit: "30 RPM Free",
+  },
+  {
+    id: "gemini-2.5-flash",
+    name: "Gemini 2.5 Flash",
+    tier: "free",
+    tierLabel: "Free Tier",
+    badge: "Free • Adaptive",
+    description: "General-purpose tasks with adaptive reasoning ('thinking budget') and high reliability.",
+    contextWindow: "1M tokens",
+    rateLimit: "15 RPM Free",
+  },
+  {
+    id: "gemini-2.5-flash-lite",
+    name: "Gemini 2.5 Flash-Lite",
+    tier: "free",
+    tierLabel: "Free Tier",
+    badge: "Free • Lightweight",
+    description: "Lightweight tasks with minimal latency footprint.",
+    contextWindow: "1M tokens",
+    rateLimit: "30 RPM Free",
+  },
+  {
+    id: "gemini-2.0-flash",
+    name: "Gemini 2.0 Flash",
+    tier: "free",
+    tierLabel: "Free Tier",
+    badge: "Free • Proven Stable",
+    description: "Standard production-grade workhorse across Google AI Studio.",
+    contextWindow: "1M tokens",
+    rateLimit: "15 RPM Free",
   },
   {
     id: "gemini-2.5-pro",
     name: "Gemini 2.5 Pro",
     tier: "paid",
-    tierLabel: "Paid Tier",
-    badge: "Paid / Frontier",
-    description: "Flagship deep reasoning model for complex statistical decisions and executive reporting.",
+    tierLabel: "Paid / Frontier",
+    badge: "Paid • Complex Reasoning",
+    description: "Complex reasoning, coding, and multi-hop mathematical synthesis with 2M token context.",
     contextWindow: "2M tokens",
-    rateLimit: "Pay-as-you-go",
-  },
-  {
-    id: "gemini-2.5-flash",
-    name: "Gemini 2.5 Flash",
-    tier: "paid",
-    tierLabel: "Paid Tier",
-    badge: "Paid / Preview",
-    description: "Next-generation adaptive reasoning with dynamic thinking budget support.",
-    contextWindow: "1M tokens",
     rateLimit: "Pay-as-you-go",
   },
 ];
@@ -113,6 +174,7 @@ export function BYOKModal({ isOpen, onClose, onKeyUpdated }: BYOKModalProps) {
   const [apiKey, setApiKey] = useState("");
   const [savedKey, setSavedKey] = useState<string | null>(null);
   const [selectedModel, setSelectedModel] = useState<string>(DEFAULT_GEMINI_MODEL);
+  const [customModelInput, setCustomModelInput] = useState<string>("");
   const [filterTier, setFilterTier] = useState<"all" | "free" | "paid">("all");
   const [isSaved, setIsSaved] = useState(false);
 
@@ -129,13 +191,34 @@ export function BYOKModal({ isOpen, onClose, onKeyUpdated }: BYOKModalProps) {
         setApiKey("");
       }
 
-      if (existingModel && GEMINI_MODELS.some((m) => m.id === existingModel)) {
-        setSelectedModel(existingModel);
+      if (existingModel && existingModel.trim()) {
+        const trimmed = existingModel.trim();
+        setSelectedModel(trimmed);
+        if (!GEMINI_MODELS.some((m) => m.id === trimmed)) {
+          setCustomModelInput(trimmed);
+        } else {
+          setCustomModelInput("");
+        }
       } else {
         setSelectedModel(DEFAULT_GEMINI_MODEL);
+        setCustomModelInput("");
       }
     }
   }, [isOpen]);
+
+  const handleCustomModelChange = (val: string) => {
+    setCustomModelInput(val);
+    if (val.trim()) {
+      setSelectedModel(val.trim());
+    } else {
+      setSelectedModel(DEFAULT_GEMINI_MODEL);
+    }
+  };
+
+  const handleSelectPresetModel = (modelId: string) => {
+    setSelectedModel(modelId);
+    setCustomModelInput("");
+  };
 
   const handleSave = () => {
     if (typeof window !== "undefined") {
@@ -143,7 +226,8 @@ export function BYOKModal({ isOpen, onClose, onKeyUpdated }: BYOKModalProps) {
         localStorage.setItem(GEMINI_KEY_STORAGE_NAME, apiKey.trim());
         setSavedKey(apiKey.trim());
       }
-      localStorage.setItem(GEMINI_MODEL_STORAGE_NAME, selectedModel);
+      const modelToSave = (customModelInput.trim() || selectedModel).trim();
+      localStorage.setItem(GEMINI_MODEL_STORAGE_NAME, modelToSave);
       setIsSaved(true);
       window.dispatchEvent(new Event("automlens_byok_updated"));
       if (onKeyUpdated) onKeyUpdated();
@@ -161,6 +245,7 @@ export function BYOKModal({ isOpen, onClose, onKeyUpdated }: BYOKModalProps) {
       setApiKey("");
       setSavedKey(null);
       setSelectedModel(DEFAULT_GEMINI_MODEL);
+      setCustomModelInput("");
       window.dispatchEvent(new Event("automlens_byok_updated"));
       if (onKeyUpdated) onKeyUpdated();
     }
@@ -171,8 +256,22 @@ export function BYOKModal({ isOpen, onClose, onKeyUpdated }: BYOKModalProps) {
     return m.tier === filterTier;
   });
 
-  const activeModelMeta =
-    GEMINI_MODELS.find((m) => m.id === selectedModel) || GEMINI_MODELS[0];
+  const isCustomModel = !GEMINI_MODELS.some((m) => m.id === selectedModel);
+  const activeModelMeta: GeminiModelOption = isCustomModel
+    ? {
+        id: selectedModel,
+        name: selectedModel,
+        tier: "free",
+        tierLabel: "Custom Manual",
+        badge: "Custom Override",
+        description: `Manual model identifier configured: "${selectedModel}"`,
+        contextWindow: "Dynamic",
+        rateLimit: "API Tier Limit",
+      }
+    : (GEMINI_MODELS.find((m) => m.id === selectedModel) || GEMINI_MODELS[0]);
+
+  const freeCount = GEMINI_MODELS.filter((m) => m.tier === "free").length;
+  const paidCount = GEMINI_MODELS.filter((m) => m.tier === "paid").length;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -230,16 +329,56 @@ export function BYOKModal({ isOpen, onClose, onKeyUpdated }: BYOKModalProps) {
             </p>
           </div>
 
+          {/* Manual Model Override Option */}
+          <div className="p-3 bg-surface-subtle rounded-lg border-2 border-border space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-text-primary flex items-center gap-1.5">
+                <Sliders className="w-3.5 h-3.5 text-cyan-500" />
+                <span>Custom Model Manual Override</span>
+              </label>
+              {isCustomModel && (
+                <Badge variant="success" size="sm" className="font-mono text-[10px]">
+                  Manual Active
+                </Badge>
+              )}
+            </div>
+            <div className="relative">
+              <Input
+                type="text"
+                placeholder="Type model ID (e.g. gemini-3.8-flash, gemini-3.7-flash, gemini-3.5-flash-lite)..."
+                value={customModelInput}
+                onChange={(e) => handleCustomModelChange(e.target.value)}
+                className="font-mono text-xs bg-surface border-2 border-border focus:border-cyan-500 pr-8"
+              />
+              {customModelInput && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCustomModelInput("");
+                    setSelectedModel(DEFAULT_GEMINI_MODEL);
+                  }}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-text-subtle hover:text-text-primary font-bold px-1"
+                  title="Reset to default model"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+            <p className="text-[11px] text-text-muted">
+              You can manually enter any model ID available in your Google AI Studio account.
+            </p>
+          </div>
+
           {/* Model Selection Header & Filter Tabs */}
           <div className="space-y-2 pt-2 border-t-2 border-border">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div className="flex items-center gap-1.5">
                 <Cpu className="w-3.5 h-3.5 text-accent shrink-0" />
                 <span className="text-xs font-bold text-text-primary">
-                  Choose Gemini Model
+                  Or Choose from Verified Models
                 </span>
                 <span className="font-marker text-[11px] text-amber-500 -rotate-1">
-                  ★ Default: Free Tier
+                  ★ Default: {DEFAULT_GEMINI_MODEL}
                 </span>
               </div>
 
@@ -254,7 +393,7 @@ export function BYOKModal({ isOpen, onClose, onKeyUpdated }: BYOKModalProps) {
                       : "text-text-muted hover:text-text-primary"
                   }`}
                 >
-                  All (6)
+                  All ({GEMINI_MODELS.length})
                 </button>
                 <button
                   type="button"
@@ -265,7 +404,7 @@ export function BYOKModal({ isOpen, onClose, onKeyUpdated }: BYOKModalProps) {
                       : "text-text-muted hover:text-text-primary"
                   }`}
                 >
-                  Free (3)
+                  Free ({freeCount})
                 </button>
                 <button
                   type="button"
@@ -276,7 +415,7 @@ export function BYOKModal({ isOpen, onClose, onKeyUpdated }: BYOKModalProps) {
                       : "text-text-muted hover:text-text-primary"
                   }`}
                 >
-                  Paid / Pro (3)
+                  Paid / Pro ({paidCount})
                 </button>
               </div>
             </div>
@@ -284,14 +423,14 @@ export function BYOKModal({ isOpen, onClose, onKeyUpdated }: BYOKModalProps) {
             {/* Model Cards Grid */}
             <div className="space-y-2">
               {visibleModels.map((model) => {
-                const isSelected = selectedModel === model.id;
+                const isSelected = selectedModel === model.id && !customModelInput.trim();
                 const isFree = model.tier === "free";
 
                 return (
                   <button
                     key={model.id}
                     type="button"
-                    onClick={() => setSelectedModel(model.id)}
+                    onClick={() => handleSelectPresetModel(model.id)}
                     className={`w-full text-left p-3 rounded-lg border-2 transition-all flex flex-col gap-1.5 relative select-none cursor-pointer ${
                       isSelected
                         ? "border-accent bg-accent/5 dark:bg-accent/10 shadow-[2px_2px_0px_0px_var(--neo-shadow-color)]"

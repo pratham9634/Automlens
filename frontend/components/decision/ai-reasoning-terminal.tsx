@@ -39,11 +39,11 @@ export function AiReasoningTerminal({
   const terminalEndRef = useRef<HTMLDivElement>(null);
   const [activeTab, setActiveTab] = useState<"stream" | "features" | "cleaning">("stream");
   const [cleaningFilter, setCleaningFilter] = useState<string>("all");
-  const [activeModel, setActiveModel] = useState<string>("gemini-2.0-flash");
+  const [activeModel, setActiveModel] = useState<string>("gemini-3.5-flash-lite");
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const model = localStorage.getItem("automlens_gemini_model") || "gemini-2.0-flash";
+      const model = localStorage.getItem("automlens_gemini_model") || "gemini-3.5-flash-lite";
       setActiveModel(model);
     }
   }, []);

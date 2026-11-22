@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import {
   ConfirmedTargetResponse,
   DecisionEngineResponse,
@@ -60,11 +60,15 @@ export function TargetDecisionView({
   const [streamingTokens, setStreamingTokens] = useState("");
   const [streamNotice, setStreamNotice] = useState<string | null>(null);
   const [activeProvider, setActiveProvider] = useState<string>("gemini");
-  const [activeGeminiModel, setActiveGeminiModel] = useState<string>("gemini-2.0-flash");
+  const [activeGeminiModel, setActiveGeminiModel] = useState<string>("gemini-3.5-flash-lite");
+
+  // Stream cancellation & target concurrency management
+  const activeAbortControllerRef = useRef<AbortController | null>(null);
+  const activeStreamTargetRef = useRef<string>("");
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const model = localStorage.getItem("automlens_gemini_model") || "gemini-2.0-flash";
+      const model = localStorage.getItem("automlens_gemini_model") || "gemini-3.5-flash-lite";
       setActiveGeminiModel(model);
     }
   }, []);
@@ -75,6 +79,18 @@ export function TargetDecisionView({
   const triggerAiStreaming = useCallback(
     async (col: string, override: TaskType | null, objective: string) => {
       if (!col) return;
+
+      // 1. Abort any previous active stream immediately to prevent race conditions
+      if (activeAbortControllerRef.current) {
+        activeAbortControllerRef.current.abort();
+        activeAbortControllerRef.current = null;
+      }
+
+      const abortController = new AbortController();
+      activeAbortControllerRef.current = abortController;
+      activeStreamTargetRef.current = col;
+
+      setSelectedColumn(col);
       setComputing(true);
       setIsStreaming(true);
       setStreamingTokens("");
@@ -84,14 +100,16 @@ export function TargetDecisionView({
 
       // Watchdog timer (15s) to guarantee spinner recovery if SSE drops
       const watchdog = setTimeout(() => {
-        setIsStreaming((curr) => {
-          if (curr) {
-            console.warn("Decision stream watchdog timed out after 15s. Resolving state.");
-            setComputing(false);
-            return false;
-          }
-          return curr;
-        });
+        if (activeStreamTargetRef.current === col) {
+          setIsStreaming((curr) => {
+            if (curr) {
+              console.warn("Decision stream watchdog timed out after 15s. Resolving state.");
+              setComputing(false);
+              return false;
+            }
+            return curr;
+          });
+        }
       }, 15000);
 
       try {
@@ -100,6 +118,11 @@ export function TargetDecisionView({
           target_column: col,
           override_task_type: override,
         });
+
+        // Guard against stale responses if target changed while fetching analysis
+        if (abortController.signal.aborted || activeStreamTargetRef.current !== col) {
+          return;
+        }
         setAnalysis(analysisData);
 
         // Stream AI reasoning from Google Gemini
@@ -112,18 +135,22 @@ export function TargetDecisionView({
           },
           {
             onStatus: (statusData) => {
+              if (abortController.signal.aborted || activeStreamTargetRef.current !== col) return;
               if (statusData.provider) {
                 setActiveProvider(statusData.provider);
               }
             },
             onToken: (token) => {
+              if (abortController.signal.aborted || activeStreamTargetRef.current !== col) return;
               setStreamingTokens((prev) => prev + token);
             },
             onNotice: (notice) => {
+              if (abortController.signal.aborted || activeStreamTargetRef.current !== col) return;
               setStreamNotice(notice);
             },
             onPipelineReady: (decisionData) => {
               clearTimeout(watchdog);
+              if (abortController.signal.aborted || activeStreamTargetRef.current !== col) return;
               setDecision(decisionData);
               setPrimaryMetric(decisionData.primary_metric);
 
@@ -137,6 +164,7 @@ export function TargetDecisionView({
             },
             onError: (err) => {
               clearTimeout(watchdog);
+              if (abortController.signal.aborted || activeStreamTargetRef.current !== col) return;
               console.warn("Stream error, falling back to synchronous formulation:", err);
               // Fallback to synchronous formulation
               apiClient
@@ -146,6 +174,7 @@ export function TargetDecisionView({
                   user_objective: objective || undefined,
                 })
                 .then((syncData) => {
+                  if (abortController.signal.aborted || activeStreamTargetRef.current !== col) return;
                   setDecision(syncData);
                   setPrimaryMetric(syncData.primary_metric);
                   setStreamingTokens(syncData.engineering_rationale);
@@ -155,17 +184,24 @@ export function TargetDecisionView({
                   setSelectedModels(recommended);
                 })
                 .catch((fallbackErr) => {
+                  if (abortController.signal.aborted || activeStreamTargetRef.current !== col) return;
                   setError(fallbackErr instanceof Error ? fallbackErr.message : String(fallbackErr));
                 })
                 .finally(() => {
-                  setIsStreaming(false);
-                  setComputing(false);
+                  if (activeStreamTargetRef.current === col) {
+                    setIsStreaming(false);
+                    setComputing(false);
+                  }
                 });
             },
-          }
+          },
+          abortController.signal
         );
       } catch (err) {
         clearTimeout(watchdog);
+        if (abortController.signal.aborted || activeStreamTargetRef.current !== col) {
+          return;
+        }
         console.error("Error initiating decision stream:", err);
         setError(
           err instanceof Error
@@ -187,6 +223,7 @@ export function TargetDecisionView({
       setLoading(true);
       setError(null);
       try {
+        let confirmedCol: string | null = null;
         // 1. Check if previously confirmed
         try {
           const confirmed = await apiClient.getConfirmedTarget(projectId);
@@ -198,6 +235,7 @@ export function TargetDecisionView({
             if (confirmed.user_objective) {
               setUserObjective(confirmed.user_objective);
             }
+            confirmedCol = confirmed.target_column;
           }
         } catch (cErr) {
           if (!(cErr instanceof ApiClientError && cErr.status === 404)) {
@@ -211,6 +249,7 @@ export function TargetDecisionView({
         setSuggestions(suggestData.suggestions);
 
         const defaultCol =
+          confirmedCol ||
           suggestData.recommended_target ||
           (suggestData.suggestions[0] ? suggestData.suggestions[0].name : "");
 
@@ -235,6 +274,9 @@ export function TargetDecisionView({
 
     return () => {
       mounted = false;
+      if (activeAbortControllerRef.current) {
+        activeAbortControllerRef.current.abort();
+      }
     };
   }, [projectId, triggerAiStreaming]);
 

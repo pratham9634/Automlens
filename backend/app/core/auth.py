@@ -111,8 +111,10 @@ async def get_gemini_api_key(
     """Extract BYOK Gemini API Key from header or server settings fallback."""
     if x_gemini_api_key and x_gemini_api_key.strip():
         return x_gemini_api_key.strip()
-    if settings.GEMINI_API_KEY and settings.GEMINI_API_KEY.strip().startswith("AIzaSy"):
-        return settings.GEMINI_API_KEY.strip()
+    if settings.GEMINI_API_KEY:
+        k = settings.GEMINI_API_KEY.strip()
+        if k.startswith("AIzaSy") or (k.startswith("AQ.") and k != "AQ.InvalidKey" and len(k) > 20):
+            return k
     return None
 
 

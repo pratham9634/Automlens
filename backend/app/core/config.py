@@ -53,7 +53,7 @@ class Settings(BaseSettings):
 
     # Gemini API (Tabular AI Copilot BYOK)
     GEMINI_API_KEY: str | None = None
-    GEMINI_MODEL: str = "gemini-2.0-flash"
+    GEMINI_MODEL: str = "gemini-3.5-flash-lite"
 
     # Authentication (Clerk)
     CLERK_SECRET_KEY: str | None = None

@@ -780,13 +780,9 @@ class AnalystService:
             yield "data: [DONE]\n\n"
             return
 
-        # 1. Attempt Gemini 2.0 streaming if key provided
-        if effective_key and effective_key.strip().startswith("AIzaSy"):
+        # 1. Attempt Gemini streaming if key provided
+        if effective_key and len(effective_key.strip()) > 8:
             key = effective_key.strip()
-            url = (
-                f"https://generativelanguage.googleapis.com/v1beta/models/"
-                f"{chosen_gemini_model}:streamGenerateContent?alt=sse&key={key}"
-            )
             system_prompt = (
                 "You are Lens, the Chief Intelligence Copilot for the AutoMLens platform. "
                 "You are an expert Senior Staff Machine Learning Architect and Data Scientist. "
@@ -826,39 +822,52 @@ class AnalystService:
                 contents.append({"role": role, "parts": [{"text": msg.content}]})
             contents.append({"role": "user", "parts": [{"text": question}]})
 
-            try:
-                async with httpx.AsyncClient(timeout=45.0) as client:
-                    async with client.stream("POST", url, json={"contents": contents}) as response:
-                        if response.status_code == 200:
-                            async for line in response.aiter_lines():
-                                if line.startswith("data: "):
-                                    raw = line[6:].strip()
-                                    if raw == "[DONE]":
-                                        break
-                                    try:
-                                        chunk = json.loads(raw)
-                                        candidates = chunk.get("candidates", [])
-                                        if candidates:
-                                            parts = (
-                                                candidates[0].get("content", {}).get("parts", [])
-                                            )
-                                            for p in parts:
-                                                text = p.get("text", "")
-                                                if text:
-                                                    yield f"data: {json.dumps({'text': text})}\n\n"
-                                    except Exception:
-                                        pass
-                            yield "data: [DONE]\n\n"
-                            return
-                        else:
-                            logger.warning(
-                                "Gemini stream HTTP %s. Falling back to deterministic Lens engine.",
-                                response.status_code,
-                            )
-            except Exception as exc:
-                logger.warning(
-                    "Gemini API stream failed: %s. Falling back to deterministic Lens engine.", exc
+            models_to_try = [chosen_gemini_model]
+            for backup in ("gemini-3.5-flash-lite", "gemini-3.1-flash-lite"):
+                if backup not in models_to_try:
+                    models_to_try.append(backup)
+
+            for model_candidate in models_to_try:
+                url = (
+                    f"https://generativelanguage.googleapis.com/v1beta/models/"
+                    f"{model_candidate}:streamGenerateContent?alt=sse&key={key}"
                 )
+                try:
+                    async with httpx.AsyncClient(timeout=25.0) as client:
+                        async with client.stream("POST", url, json={"contents": contents}) as response:
+                            if response.status_code == 200:
+                                async for line in response.aiter_lines():
+                                    if line.startswith("data: "):
+                                        raw = line[6:].strip()
+                                        if raw == "[DONE]":
+                                            break
+                                        try:
+                                            chunk = json.loads(raw)
+                                            candidates = chunk.get("candidates", [])
+                                            if candidates:
+                                                parts = (
+                                                    candidates[0].get("content", {}).get("parts", [])
+                                                )
+                                                for p in parts:
+                                                    text = p.get("text", "")
+                                                    if text:
+                                                        yield f"data: {json.dumps({'text': text})}\n\n"
+                                        except Exception:
+                                            pass
+                                yield "data: [DONE]\n\n"
+                                return
+                            else:
+                                logger.warning(
+                                    "Gemini stream HTTP %s on model %s, trying fallback if available.",
+                                    response.status_code,
+                                    model_candidate,
+                                )
+                except Exception as exc:
+                    logger.warning(
+                        "Gemini API model %s stream failed (%s), trying fallback.",
+                        model_candidate,
+                        exc,
+                    )
 
         # 2. High-performance deterministic Lens engine fallback
         full_text = self._generate_deterministic_response(question, ctx, user_id=user_id)

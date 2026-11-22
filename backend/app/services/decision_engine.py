@@ -371,6 +371,8 @@ class DecisionEngineService:
             "You are the Chief Machine Learning Architect for AutoMLens. "
             "You analyze tabular datasets, formulate fold-safe preprocessing, "
             "and explain how the user objective maps to algorithm candidate selection and metrics. "
+            "CRITICAL: The target column to predict is strictly specified in the user prompt. "
+            "Never substitute or switch the target column to another feature, even if the user objective text mentions other columns. "
             "Always enforce Rule 1 (zero data leakage: all transformations fit inside CV folds) "
             "and Rule 4 (mandatory Dummy baseline control)."
         )
@@ -382,7 +384,7 @@ class DecisionEngineService:
         )
 
         user_prompt = (
-            f"Target Column: '{target_column}'\n"
+            f"Target Column to Predict: '{target_column}' (PREDICT THIS TARGET STRICTLY)\n"
             f"Task Type: {task_type.value}\n"
             f"User Objective Prompt: {user_objective or 'General automated tabular modeling'}\n"
             f"Selected Primary Metric: {primary_metric or 'Auto-inferred'}\n"
@@ -390,7 +392,9 @@ class DecisionEngineService:
             f"Features Summary (sample):\n{json.dumps(features_summary[:10], indent=2)}\n\n"
             f"Engineered Transformations: {eng_feature_text}\n\n"
             "Write a concise, high-impact engineering explanation in 3 clear sections:\n"
-            "1. 🎯 Goal & Strategy: Directly connect user objective to target and metric.\n"
+            f"1. 🎯 Goal & Strategy: Explicitly confirm that the model is predicting '{target_column}'. "
+            f"If the user objective mentions other attributes (e.g. sex, survival, fare), explain how those attributes "
+            f"act as input predictor features to forecast '{target_column}'.\n"
             "2. 🧹 Automated Data Preparation: Explain in plain English WHY median vs mean "
             "was picked, WHY specific scalers/encoders were chosen, and any PCA reductions.\n"
             "3. 🤖 Algorithmic Selection: Why candidate algorithms achieve the desired outcome, "
@@ -765,68 +769,106 @@ class DecisionEngineService:
             active_provider = "offline"
 
             if use_gemini and effective_gemini_key:
-                try:
-                    sys_prompt, usr_prompt = self._build_ai_prompt(
-                        task_type=task_type,
-                        target_column=target_column,
-                        features_summary=features_summary,
-                        models=models,
-                        engineered_features=eng_features,
-                        user_objective=user_objective,
-                        primary_metric=primary_metric,
-                    )
-                    key = effective_gemini_key.strip()
+                sys_prompt, usr_prompt = self._build_ai_prompt(
+                    task_type=task_type,
+                    target_column=target_column,
+                    features_summary=features_summary,
+                    models=models,
+                    engineered_features=eng_features,
+                    user_objective=user_objective,
+                    primary_metric=primary_metric,
+                )
+                key = effective_gemini_key.strip()
+                combined_prompt = f"{sys_prompt}\n\nTask Specifics:\n{usr_prompt}"
+                payload = {
+                    "contents": [
+                        {"role": "user", "parts": [{"text": combined_prompt}]}
+                    ],
+                    "generationConfig": {
+                        "temperature": 0.2,
+                        "maxOutputTokens": 800,
+                    },
+                }
+
+                # Resilient fallback chain: requested model -> gemini-3.5-flash-lite -> gemini-3.1-flash-lite
+                models_to_try = [chosen_gemini_model]
+                for backup in ("gemini-3.5-flash-lite", "gemini-3.1-flash-lite"):
+                    if backup not in models_to_try:
+                        models_to_try.append(backup)
+
+                last_error_msg = ""
+                for model_candidate in models_to_try:
                     url = (
                         f"https://generativelanguage.googleapis.com/v1beta/models/"
-                        f"{chosen_gemini_model}:streamGenerateContent?alt=sse&key={key}"
+                        f"{model_candidate}:streamGenerateContent?alt=sse&key={key}"
                     )
-                    combined_prompt = f"{sys_prompt}\n\nTask Specifics:\n{usr_prompt}"
-                    payload = {
-                        "contents": [
-                            {"role": "user", "parts": [{"text": combined_prompt}]}
-                        ],
-                        "generationConfig": {
-                            "temperature": 0.2,
-                            "maxOutputTokens": 800,
-                        },
-                    }
-                    async with httpx.AsyncClient(timeout=30.0) as client:
-                        async with client.stream("POST", url, json=payload) as response:
-                            if response.status_code == 200:
-                                async for line in response.aiter_lines():
-                                    if line.startswith("data: "):
-                                        raw = line[6:].strip()
-                                        if raw == "[DONE]":
-                                            break
-                                        try:
-                                            chunk = json.loads(raw)
-                                            candidates = chunk.get("candidates", [])
-                                            if candidates:
-                                                parts = (
-                                                    candidates[0]
-                                                    .get("content", {})
-                                                    .get("parts", [])
+                    try:
+                        async with httpx.AsyncClient(timeout=18.0) as client:
+                            async with client.stream("POST", url, json=payload) as response:
+                                if response.status_code == 200:
+                                    if model_candidate != chosen_gemini_model:
+                                        yield _format_sse(
+                                            "notice",
+                                            json.dumps({
+                                                "message": (
+                                                    f"{chosen_gemini_model} was busy (503/high-demand). "
+                                                    f"Auto-routed to resilient {model_candidate}."
                                                 )
-                                                for p in parts:
-                                                    text = p.get("text", "")
-                                                    if text:
-                                                        full_rationale += text
-                                                        yield _format_sse("token", {"token": text})
-                                        except Exception:
-                                            pass
-                                is_llm = True
-                                active_provider = "gemini"
-                            else:
-                                msg = f"Gemini API returned HTTP {response.status_code}"
-                                raise RuntimeError(msg)
-                except Exception as exc:
-                    logger.warning(
-                        "Gemini stream failed (%s), falling back to offline heuristics.", exc
-                    )
+                                            }),
+                                        )
+                                    async for line in response.aiter_lines():
+                                        if line.startswith("data: "):
+                                            raw = line[6:].strip()
+                                            if raw == "[DONE]":
+                                                break
+                                            try:
+                                                chunk = json.loads(raw)
+                                                candidates = chunk.get("candidates", [])
+                                                if candidates:
+                                                    parts = (
+                                                        candidates[0]
+                                                        .get("content", {})
+                                                        .get("parts", [])
+                                                    )
+                                                    for p in parts:
+                                                        text = p.get("text", "")
+                                                        if text:
+                                                            full_rationale += text
+                                                            yield _format_sse("token", {"token": text})
+                                            except Exception:
+                                                pass
+                                    is_llm = True
+                                    active_provider = "gemini"
+                                    break
+                                else:
+                                    err_detail = f"HTTP {response.status_code}"
+                                    try:
+                                        raw_err = await response.aread()
+                                        parsed_err = json.loads(raw_err.decode("utf-8", errors="ignore"))
+                                        api_msg = parsed_err.get("error", {}).get("message")
+                                        if api_msg:
+                                            err_detail += f" ({api_msg})"
+                                    except Exception:
+                                        pass
+                                    last_error_msg = err_detail
+                                    logger.warning(
+                                        "Gemini model %s returned %s, trying fallback if available.",
+                                        model_candidate,
+                                        err_detail,
+                                    )
+                    except Exception as model_exc:
+                        last_error_msg = str(model_exc).strip() or type(model_exc).__name__
+                        logger.warning(
+                            "Gemini model %s stream failed (%s), trying fallback if available.",
+                            model_candidate,
+                            last_error_msg,
+                        )
+
+                if not is_llm:
                     notice_data = json.dumps(
                         {
                             "message": (
-                                f"Google Gemini ({chosen_gemini_model}) stream error ({exc}). "
+                                f"Google Gemini stream notice: {last_error_msg}. "
                                 "Falling back to deterministic rule engine."
                             )
                         }
