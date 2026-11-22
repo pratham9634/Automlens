@@ -29,6 +29,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { AlertRow } from "@/components/ui/alert-row";
+import { SectionExplainerGuide } from "@/components/ui/section-explainer-guide";
 
 interface PredictionViewProps {
   projectId: string;
@@ -206,6 +207,48 @@ export function PredictionView({
           </div>
         </div>
       </Card>
+
+      {/* PLAIN-ENGLISH INFERENCE & PREDICTION GUIDE DROPDOWN BOX */}
+      <SectionExplainerGuide
+        title="What is Model Inference & Prediction? (1-Minute Plain-English Guide)"
+        subtitle="Click to understand how to test your trained model with new, unseen records or scenario tests."
+        badgeText="For Non-Tech Users"
+        cards={[
+          {
+            icon: Cpu,
+            title: "Training vs. Inference",
+            description:
+              "Training is when the AI studies historical data to learn patterns. Inference is when you give the trained model a brand-new unseen case and ask for its prediction.",
+          },
+          {
+            icon: UploadCloud,
+            title: "Single vs. Batch Inference",
+            description:
+              "Use Single Prediction to test one person or case. Use Batch Prediction to upload an entire CSV with thousands of records and forecast all of them simultaneously.",
+          },
+          {
+            icon: SlidersHorizontal,
+            title: "Zero-Effort Transformation (Rule 8)",
+            description:
+              "The exported pipeline bundles the exact encoders and imputers fitted during training. You can pass raw values and the model handles preprocessing automatically.",
+          },
+        ]}
+        tipsTitle="How to use the prediction tools:"
+        tips={[
+          {
+            label: "Single Prediction",
+            text: "Fill out the form fields on the left to see live prediction probabilities and confidence scores.",
+          },
+          {
+            label: "Batch Prediction",
+            text: "Upload a CSV without the target column to download an enriched file containing predicted outputs.",
+          },
+          {
+            label: "What-If Simulation",
+            text: "Use sliders to adjust features and see the exact tipping point where an outcome changes.",
+          },
+        ]}
+      />
 
       {/* Mode Sub-Tabs Toggle */}
       <div className="flex items-center gap-1.5 border-b border-border pb-2 overflow-x-auto text-xs font-mono">

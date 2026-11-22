@@ -26,6 +26,8 @@ import {
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { SectionExplainerGuide } from "@/components/ui/section-explainer-guide";
+import { Sliders, Target, ShieldCheck as ShieldCheckIcon } from "lucide-react";
 
 interface TargetDecisionViewProps {
   projectId: string;
@@ -356,6 +358,48 @@ export function TargetDecisionView({
 
   return (
     <div className="space-y-6">
+      {/* PLAIN-ENGLISH AI STRATEGY & TARGET GUIDE DROPDOWN BOX */}
+      <SectionExplainerGuide
+        title="What is AI Strategy & Target Selection? (1-Minute Plain-English Guide)"
+        subtitle="Click to understand how choosing a target column configures your machine learning tournament."
+        badgeText="For Non-Tech Users"
+        cards={[
+          {
+            icon: Target,
+            title: "What is a 'Target Column'?",
+            description:
+              "The target column is the exact question you want the AI to answer. All other columns become clues (features) that the algorithms study to predict that answer.",
+          },
+          {
+            icon: Sliders,
+            title: "Classification vs. Regression",
+            description:
+              "If the answer is a category or label (e.g. Yes/No, Churn/Retain), it's Classification. If it is a continuous number (e.g. Price, Temperature), it's Regression.",
+          },
+          {
+            icon: ShieldCheckIcon,
+            title: "Zero-Leakage Guard (Rule 1 & 2)",
+            description:
+              "The AI recommends candidate models and metrics, but requires your explicit human approval (Rule 2). Once locked, test data is strictly isolated to prevent cheating.",
+          },
+        ]}
+        tipsTitle="How to configure your target strategy:"
+        tips={[
+          {
+            label: "1. Select Target Column",
+            text: "Pick the column you wish to predict from the suggested candidates below.",
+          },
+          {
+            label: "2. Optional User Objective",
+            text: "Type any specific goal (e.g., 'prioritize catching all fraud') to steer the AI's algorithm choices.",
+          },
+          {
+            label: "3. Review & Lock Strategy",
+            text: "Click 'Confirm Target & Lock Strategy' to create the leakage-safe training blueprint.",
+          },
+        ]}
+      />
+
       {/* Target Confirmed Locked Banner */}
       {confirmedTarget && (
         <Card className="p-4 sm:p-5 border-success/30 bg-success/5 flex flex-col md:flex-row md:items-center justify-between gap-4">

@@ -14,8 +14,6 @@ import {
   ShieldCheck,
   RefreshCw,
   Hash,
-  FileText,
-  Layers,
   Copy,
   Check,
   Package,
@@ -24,11 +22,11 @@ import {
 import { apiClient } from "@/lib/api-client";
 import { ExportItemStatus, ExportStatusResponse } from "@/lib/types";
 import { formatBytes } from "@/lib/utils";
-import { VivaExecutiveSummary } from "./viva-executive-summary";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AlertRow } from "@/components/ui/alert-row";
+import { SectionExplainerGuide } from "@/components/ui/section-explainer-guide";
 
 interface ExportViewProps {
   projectId: string;
@@ -41,7 +39,6 @@ export function ExportView({ projectId, projectName }: ExportViewProps) {
   const [downloadingType, setDownloadingType] = useState<string | null>(null);
   const [copiedSha, setCopiedSha] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [subView, setSubView] = useState<"artifacts" | "executive-summary">("artifacts");
 
   const fetchStatus = async () => {
     setLoading(true);
@@ -208,52 +205,60 @@ export function ExportView({ projectId, projectName }: ExportViewProps) {
         </div>
       </Card>
 
-      {/* Sub-view Navigation Toggle */}
-      <div className="flex items-center gap-1.5 border-b border-border pb-2 overflow-x-auto text-xs font-mono">
-        <button
-          onClick={() => setSubView("artifacts")}
-          className={`flex items-center gap-2 px-3.5 py-1.5 rounded-md transition-colors ${
-            subView === "artifacts"
-              ? "bg-surface-muted text-text-primary font-semibold border border-border shadow-xs"
-              : "text-text-muted hover:text-text-primary hover:bg-surface-subtle/50"
-          }`}
-        >
-          <Layers className="w-3.5 h-3.5" />
-          <span>Artifact Bundle Downloads</span>
-        </button>
+      {/* PLAIN-ENGLISH EXPORTS & BENCHMARKS GUIDE DROPDOWN BOX */}
+      <SectionExplainerGuide
+        title="What are Artifact Exports? (1-Minute Plain-English Guide)"
+        subtitle="Click to understand how to download your trained models, validation benchmarks, and reproducibility bundles."
+        badgeText="For Non-Tech Users"
+        cards={[
+          {
+            icon: Binary,
+            title: "Trained Pipeline (.joblib)",
+            description:
+              "The actual serialized machine learning model bundled with its exact preprocessing steps. Ready to load into Python or deploy in a web application.",
+          },
+          {
+            icon: FileCode,
+            title: "Model Diagnostics & Manifest",
+            description:
+              "Metadata and validation leaderboard detailing hyperparameters, fold scores, and environment specifications for academic defensibility.",
+          },
+          {
+            icon: Package,
+            title: "Master Archive (.zip)",
+            description:
+              "Single-click download containing all model weights, evaluation metrics, the audit trail, and SHA-256 cryptographic manifests for 100% reproducibility.",
+          },
+        ]}
+        tipsTitle="How to use your deliverables:"
+        tips={[
+          {
+            label: "Master Bundle (.zip)",
+            text: "Download this archive to obtain your complete project deliverables and benchmarks in one package.",
+          },
+          {
+            label: "Modular Downloads",
+            text: "Download individual components (like serialized .joblib weights or validation logs) on demand.",
+          },
+          {
+            label: "Cryptographic Integrity",
+            text: "Every file has an immutable SHA-256 hash verifying it was not modified after training.",
+          },
+        ]}
+      />
 
-        <button
-          onClick={() => setSubView("executive-summary")}
-          className={`flex items-center gap-2 px-3.5 py-1.5 rounded-md transition-colors ${
-            subView === "executive-summary"
-              ? "bg-surface-muted text-text-primary font-semibold border border-border shadow-xs"
-              : "text-text-muted hover:text-text-primary hover:bg-surface-subtle/50"
-          }`}
-        >
-          <FileText className="w-3.5 h-3.5 text-accent" />
-          <span>Executive Model Report</span>
-          <Badge variant="accent" size="sm" className="text-[10px] py-0 px-1.5">
-            Printable
-          </Badge>
-        </button>
-      </div>
-
-      {subView === "executive-summary" ? (
-        <VivaExecutiveSummary projectId={projectId} projectName={projectName || "Workspace"} />
+      {loading && !statusData ? (
+        <div className="py-20 flex flex-col items-center justify-center space-y-3 text-xs font-mono text-text-muted">
+          <Loader2 className="w-5 h-5 animate-spin text-accent" />
+          <span>Inspecting project storage artifacts...</span>
+        </div>
+      ) : error ? (
+        <AlertRow variant="danger" title="Export Storage Error">
+          {error}
+        </AlertRow>
       ) : (
-        <>
-          {loading && !statusData ? (
-            <div className="py-20 flex flex-col items-center justify-center space-y-3 text-xs font-mono text-text-muted">
-              <Loader2 className="w-5 h-5 animate-spin text-accent" />
-              <span>Inspecting project storage artifacts...</span>
-            </div>
-          ) : error ? (
-            <AlertRow variant="danger" title="Export Storage Error">
-              {error}
-            </AlertRow>
-          ) : (
-            <div className="space-y-6">
-              {/* MASTER BUNDLE HERO CARD */}
+        <div className="space-y-6">
+          {/* MASTER BUNDLE HERO CARD */}
               {bundleExport && (
                 <Card className="p-6 border-2 border-accent/40 bg-gradient-to-br from-surface to-accent/5 shadow-md space-y-4">
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -436,12 +441,10 @@ export function ExportView({ projectId, projectName }: ExportViewProps) {
             </div>
           )}
 
-          {/* Model Governance Compliance Callout */}
-          <AlertRow variant="info" title="Model Governance &amp; Compliance Notice">
-            All exported artifacts are compiled strictly without data leakage, include 5-fold cross-validation fold scores, and conform with Rule 5 &amp; 10 reproducibility standards.
-          </AlertRow>
-        </>
-      )}
+      {/* Model Governance Compliance Callout */}
+      <AlertRow variant="info" title="Model Governance &amp; Compliance Notice">
+        All exported artifacts are compiled strictly without data leakage, include 5-fold cross-validation fold scores, and conform with Rule 5 &amp; 10 reproducibility standards.
+      </AlertRow>
     </div>
   );
 }

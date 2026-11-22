@@ -9,6 +9,9 @@ import {
   Copy,
   Check,
   FileCode,
+  Database,
+  ShieldCheck,
+  AlertTriangle,
 } from "lucide-react";
 import { DatasetProfileResponse } from "@/lib/types";
 import { apiClient } from "@/lib/api-client";
@@ -21,6 +24,7 @@ import { QualityScoreGauge } from "./quality-score-gauge";
 import { QualityWarningsList } from "./quality-warnings-list";
 import { FeatureDistributionViewer } from "./feature-distribution-viewer";
 import { CorrelationHeatmap } from "./correlation-heatmap";
+import { SectionExplainerGuide } from "@/components/ui/section-explainer-guide";
 
 interface StatisticalProfileViewProps {
   projectId: string;
@@ -147,6 +151,52 @@ export function StatisticalProfileView({
           </Button>
         </div>
       </Card>
+
+      {/* PLAIN-ENGLISH DATA HEALTH GUIDE DROPDOWN BOX */}
+      <SectionExplainerGuide
+        title="What is Data Health & Profiling? (1-Minute Plain-English Guide)"
+        subtitle="Click to understand why data cleaning and quality auditing is the most important step in machine learning."
+        badgeText="For Non-Tech Users"
+        cards={[
+          {
+            icon: Database,
+            title: "Garbage In, Garbage Out",
+            description:
+              "Even the most advanced AI will fail or make embarrassing mistakes if trained on dirty, duplicated, or corrupted data. This section audits your raw file before anything else happens.",
+          },
+          {
+            icon: ShieldCheck,
+            title: "Data Quality Score (0 to 100)",
+            description:
+              "A deterministic health rating based on missing values, duplicate rows, constant columns, and extreme outliers. Scores above 80 indicate high readiness for training.",
+          },
+          {
+            icon: AlertTriangle,
+            title: "No Secret Data Deletions (Rule 6)",
+            description:
+              "Unlike careless tools, AutoMLens never automatically drops rows or outliers behind your back. It flags them transparently and handles them inside cross-validation folds.",
+          },
+        ]}
+        tipsTitle="How to read your data health report:"
+        tips={[
+          {
+            label: "Quality Score > 80",
+            text: "Your dataset is clean and ready for target column selection and modeling.",
+          },
+          {
+            label: "Missing Values",
+            text: "Missing numbers are automatically imputed with medians and categories with modes during CV folds.",
+          },
+          {
+            label: "Duplicate Rows",
+            text: "Exact row duplicates are highlighted so you can verify if they represent natural recurring events or accidental copy-pastes.",
+          },
+          {
+            label: "High Correlations",
+            text: "Features that duplicate each other's signal are flagged in the correlation matrix below.",
+          },
+        ]}
+      />
 
       {/* Quick Section Anchor Jumper */}
       <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs font-mono">

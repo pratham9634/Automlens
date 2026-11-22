@@ -20,6 +20,7 @@ import {
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { SectionExplainerGuide } from "@/components/ui/section-explainer-guide";
 
 interface TrainingDashboardProps {
   projectId: string;
@@ -364,6 +365,48 @@ export function TrainingDashboard({
           </Button>
         </div>
       </Card>
+
+      {/* PLAIN-ENGLISH TRAINING & TOURNAMENT GUIDE DROPDOWN BOX */}
+      <SectionExplainerGuide
+        title="What is Multi-Model Training & Cross-Validation? (1-Minute Plain-English Guide)"
+        subtitle="Click to understand how algorithms compete in an automated tournament across unseen mock exams."
+        badgeText="For Non-Tech Users"
+        cards={[
+          {
+            icon: Trophy,
+            title: "The Model Tournament",
+            description:
+              "Multiple diverse algorithms (Random Forest, Gradient Boosting, Ridge, Logistic Regression) compete simultaneously on the exact same dataset to find the best fit.",
+          },
+          {
+            icon: ShieldCheck,
+            title: "5-Fold Cross-Validation (Rule 3)",
+            description:
+              "Each algorithm takes 5 separate 'mock exams'. It trains on 4 parts of the data and is evaluated on the unseen 5th part to ensure it didn't just memorize the answers.",
+          },
+          {
+            icon: Cpu,
+            title: "The Baseline Test (Rule 4)",
+            description:
+              "Every run includes a simple guessing baseline (e.g., predicting the most frequent class). An algorithm is only useful if it beats this baseline by a clear margin.",
+          },
+        ]}
+        tipsTitle="How the training process works:"
+        tips={[
+          {
+            label: "Parallel CPU Workers",
+            text: "Models train simultaneously across multiple CPU cores without blocking the user interface.",
+          },
+          {
+            label: "Real-time Telemetry",
+            text: "Watch live progress as each algorithm completes its 5-fold evaluation.",
+          },
+          {
+            label: "Predictive Lift",
+            text: "The percentage gain over the baseline shows how much real predictive intelligence the model learned.",
+          },
+        ]}
+      />
 
       {/* Active Multi-Core CPU Worker Telemetry Indicator */}
       {isTrainingActive && (

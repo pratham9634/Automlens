@@ -34,6 +34,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { AlertRow } from "@/components/ui/alert-row";
+import { SectionExplainerGuide } from "@/components/ui/section-explainer-guide";
 
 interface AuditLedgerProps {
   projectId: string;
@@ -48,6 +49,48 @@ type ActionCategory =
   | "explain"
   | "export";
 
+/** Translates raw database slugs into clear human-friendly milestone titles */
+const getActionMeta = (action: string): { title: string; isMilestone: boolean } => {
+  const norm = action.toLowerCase().trim();
+  if (norm.includes("dataset_upload") || norm.includes("dataset_ingest")) {
+    return { title: "Dataset Ingested & Cryptographically Fingerprinted", isMilestone: true };
+  }
+  if (norm.includes("profile")) {
+    return { title: "Data Health & Quality Audit Generated", isMilestone: true };
+  }
+  if (norm.includes("target_confirm") || norm.includes("target_lock")) {
+    return { title: "AI Strategy Locked & Zero-Leakage Pipeline Configured", isMilestone: true };
+  }
+  if (norm.includes("target_analyz")) {
+    return { title: "Target Column & Task Feasibility Analyzed", isMilestone: false };
+  }
+  if (norm.includes("training_complete")) {
+    return { title: "★ 5-Fold Cross-Validation Finished: Champion Selected", isMilestone: true };
+  }
+  if (norm.includes("training_start")) {
+    return { title: "Parallel 5-Fold Cross-Validation Launched", isMilestone: false };
+  }
+  if (norm.includes("training_fail")) {
+    return { title: "Training Execution Encountered Error", isMilestone: true };
+  }
+  if (norm.includes("explanation_global")) {
+    return { title: "Global Feature Attribution (SHAP) Matrix Generated", isMilestone: true };
+  }
+  if (norm.includes("explanation_local")) {
+    return { title: "Local Observation Decomposition (Waterfall) Evaluated", isMilestone: false };
+  }
+  if (norm.includes("what_if") || norm.includes("counterfactual")) {
+    return { title: "Counterfactual Recourse (DiCE) Computed", isMilestone: false };
+  }
+  if (norm.includes("predict")) {
+    return { title: "Model Inference Prediction Evaluated", isMilestone: false };
+  }
+  if (norm.includes("export")) {
+    return { title: "Model Artifacts & Audit Archive Exported", isMilestone: true };
+  }
+  return { title: action.replace(/_/g, " ").toUpperCase(), isMilestone: false };
+};
+
 export function AuditLedger({ projectId }: AuditLedgerProps) {
   const [timeline, setTimeline] = useState<AuditTimelineResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -57,6 +100,7 @@ export function AuditLedger({ projectId }: AuditLedgerProps) {
 
   // Filters & State
   const [category, setCategory] = useState<ActionCategory>("all");
+  const [onlyMilestones, setOnlyMilestones] = useState(false);
   const [resultFilter, setResultFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedEvents, setExpandedEvents] = useState<Record<string, boolean>>({});
@@ -179,6 +223,7 @@ export function AuditLedger({ projectId }: AuditLedgerProps) {
     const items = timeline?.items || [];
     return {
       all: items.length,
+      milestones: items.filter((i) => getActionMeta(i.action).isMilestone).length,
       data: items.filter((i) => matchesCategory(i.action, "data")).length,
       decision: items.filter((i) => matchesCategory(i.action, "decision")).length,
       training: items.filter((i) => matchesCategory(i.action, "training")).length,
@@ -192,21 +237,30 @@ export function AuditLedger({ projectId }: AuditLedgerProps) {
     if (!timeline?.items) return [];
 
     return timeline.items.filter((item) => {
+      // Milestone filter
+      if (onlyMilestones && !getActionMeta(item.action).isMilestone) {
+        return false;
+      }
+
       if (!matchesCategory(item.action, category)) return false;
 
       if (searchQuery.trim()) {
         const query = searchQuery.toLowerCase();
+        const meta = getActionMeta(item.action);
         const matchesAction = item.action.toLowerCase().includes(query);
+        const matchesHumanTitle = meta.title.toLowerCase().includes(query);
         const matchesReason = item.reason.toLowerCase().includes(query);
         const matchesEvidence = item.evidence
           ? JSON.stringify(item.evidence).toLowerCase().includes(query)
           : false;
-        if (!matchesAction && !matchesReason && !matchesEvidence) return false;
+        if (!matchesAction && !matchesHumanTitle && !matchesReason && !matchesEvidence) {
+          return false;
+        }
       }
 
       return true;
     });
-  }, [timeline?.items, category, searchQuery]);
+  }, [timeline?.items, category, onlyMilestones, searchQuery]);
 
   const getActionIcon = (action: string) => {
     const a = action.toLowerCase();
@@ -251,7 +305,7 @@ export function AuditLedger({ projectId }: AuditLedgerProps) {
     }
   };
 
-  // Helper extracting highlights from evidence object for clean non-tech presentation
+  // Helper extracting highlights from evidence object for clean presentation
   const renderEvidenceHighlights = (evidence: Record<string, unknown> | null | undefined) => {
     if (!evidence || Object.keys(evidence).length === 0) return null;
 
@@ -343,7 +397,7 @@ export function AuditLedger({ projectId }: AuditLedgerProps) {
               size="sm"
               onClick={handleDownloadAuditJson}
               disabled={downloadingLog}
-              className="gap-2 font-mono text-xs"
+              className="gap-2 font-mono text-xs font-bold"
             >
               {downloadingLog ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -403,10 +457,73 @@ export function AuditLedger({ projectId }: AuditLedgerProps) {
         </div>
       </Card>
 
+      {/* PLAIN-ENGLISH AUDIT LEDGER GUIDE DROPDOWN BOX */}
+      <SectionExplainerGuide
+        title="What is the Deterministic Audit Ledger? (1-Minute Plain-English Guide)"
+        subtitle="Click to understand how this ledger acts as your project's flight recorder and viva defense proof."
+        badgeText="For Non-Tech Users & Examiners"
+        cards={[
+          {
+            icon: History,
+            title: "The Project's 'Flight Recorder'",
+            description:
+              "Just like an airplane flight recorder, this ledger logs every single decision, data transformation, and training run chronologically with unalterable mathematical proof.",
+          },
+          {
+            icon: ShieldCheck,
+            title: "Zero-Leakage & Viva Proof",
+            description:
+              "Proves to university examiners that preprocessing was never fitted before cross-validation (Rule 1), control baselines were tested (Rule 4), and no outliers were secretly deleted (Rule 6).",
+          },
+          {
+            icon: Terminal,
+            title: "100% Scientific Reproducibility",
+            description:
+              "Every event records exact hyperparameters, random seeds (42), and dataset fingerprints so any examiner or auditor can replicate the exact experiment from scratch.",
+          },
+        ]}
+        tipsTitle="How to navigate the audit timeline:"
+        tips={[
+          {
+            label: "🟢 Verified (Success)",
+            text: "The operation completed cleanly and generated immutable proof in the database.",
+          },
+          {
+            label: "🟡 Advisory (Warning)",
+            text: "The operation succeeded, but flagged potential caveats (like class imbalance or data skew).",
+          },
+          {
+            label: "🔴 Failure",
+            text: "An execution error occurred (e.g. missing target column or corrupt CSV), logged for debugging.",
+          },
+          {
+            label: "★ Key Milestones Only",
+            text: "Use the filter below to see high-level project achievements without getting lost in granular logs.",
+          },
+        ]}
+      />
+
       {/* Filter and Search Bar */}
       <Card className="p-4 flex flex-col md:flex-row gap-3 items-center justify-between">
-        {/* Category Pills */}
+        {/* Category Pills + Key Milestones Toggle */}
         <div className="flex items-center gap-1.5 flex-wrap w-full md:w-auto font-mono text-xs">
+          {/* Key Milestones Button */}
+          <button
+            type="button"
+            onClick={() => setOnlyMilestones(!onlyMilestones)}
+            className={`px-3 py-1.5 rounded-md transition-all flex items-center gap-1.5 cursor-pointer ${
+              onlyMilestones
+                ? "bg-amber-500/20 text-amber-700 dark:text-amber-300 font-bold border border-amber-500/40 shadow-xs"
+                : "text-text-muted hover:text-text-primary hover:bg-surface-subtle/60"
+            }`}
+          >
+            <Sparkles className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
+            <span>★ Key Milestones</span>
+            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-surface-subtle border border-border-subtle tabular-nums">
+              {categoryCounts.milestones}
+            </span>
+          </button>
+
           {(
             [
               { id: "all", label: "All Events", count: categoryCounts.all },
@@ -420,9 +537,12 @@ export function AuditLedger({ projectId }: AuditLedgerProps) {
           ).map((cat) => (
             <button
               key={cat.id}
-              onClick={() => setCategory(cat.id)}
-              className={`px-3 py-1.5 rounded-md transition-all flex items-center gap-1.5 ${
-                category === cat.id
+              onClick={() => {
+                setCategory(cat.id);
+                setOnlyMilestones(false);
+              }}
+              className={`px-3 py-1.5 rounded-md transition-all flex items-center gap-1.5 cursor-pointer ${
+                category === cat.id && !onlyMilestones
                   ? "bg-surface-muted text-text-primary font-semibold border border-border shadow-xs"
                   : "text-text-muted hover:text-text-primary hover:bg-surface-subtle/60"
               }`}
@@ -441,7 +561,7 @@ export function AuditLedger({ projectId }: AuditLedgerProps) {
             <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
             <input
               type="text"
-              placeholder="Search reasons or actions..."
+              placeholder="Search actions, reasons, evidence..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-9 pr-3 py-1.5 text-xs font-mono rounded-md border border-border bg-surface-subtle text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-accent"
@@ -457,8 +577,8 @@ export function AuditLedger({ projectId }: AuditLedgerProps) {
               className="bg-transparent text-xs font-mono text-text-primary focus:outline-none cursor-pointer"
             >
               <option value="all" className="bg-surface text-text-primary">All Outcomes</option>
-              <option value="success" className="bg-surface text-text-primary">Success</option>
-              <option value="warning" className="bg-surface text-text-primary">Advisory / Warning</option>
+              <option value="success" className="bg-surface text-text-primary">Verified (Success)</option>
+              <option value="warning" className="bg-surface text-text-primary">Advisory (Warning)</option>
               <option value="failure" className="bg-surface text-text-primary">Failure</option>
             </select>
           </div>
@@ -479,7 +599,7 @@ export function AuditLedger({ projectId }: AuditLedgerProps) {
         <EmptyState
           icon={History}
           title="No matching audit events"
-          description="Try adjusting your category pills or search filter above to display other lifecycle events."
+          description="Try adjusting your category pills, milestone toggle, or search filter above to display other lifecycle events."
         />
       ) : (
         <div className="relative pl-6 space-y-4 before:absolute before:left-3 before:top-2 before:bottom-2 before:w-0.5 before:bg-gradient-to-b before:from-accent before:via-border before:to-border">
@@ -487,6 +607,7 @@ export function AuditLedger({ projectId }: AuditLedgerProps) {
             const Icon = getActionIcon(event.action);
             const isExpanded = !!expandedEvents[event.id];
             const hasEvidence = event.evidence && Object.keys(event.evidence).length > 0;
+            const meta = getActionMeta(event.action);
 
             const dotGlow =
               event.result === "success"
@@ -503,30 +624,44 @@ export function AuditLedger({ projectId }: AuditLedgerProps) {
                 />
 
                 {/* Event Card */}
-                <Card className="p-4 sm:p-5 hover:border-border-strong transition-all space-y-3 shadow-xs">
-                  {/* Card Header */}
+                <Card
+                  className={`p-4 sm:p-5 hover:border-border-strong transition-all space-y-3 shadow-xs ${
+                    meta.isMilestone ? "border-l-4 border-l-accent bg-accent/[0.02]" : ""
+                  }`}
+                >
+                  {/* Card Header: Human-Friendly Title + Status Badge */}
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2.5 border-b border-border-subtle">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="p-1.5 rounded-md bg-surface-muted border border-border-subtle text-accent">
                         <Icon className="w-3.5 h-3.5" />
                       </span>
-                      <span className="text-xs font-mono font-semibold text-text-primary uppercase tracking-wide">
-                        {event.action.replace(/_/g, " ")}
+                      <span className="text-xs font-mono font-bold text-text-primary tracking-wide">
+                        {meta.title}
                       </span>
+                      {meta.isMilestone && (
+                        <Badge variant="optimal" size="sm" className="font-mono text-[9px]">
+                          ★ Key Milestone
+                        </Badge>
+                      )}
                       {getResultBadge(event.result)}
                     </div>
 
-                    <span
-                      title={event.created_at}
-                      className="text-xs font-mono text-text-muted whitespace-nowrap self-start sm:self-auto tabular-nums"
-                    >
-                      {formatDate(event.created_at)}
-                    </span>
+                    <div className="flex items-center gap-2 self-start sm:self-auto text-xs font-mono text-text-muted">
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-surface-subtle border border-border-subtle text-text-muted">
+                        slug: {event.action}
+                      </span>
+                      <span
+                        title={event.created_at}
+                        className="whitespace-nowrap tabular-nums"
+                      >
+                        {formatDate(event.created_at)}
+                      </span>
+                    </div>
                   </div>
 
                   {/* Reason Narrative */}
                   <div className="space-y-1.5">
-                    <p className="text-xs text-text-primary leading-relaxed">
+                    <p className="text-xs text-text-primary leading-relaxed font-sans">
                       {event.reason}
                     </p>
                     {/* Compact Evidence Highlights */}
