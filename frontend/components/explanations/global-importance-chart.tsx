@@ -97,8 +97,13 @@ export function GlobalImportanceChart({ data }: GlobalImportanceChartProps) {
 
       {/* Recharts Horizontal Bar Chart */}
       <Card className="p-5 sm:p-6 space-y-4">
-        <div className="flex items-center justify-between text-xs font-mono text-text-muted border-b border-border pb-3">
-          <span>Top 10 Influential Features</span>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs font-mono text-text-muted border-b border-border pb-3 gap-2">
+          <div className="flex items-center gap-2">
+            <span className="font-semibold text-text-primary">Top 10 Influential Features</span>
+            <span className="text-[10px] text-accent bg-accent/10 px-2 py-0.5 rounded">
+              Macro Dataset Drivers
+            </span>
+          </div>
           <span>
             Metric:{" "}
             <strong className="text-text-primary">
@@ -106,6 +111,10 @@ export function GlobalImportanceChart({ data }: GlobalImportanceChartProps) {
             </strong>
           </span>
         </div>
+
+        <p className="text-xs text-text-muted leading-relaxed font-mono">
+          Features at the top create the greatest overall movement in model predictions across the {data.sample_size_used} background samples.
+        </p>
 
         {topFeatures.length > 0 ? (
           <div className="h-80 w-full pt-2">

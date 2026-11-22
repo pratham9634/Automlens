@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import {
   ColumnInfo,
+  DatasetProfileResponse,
   GlobalExplanationResponse,
   ModelRun,
 } from "@/lib/types";
@@ -18,7 +19,12 @@ import {
   Sparkles,
   ArrowRight,
   ChevronDown,
+  ChevronUp,
   SlidersHorizontal,
+  HelpCircle,
+  Lightbulb,
+  Scale,
+  Compass,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -43,10 +49,16 @@ export function ExplanationView({
   const [models, setModels] = useState<ModelRun[]>([]);
   const [selectedModelId, setSelectedModelId] = useState<string>("");
 
+  const [previewRows, setPreviewRows] = useState<Record<string, any>[]>([]);
+  const [profile, setProfile] = useState<DatasetProfileResponse | null>(null);
+
   const [activeTab, setActiveTab] = useState<"global" | "local" | "whatif">("global");
   const [globalData, setGlobalData] = useState<GlobalExplanationResponse | null>(null);
   const [explLoading, setExplLoading] = useState<boolean>(false);
   const [explError, setExplError] = useState<string | null>(null);
+
+  // Plain-English Beginner Guide dropdown state
+  const [showBeginnerGuide, setShowBeginnerGuide] = useState<boolean>(false);
 
   useEffect(() => {
     let mounted = true;
@@ -54,15 +66,18 @@ export function ExplanationView({
 
     async function loadWorkspace() {
       try {
-        const [dsData, targetData, runsData] = await Promise.all([
+        const [dsData, targetData, runsData, profileData] = await Promise.all([
           apiClient.getDataset(projectId),
           apiClient.getConfirmedTarget(projectId),
           apiClient.listTrainingRuns(projectId),
+          apiClient.getProfile(projectId).catch(() => null),
         ]);
 
         if (!mounted) return;
         setColumns(dsData.dataset.columns);
         setTargetColumn(targetData.target_column);
+        setPreviewRows(dsData.preview_rows || []);
+        setProfile(profileData);
 
         const completedRuns = runsData.filter((r) => r.status === "completed");
         if (completedRuns.length > 0) {
@@ -205,6 +220,100 @@ export function ExplanationView({
         </div>
       </Card>
 
+      {/* PLAIN ENGLISH BEGINNER GUIDE DROPDOWN BOX */}
+      <Card className="border-2 border-accent/40 bg-accent/5 overflow-hidden transition-all duration-200">
+        <button
+          type="button"
+          onClick={() => setShowBeginnerGuide(!showBeginnerGuide)}
+          className="w-full p-4 sm:p-5 flex items-center justify-between text-left cursor-pointer hover:bg-accent/10 transition-colors"
+          aria-expanded={showBeginnerGuide}
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-md bg-accent/15 text-accent flex items-center justify-center shrink-0">
+              <Lightbulb className="w-5 h-5 fill-current" />
+            </div>
+            <div>
+              <div className="text-sm font-bold text-text-primary flex items-center gap-2">
+                <span>What is this section? (1-Minute Plain-English Guide)</span>
+                <Badge variant="optimal" size="sm" className="text-[10px]">
+                  For Non-Tech Users
+                </Badge>
+              </div>
+              <p className="text-xs text-text-muted">
+                Click to understand how this AI explains its thinking and how to read the charts.
+              </p>
+            </div>
+          </div>
+          <div className="text-accent flex items-center gap-1 text-xs font-mono shrink-0 ml-2">
+            <span>{showBeginnerGuide ? "Collapse" : "Open Guide"}</span>
+            {showBeginnerGuide ? (
+              <ChevronUp className="w-4 h-4" />
+            ) : (
+              <ChevronDown className="w-4 h-4" />
+            )}
+          </div>
+        </button>
+
+        {showBeginnerGuide && (
+          <div className="p-4 sm:p-5 pt-0 border-t border-accent/20 space-y-4 text-xs leading-relaxed animate-in fade-in duration-200">
+            {/* The Big Picture Analogy */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-3">
+              <div className="p-3.5 rounded-lg bg-surface border border-border space-y-1.5">
+                <div className="font-semibold text-text-primary flex items-center gap-1.5">
+                  <Compass className="w-4 h-4 text-accent" />
+                  <span>The AI &quot;Truth Room&quot;</span>
+                </div>
+                <p className="text-text-secondary text-[11px] leading-relaxed">
+                  Machine learning models can be accurate, but in real life or exams you cannot just trust a black box.
+                  This section proves <strong>why</strong> the AI predicted what it did, making sure it isn&apos;t cheating or relying on silly shortcuts.
+                </p>
+              </div>
+
+              <div className="p-3.5 rounded-lg bg-surface border border-border space-y-1.5">
+                <div className="font-semibold text-text-primary flex items-center gap-1.5">
+                  <BarChart3 className="w-4 h-4 text-accent" />
+                  <span>1. Global View (Big Picture)</span>
+                </div>
+                <p className="text-text-secondary text-[11px] leading-relaxed">
+                  Shows what the model cares about <strong>across the entire dataset</strong>.
+                  For example: did it rely heavily on <em>Fare</em> and <em>Gender</em>, while ignoring <em>Ticket Number</em>?
+                </p>
+              </div>
+
+              <div className="p-3.5 rounded-lg bg-surface border border-border space-y-1.5">
+                <div className="font-semibold text-text-primary flex items-center gap-1.5">
+                  <Scale className="w-4 h-4 text-accent" />
+                  <span>2. Local View (Tug-of-War)</span>
+                </div>
+                <p className="text-text-secondary text-[11px] leading-relaxed">
+                  Shows the exact story for <strong>one single person or row</strong>.
+                  Starts at the dataset average, then features act like a tug-of-war: 
+                  <span className="text-success font-semibold"> Green Boosts</span> pull the score UP, and 
+                  <span className="text-danger font-semibold"> Red Drags</span> pull it DOWN.
+                </p>
+              </div>
+            </div>
+
+            {/* Practical Reading Tip */}
+            <div className="p-3 rounded-lg bg-surface-subtle border border-border/80 font-mono text-[11px] text-text-secondary space-y-1">
+              <div className="text-text-primary font-bold flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-accent" />
+                <span>How to read a SHAP number:</span>
+              </div>
+              <div>
+                • <strong className="text-success">+0.25 (Positive):</strong> This feature made the AI more confident in a positive/higher outcome.
+              </div>
+              <div>
+                • <strong className="text-danger">-0.15 (Negative):</strong> This feature dragged the score down toward zero.
+              </div>
+              <div>
+                • <strong>Zero (0.00):</strong> This feature had zero influence on this specific prediction.
+              </div>
+            </div>
+          </div>
+        )}
+      </Card>
+
       {/* Rule 10 Scientific Rigor Attribution Notice */}
       <AlertRow variant="warning" title="Correlation vs. Causation (Rule 10)">
         Feature attribution explains how the model formulated its prediction based on correlated statistical patterns in the training data. A high SHAP attribution score indicates predictive influence, but does <strong>not</strong> prove real-world cause and effect.
@@ -283,6 +392,8 @@ export function ExplanationView({
           modelId={selectedModelId}
           columns={columns}
           targetColumn={targetColumn}
+          previewRows={previewRows}
+          profile={profile}
         />
       ) : (
         <WhatIfSimulator
