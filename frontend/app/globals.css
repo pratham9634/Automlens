@@ -16,31 +16,31 @@ html {
 }
 
 :root {
-  /* Modern Neo-Brutalism — Light Mode (Cleanroom White, Crisp Ink Borders & Hard Shadows) */
-  --canvas: #F8FAFC;
-  --surface: #FFFFFF;
-  --surface-subtle: #F1F5F9;
-  --surface-container: #E2E8F0;
-  --surface-hover: #E2E8F0;
+  /* Warm Titanium / Alabaster Editorial — Light Mode (Soothing Glare-Free Canvas, Warm Porcelain Surfaces & Balanced Depth) */
+  --canvas: #F4F3EE;
+  --surface: #FCFCFA;
+  --surface-subtle: #EBE8DF;
+  --surface-container: #E2DFD5;
+  --surface-hover: #E2DFD5;
   
-  --border: #0F172A;
-  --border-subtle: #94A3B8;
-  --border-strong: #020617;
+  --border: #1E242B;
+  --border-subtle: #CBD2D9;
+  --border-strong: #0F141A;
 
-  --text-primary: #090D16;
-  --text-secondary: #334155;
-  --text-muted: #64748B;
-  --text-subtle: #94A3B8;
+  --text-primary: #181B1F;
+  --text-secondary: #3E4651;
+  --text-muted: #667080;
+  --text-subtle: #98A2B3;
 
   --accent: #0284C7;
   --accent-hover: #0369A1;
   --primary-container: #0EA5E9;
   
-  --secondary: #00687A;
+  --secondary: #007A87;
   --secondary-hover: #0891B2;
   --secondary-container: #06B6D4;
   
-  --tertiary: #6366F1;
+  --tertiary: #5B5FC7;
   --success: #059669;
   --warning: #D97706;
   --danger: #DC2626;
@@ -48,24 +48,24 @@ html {
 
   /* Dataset Metamorphosis Editorial Tokens (Light Theme) */
   --story-bg: var(--canvas);
-  --story-surface: #FFFFFF;
-  --story-surface-subtle: #EBECE7;
-  --story-border: #DCDDD6;
-  --story-border-strong: #0F172A;
-  --story-grid: #E6E7E1;
-  --story-text-primary: #20211F;
-  --story-text-secondary: #64748B;
-  --story-text-muted: #94A3B8;
+  --story-surface: #FCFCFA;
+  --story-surface-subtle: #E8E5DC;
+  --story-border: #D8D4C8;
+  --story-border-strong: #1E242B;
+  --story-grid: #E2DFD3;
+  --story-text-primary: #181B1F;
+  --story-text-secondary: #667080;
+  --story-text-muted: #98A2B3;
   --story-accent-teal: #059669;
   --story-accent-blue: #0284C7;
   --story-accent-amber: #D97706;
   --story-accent-red: #DC2626;
 
-  /* Neo-Brutalist Hard Shadows */
-  --neo-shadow-color: #0F172A;
-  --neo-shadow: 4px 4px 0px 0px #0F172A;
-  --neo-shadow-sm: 2px 2px 0px 0px #0F172A;
-  --neo-shadow-lg: 6px 6px 0px 0px #0F172A;
+  /* Refined Soft Neo-Brutalist Depth */
+  --neo-shadow-color: #1E242B;
+  --neo-shadow: 3px 3px 0px 0px #1E242B;
+  --neo-shadow-sm: 2px 2px 0px 0px #1E242B;
+  --neo-shadow-lg: 5px 5px 0px 0px #1E242B;
 
   /* Typography Fallbacks */
   --font-display: 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
