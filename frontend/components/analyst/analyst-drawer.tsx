@@ -43,7 +43,10 @@ export function AnalystDrawer({
   const [isStreaming, setIsStreaming] = useState(false);
   const [suggestions, setSuggestions] = useState<ChatSuggestion[]>([]);
   const [hasCustomKey, setHasCustomKey] = useState(false);
-  const [activeModel, setActiveModel] = useState<string>("gemini-2.0-flash");
+  const [activeModel, setActiveModel] = useState<string>("gemini-3.5-flash-lite");
+  const [engineMode, setEngineMode] = useState<"llm" | "deterministic" | null>(null);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [tempKey, setTempKey] = useState("");
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<(() => void) | null>(null);
@@ -52,19 +55,46 @@ export function AnalystDrawer({
   useEffect(() => {
     if (typeof window !== "undefined") {
       const key = localStorage.getItem("automlens_gemini_key");
-      const model = localStorage.getItem("automlens_gemini_model") || "gemini-2.0-flash";
-      setHasCustomKey(Boolean(key && key.trim()));
+      let model = localStorage.getItem("automlens_gemini_model") || "gemini-3.5-flash-lite";
+      if (
+        model.includes("2.0") ||
+        model.includes("1.5") ||
+        model.includes("2.5")
+      ) {
+        model = "gemini-3.5-flash-lite";
+        localStorage.setItem("automlens_gemini_model", model);
+      }
+      const hasKey = Boolean(key && key.trim());
+      setHasCustomKey(hasKey);
       setActiveModel(model);
+      if (hasKey) {
+        setEngineMode("llm");
+      }
     }
   }, [isOpen]);
 
-  // Load contextual suggestion pills
+  // Load contextual suggestion pills & persisted message history
   useEffect(() => {
     if (isOpen && projectId) {
       apiClient
         .getChatSuggestions(projectId)
         .then((data) => setSuggestions(data))
         .catch(() => setSuggestions([]));
+
+      apiClient
+        .getChatMessages(projectId)
+        .then((records) => {
+          if (records && records.length > 0) {
+            setMessages(
+              records.map((r) => ({
+                role: r.role,
+                content: r.content,
+                timestamp: r.created_at || undefined,
+              }))
+            );
+          }
+        })
+        .catch(() => {});
     }
   }, [isOpen, projectId]);
 
@@ -122,6 +152,9 @@ export function AnalystDrawer({
             return [...updated];
           });
         },
+        onMode: (mode: "llm" | "deterministic") => {
+          setEngineMode(mode);
+        },
         onDone: () => {
           setIsStreaming(false);
           abortRef.current = null;
@@ -152,9 +185,14 @@ export function AnalystDrawer({
     setIsStreaming(false);
   };
 
-  const clearChat = () => {
+  const clearChat = async () => {
     if (isStreaming) handleStop();
     setMessages([]);
+    try {
+      await apiClient.clearChatMessages(projectId);
+    } catch {
+      // Local wipe succeeded
+    }
   };
 
   const copyMessage = (idx: number, text: string) => {
@@ -272,14 +310,22 @@ export function AnalystDrawer({
               <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-surface" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <span className="font-bold text-sm text-text-primary tracking-tight">Lens</span>
-                <span className="px-1.5 py-0.2 rounded text-[10px] font-mono font-semibold bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
+                <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
                   ML Copilot
                 </span>
-                <span className="hidden sm:inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-mono bg-surface-muted text-text-muted border border-border">
-                  {hasCustomKey ? `${activeModel} (BYOK)` : "Lens Hybrid AI"}
-                </span>
+                {engineMode === "llm" || (engineMode === null && hasCustomKey) ? (
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono bg-cyan-500/15 text-cyan-400 border border-cyan-500/30">
+                    <Zap className="w-3 h-3 text-cyan-400" />
+                    <span>{activeModel} (Live)</span>
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono bg-amber-500/10 text-amber-400 border border-amber-500/30">
+                    <ShieldCheck className="w-3 h-3 text-amber-400" />
+                    <span>Offline Grounded</span>
+                  </span>
+                )}
               </div>
               <p className="text-[11px] text-text-muted">Senior Staff ML Architect • Automated Tabular Intelligence</p>
             </div>
@@ -319,6 +365,71 @@ export function AnalystDrawer({
             <span className="truncate">Tenant: {displayName}</span>
           </div>
         </div>
+
+        {/* Offline Grounded Mode Notice & BYOK Key Quick-Config */}
+        {!hasCustomKey && (
+          <div className="px-5 py-2 bg-amber-500/10 border-b border-amber-500/20 flex items-center justify-between text-[11px] text-amber-300">
+            <div className="flex items-center gap-1.5 truncate">
+              <Lightbulb className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+              <span className="truncate">Operating in 100% Offline Rule Mode.</span>
+            </div>
+            <button
+              onClick={() => setIsSettingsOpen(!isSettingsOpen)}
+              className="ml-2 text-[10px] font-mono underline hover:text-white shrink-0 cursor-pointer text-amber-200"
+            >
+              {isSettingsOpen ? "Close Key Setup" : "Connect Gemini BYOK"}
+            </button>
+          </div>
+        )}
+
+        {isSettingsOpen && (
+          <div className="p-3 bg-surface-subtle border-b border-border space-y-2 text-xs">
+            <div className="flex items-center justify-between text-[11px] font-medium text-text-primary">
+              <span>Google Gemini API Configuration (BYOK)</span>
+              <button onClick={() => setIsSettingsOpen(false)} className="text-text-muted hover:text-text-primary">
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+            <div className="flex gap-2">
+              <input
+                type="password"
+                placeholder="Paste AI Studio Key (AIzaSy... / AQ...)"
+                value={tempKey}
+                onChange={(e) => setTempKey(e.target.value)}
+                className="flex-1 bg-surface px-2.5 py-1.5 rounded border border-border text-xs text-text-primary placeholder:text-text-muted focus:outline-none focus:border-cyan-500 font-mono"
+              />
+              <select
+                value={activeModel}
+                onChange={(e) => {
+                  const m = e.target.value;
+                  setActiveModel(m);
+                  localStorage.setItem("automlens_gemini_model", m);
+                }}
+                className="bg-surface px-2 py-1.5 rounded border border-border text-xs text-text-primary focus:outline-none focus:border-cyan-500 font-mono"
+              >
+                <option value="gemini-3.5-flash-lite">gemini-3.5-flash-lite (Fastest)</option>
+                <option value="gemini-flash-lite-latest">gemini-flash-lite-latest</option>
+                <option value="gemini-3.5-flash">gemini-3.5-flash</option>
+              </select>
+              <button
+                type="button"
+                onClick={() => {
+                  if (tempKey.trim()) {
+                    localStorage.setItem("automlens_gemini_key", tempKey.trim());
+                    localStorage.setItem("automlens_gemini_model", activeModel);
+                    setHasCustomKey(true);
+                    setEngineMode("llm");
+                    setIsSettingsOpen(false);
+                    setTempKey("");
+                  }
+                }}
+                className="px-3 py-1.5 bg-cyan-500 text-white rounded text-xs font-semibold hover:bg-cyan-600 transition-colors cursor-pointer"
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Message Feed */}
         <div className="flex-1 overflow-y-auto p-5 space-y-4">

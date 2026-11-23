@@ -92,6 +92,12 @@ class Project(Base):
         cascade="all, delete-orphan",
         order_by="desc(AuditEvent.created_at)",
     )
+    chat_sessions: Mapped[list["ChatSession"]] = relationship(
+        "ChatSession",
+        back_populates="project",
+        cascade="all, delete-orphan",
+        order_by="desc(ChatSession.created_at)",
+    )
 
     def __repr__(self) -> str:
         return f"<Project(id='{self.id}', name='{self.name}', status='{self.status}')>"
@@ -335,3 +341,105 @@ class AuditEvent(Base):
 
     def __repr__(self) -> str:
         return f"<AuditEvent(id='{self.id}', action='{self.action}', result='{self.result}')>"
+
+
+class ChatSession(Base):
+    """Conversation thread between user and AI Analyst (Lens)."""
+
+    __tablename__ = "chat_sessions"
+
+    id: Mapped[str] = mapped_column(
+        String(36),
+        primary_key=True,
+        default=lambda: str(uuid.uuid4()),
+        index=True,
+    )
+    project_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("projects.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    user_id: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+        default="user_default_local_dev",
+        index=True,
+    )
+    title: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+        default="AI Analyst Discussion",
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+        index=True,
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+    )
+
+    # Relationships
+    project: Mapped["Project"] = relationship("Project", back_populates="chat_sessions")
+    messages: Mapped[list["AnalystMessage"]] = relationship(
+        "AnalystMessage",
+        back_populates="session",
+        cascade="all, delete-orphan",
+        order_by="AnalystMessage.created_at",
+    )
+
+    def __repr__(self) -> str:
+        return f"<ChatSession(id='{self.id}', project_id='{self.project_id}', title='{self.title}')>"
+
+
+class AnalystMessage(Base):
+    """Individual conversation turn stored in database for audit and chat persistence."""
+
+    __tablename__ = "analyst_messages"
+
+    id: Mapped[str] = mapped_column(
+        String(36),
+        primary_key=True,
+        default=lambda: str(uuid.uuid4()),
+        index=True,
+    )
+    session_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("chat_sessions.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    role: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        index=True,
+    )
+    content: Mapped[str] = mapped_column(
+        Text,
+        nullable=False,
+    )
+    mode: Mapped[str | None] = mapped_column(
+        String(50),
+        nullable=True,
+    )
+    tool_calls: Mapped[dict | None] = mapped_column(
+        JSON,
+        nullable=True,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+        index=True,
+    )
+
+    # Relationships
+    session: Mapped["ChatSession"] = relationship("ChatSession", back_populates="messages")
+
+    def __repr__(self) -> str:
+        return f"<AnalystMessage(id='{self.id}', role='{self.role}', session_id='{self.session_id}')>"

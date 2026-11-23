@@ -14,10 +14,15 @@ from typing import Any
 import httpx
 from sqlalchemy.orm import Session
 
-from app.api.v1.schemas.analyst import ChatMessage, ChatSuggestion
+from app.api.v1.schemas.analyst import (
+    ChatMessage,
+    ChatSuggestion,
+    PersistedMessageResponse,
+)
 from app.core.config import get_settings
 from app.core.logging import get_logger
 from app.db.repositories.audit import AuditRepository
+from app.db.repositories.chat import ChatRepository
 from app.db.repositories.datasets import DatasetRepository
 from app.db.repositories.projects import ProjectRepository
 from app.db.repositories.runs import RunRepository
@@ -51,6 +56,7 @@ class AnalystService:
         self.dataset_repo = DatasetRepository(db)
         self.run_repo = RunRepository(db)
         self.audit_repo = AuditRepository(db)
+        self.chat_repo = ChatRepository(db)
         self.profiling_service = ProfilingService(db, storage=self.storage)
         self.explainability_service = ExplainabilityService(
             project_repo=self.project_repo,
@@ -363,6 +369,117 @@ class AnalystService:
 
         return suggestions
 
+    def get_messages(
+        self, project_id: str, user_id: str | None = None
+    ) -> list[PersistedMessageResponse]:
+        """Fetch all stored chat turns for the user's active session in this project."""
+        effective_user = user_id or settings.DEFAULT_DEV_USER_ID
+        session = self.chat_repo.get_or_create_active_session(project_id, effective_user)
+        records = self.chat_repo.list_messages(session.id)
+        return [
+            PersistedMessageResponse(
+                id=r.id,
+                role=r.role,
+                content=r.content,
+                mode=r.mode,
+                created_at=r.created_at.strftime("%I:%M %p") if r.created_at else None,
+            )
+            for r in records
+        ]
+
+    def clear_messages(self, project_id: str, user_id: str | None = None) -> int:
+        """Clear all messages for the active session in this project."""
+        effective_user = user_id or settings.DEFAULT_DEV_USER_ID
+        session = self.chat_repo.get_or_create_active_session(project_id, effective_user)
+        return self.chat_repo.clear_session_messages(session.id)
+
+    def execute_tool(
+        self, project_id: str, tool_name: str, args: dict[str, Any]
+    ) -> dict[str, Any]:
+        """Execute a safe, read-only internal telemetry tool call."""
+        if tool_name == "get_model_diagnostics":
+            model_target = str(args.get("model_name_or_id", "")).strip().lower()
+            completed_runs = self.run_repo.list_completed_runs(project_id)
+            if not completed_runs:
+                return {"error": "No completed training runs found in this workspace."}
+            latest_run = completed_runs[0]
+            models = self.run_repo.list_model_runs_by_run_id(latest_run.id)
+            target_model = next(
+                (
+                    m
+                    for m in models
+                    if m.model_name.lower() == model_target
+                    or m.model_id.lower() == model_target
+                    or model_target in m.model_name.lower()
+                ),
+                None,
+            )
+            if not target_model:
+                avail = [m.model_name for m in models]
+                return {"error": f"Model '{model_target}' not found. Available models: {avail}"}
+            diag = (target_model.all_metrics or {}).get("_diagnostics", {})
+            return {
+                "model_name": target_model.model_name,
+                "primary_metric": latest_run.primary_metric,
+                "validation_score": target_model.primary_metric_score,
+                "validation_std": target_model.primary_metric_std,
+                "train_score": diag.get("train_score"),
+                "overfit_gap": diag.get("overfit_gap"),
+                "overfit_risk": diag.get("overfit_risk", "low"),
+                "train_time_seconds": target_model.train_time_seconds,
+            }
+
+        elif tool_name == "query_column_distribution":
+            col_target = str(args.get("column_name", "")).strip()
+            try:
+                profile = self.profiling_service.get_profile(project_id)
+                num_col = next(
+                    (c for c in profile.numeric_columns if c.name.lower() == col_target.lower()),
+                    None,
+                )
+                if num_col:
+                    return {
+                        "column_name": num_col.name,
+                        "type": "numeric",
+                        "mean": num_col.mean,
+                        "std": num_col.std,
+                        "min": num_col.min,
+                        "max": num_col.max,
+                        "median": num_col.median,
+                        "null_count": num_col.null_count,
+                        "null_percentage": num_col.null_percentage,
+                        "skewness": num_col.skewness,
+                    }
+                cat_col = next(
+                    (
+                        c
+                        for c in profile.categorical_columns
+                        if c.name.lower() == col_target.lower()
+                    ),
+                    None,
+                )
+                if cat_col:
+                    top_freqs = [
+                        {"value": f.value, "count": f.count, "percentage": f.percentage}
+                        for f in (cat_col.top_categories or [])[:5]
+                    ]
+                    return {
+                        "column_name": cat_col.name,
+                        "type": "categorical",
+                        "unique_count": cat_col.unique_count,
+                        "null_count": cat_col.null_count,
+                        "null_percentage": cat_col.null_percentage,
+                        "top_categories": top_freqs,
+                    }
+                all_cols = [c.name for c in profile.numeric_columns] + [
+                    c.name for c in profile.categorical_columns
+                ]
+                return {"error": f"Column '{col_target}' not found. Available features: {all_cols}"}
+            except Exception as e:
+                return {"error": f"Failed to retrieve profile: {str(e)}"}
+
+        return {"error": f"Unknown tool '{tool_name}'"}
+
     def _is_off_topic_or_adversarial(self, text: str) -> bool:
         """Check whether the question is completely out of scope or adversarial."""
         for pattern in OFF_TOPIC_PATTERNS:
@@ -664,11 +781,66 @@ class AnalystService:
                 )
 
             lines.append("\n#### Why This Model Won:")
-            lines.append(
-                f"`{top.get('name')}` outperformed competitor estimators because its inductive "
-                f"bias matches the tabular feature distribution. For complex tabular interactions, "
-                f"tree-based ensembles capture non-linear decision boundaries without overfitting."
-            )
+
+            # Identify runner-up and baseline
+            runner_up = next((m for m in models if m.get("name") != win_name and not m.get("is_baseline")), None)
+            baseline = next((m for m in models if m.get("is_baseline")), None)
+
+            # Inductive bias explanation based on algorithm family
+            win_lower = (win_name or "").lower()
+            if any(k in win_lower for k in ("forest", "gradient", "tree", "extra", "xgb", "lgb")):
+                bias_exp = (
+                    f"**Tree-Based Non-Linearity:** `{win_name}` operates via recursive axis-aligned feature partitioning. "
+                    "Unlike linear estimators, it automatically captures multi-way non-linear feature interactions and threshold effects "
+                    "without requiring synthetic polynomial expansions."
+                )
+            elif any(k in win_lower for k in ("ridge", "lasso", "elastic", "logistic", "linear")):
+                bias_exp = (
+                    f"**Regularized Convex Generalization:** `{win_name}` applies shrinkage penalties that stabilize coefficients "
+                    "against multicollinearity, delivering low variance and resilient generalization without overfitting sparse tabular regions."
+                )
+            elif "neighbor" in win_lower or "knn" in win_lower:
+                bias_exp = (
+                    f"**Instance Manifold Geometry:** `{win_name}` constructs local geometric predictions from dense metric clusters, "
+                    "excelling where tabular records share continuous feature neighborhoods."
+                )
+            else:
+                bias_exp = f"`{win_name}` demonstrated the optimal trade-off between bias and variance across 5-fold cross-validation."
+
+            lines.append(f"1. {bias_exp}")
+
+            # Performance delta against runner-up
+            if runner_up:
+                r_name = runner_up.get("name")
+                r_score = runner_up.get("score")
+                try:
+                    delta = abs(float(top.get("score", 0)) - float(r_score))
+                    lines.append(
+                        f"2. **Margin over Runner-Up ({r_name}):** Outperformed the second-place model by "
+                        f"a Δ of `{delta:.4f}` on the primary metric `{lb.get('primary_metric')}`."
+                    )
+                except Exception:
+                    lines.append(f"2. **Outperformed Runner-Up ({r_name}):** Maintained superior cross-validation stability.")
+
+            # Baseline lift
+            if baseline:
+                b_name = baseline.get("name")
+                b_score = baseline.get("score")
+                lines.append(
+                    f"3. **Rule 4 Baseline Validation:** Decisively beat the `{b_name}` (score: {b_score}), "
+                    f"confirming genuine learned predictive signal rather than majority-class or mean memorization."
+                )
+
+            # Top driving feature attribution
+            top_features = ctx.get("top_features", [])
+            if top_features:
+                top_col = top_features[0].get("name")
+                top_shap = top_features[0].get("shap")
+                lines.append(
+                    f"4. **Primary Signal Driver:** Global SHAP attribution indicates **`{top_col}`** "
+                    f"(mean |SHAP| = {top_shap}) provided the dominant predictive variance, which `{win_name}` effectively leveraged."
+                )
+
             return "\n".join(lines)
 
         # 7. Features & SHAP Signal
@@ -751,6 +923,79 @@ class AnalystService:
             "or summarize the model tournament results!"
         )
 
+    def _build_grounding_card(self, ctx: dict[str, Any]) -> str:
+        """Construct a structured, semantic Markdown Telemetry Card for strict LLM grounding."""
+        lines = [
+            f"### WORKSPACE CONTEXT: {ctx.get('project_name', 'Workspace')} (ID: `{ctx.get('project_id', 'unknown')}`)",
+            f"- **Tenant User:** `{ctx.get('authenticated_user_id', 'Anonymous')}`",
+            f"- **Active Stage:** {ctx.get('stage_name', 'Stage 1')}",
+            f"- **Recommended Next Action:** {ctx.get('next_action', 'None')}",
+            "",
+        ]
+
+        # Dataset Telemetry
+        ds = ctx.get("dataset")
+        if ds:
+            lines.extend([
+                "### DATASET TELEMETRY (VERIFIED FACTS)",
+                f"- **Dimensions:** {ds.get('total_rows', 0):,} rows × {ds.get('total_columns', 0)} features",
+                f"- **Quality Score:** {ds.get('quality_score', 'N/A')} / 100",
+                f"- **Duplicate Rows:** {ds.get('duplicate_rows_pct', 0)}%",
+                f"- **Numeric Features:** {', '.join(ds.get('numeric_cols', [])[:10]) or 'None'}",
+                f"- **Categorical Features:** {', '.join(ds.get('categorical_cols', [])[:10]) or 'None'}",
+            ])
+            warnings = ds.get("warnings", [])
+            if warnings:
+                lines.append("- **Quality Warnings Detected:**")
+                for w in warnings[:6]:
+                    col_info = f" in column '{w['col']}'" if w.get("col") else ""
+                    lines.append(f"  • [{w.get('severity', 'info').upper()}] {w.get('code')}{col_info}: {w.get('msg')}")
+            high_corr = ds.get("high_correlations", [])
+            if high_corr:
+                lines.append("- **High Correlations (|r| >= 0.70):**")
+                for c in high_corr[:4]:
+                    lines.append(f"  • `{c.get('a')}` ↔ `{c.get('b')}`: r = {c.get('corr', 0):.2f}")
+            lines.append("")
+
+        # Leaderboard Telemetry
+        lb = ctx.get("leaderboard")
+        if lb:
+            top = lb.get("top_model", {})
+            lines.extend([
+                "### CROSS-VALIDATION LEADERBOARD (VERIFIED BENCHMARKS)",
+                f"- **Target Column:** '{lb.get('target_column')}' | Task: {lb.get('task_type')} | Protocol: 5-Fold Stratified CV",
+                f"- **Primary Metric:** {lb.get('primary_metric')} (Lower is better: {lb.get('lower_is_better')})",
+                f"- **Top Performer (Champion):** {top.get('name')}",
+                f"  • Validation Score: {top.get('score')}",
+                f"  • Training Fold Score: {top.get('train_score', 'N/A')}",
+                f"  • Overfit Gap (Δ): {top.get('overfit_gap', 'N/A')} (Generalization Risk: {top.get('overfit_risk', 'low').upper()})",
+                f"  • Training Duration: {top.get('duration_sec')}s",
+                f"- **Rule 4 Baseline Comparison:** {lb.get('lift_summary', 'Established')}",
+                "- **All Models Ranked:**",
+            ])
+            for m in lb.get("models", [])[:6]:
+                base_note = " [Dummy Baseline]" if m.get("is_baseline") else ""
+                lines.append(f"  • {m.get('name')}{base_note}: {m.get('score')} ± {m.get('std', 0.0):.3f}")
+            lines.append("")
+
+        # SHAP Features
+        shap = ctx.get("top_features")
+        if shap:
+            lines.append("### GLOBAL FEATURE IMPORTANCE (Mean |SHAP| Attribution via 5-Fold CV)")
+            for f in shap[:5]:
+                lines.append(f"- **`{f.get('name')}`**: mean |SHAP| = {f.get('shap')}")
+            lines.append("")
+
+        # Audit timeline (recent 5)
+        audits = ctx.get("audit_timeline")
+        if audits:
+            lines.append("### RECENT AUDIT LOG MILESTONES")
+            for a in audits[-5:]:
+                lines.append(f"- [{a.get('action')}]: {a.get('reason')}")
+            lines.append("")
+
+        return "\n".join(lines)
+
     async def stream_chat(
         self,
         project_id: str,
@@ -760,18 +1005,43 @@ class AnalystService:
         gemini_api_key: str | None = None,
         gemini_model: str | None = None,
     ) -> AsyncGenerator[str, None]:
-        """Stream conversational response chunk by chunk as SSE events with Lens persona."""
+        """Stream conversational response chunk by chunk as SSE events with Lens persona and persistence."""
         ctx = self.build_context(project_id, user_id=user_id)
+        effective_user = user_id or settings.DEFAULT_DEV_USER_ID
         effective_key = gemini_api_key or settings.GEMINI_API_KEY
+        DEPRECATED_MODELS = {
+            "gemini-2.0-flash",
+            "gemini-2.5-flash",
+            "gemini-2.5-pro",
+            "gemini-1.5-flash",
+            "gemini-1.5-pro",
+        }
         chosen_gemini_model = (
             gemini_model.strip()
             if (gemini_model and gemini_model.strip())
             else settings.GEMINI_MODEL
         )
+        if chosen_gemini_model in DEPRECATED_MODELS or not chosen_gemini_model:
+            chosen_gemini_model = "gemini-3.5-flash-lite"
+
+        # Ensure active database session and persist user message
+        session = self.chat_repo.get_or_create_active_session(project_id, effective_user)
+        self.chat_repo.append_message(
+            session_id=session.id,
+            role="user",
+            content=question,
+        )
 
         # 0. Off-topic & Adversarial Guardrail
         if self._is_off_topic_or_adversarial(question):
+            yield f"data: {json.dumps({'mode': 'deterministic'})}\n\n"
             rejection_text = self._generate_calm_rejection()
+            self.chat_repo.append_message(
+                session_id=session.id,
+                role="assistant",
+                content=rejection_text,
+                mode="deterministic",
+            )
             words = rejection_text.split(" ")
             for i in range(0, len(words), 3):
                 chunk = " ".join(words[i : i + 3]) + " "
@@ -783,47 +1053,82 @@ class AnalystService:
         # 1. Attempt Gemini streaming if key provided
         if effective_key and len(effective_key.strip()) > 8:
             key = effective_key.strip()
+            grounding_card = self._build_grounding_card(ctx)
             system_prompt = (
                 "You are Lens, the Chief Intelligence Copilot for the AutoMLens platform. "
                 "You are an expert Senior Staff Machine Learning Architect and Data Scientist. "
-                "Your demeanor is calm, articulate, patient, encouraging, and knowledgeable. "
-                "You strictly specialize in tabular ML, automated preprocessing, "
-                "cross-validation evaluation, explainable AI, and platform navigation.\n\n"
-                f"Authenticated Tenant User: {ctx.get('authenticated_user_id')}\n"
-                f"Active Workspace State: {ctx.get('stage_name')}\n"
-                f"Next Recommended Action: {ctx.get('next_action')}\n\n"
-                f"Workspace Database Context:\n{json.dumps(ctx, indent=2)}\n\n"
-                "CRITICAL DIRECTIVES:\n"
-                "1. If the user asks general trivia, creative writing, or unrelated coding, "
-                "calmly and politely decline, stating you are Lens, dedicated to AutoMLens.\n"
-                "2. When explaining results to non-technical users, translate statistical metrics "
-                "into intuitive business meaning.\n"
-                "3. Always reinforce ML rigor: Rule 1 zero-leakage, 5-fold CV, "
-                "Rule 4 baseline lift, and overfit gap (Δ).\n"
-                "4. Always confirm that user data is confidential and isolated to their session."
+                "Your demeanor is calm, articulate, patient, encouraging, and rigorously factual.\n\n"
+                f"{grounding_card}\n\n"
+                "CRITICAL ANTI-HALLUCINATION & RIGOR DIRECTIVES:\n"
+                "1. GROUND TRUTH FIDELITY: ONLY cite numeric metrics (scores, counts, correlations, SHAP) "
+                "explicitly recorded in the Telemetry above or returned by tools. Never estimate or invent metrics.\n"
+                "2. UNRECORDED METRICS: If the user asks for a granular value not present in this telemetry "
+                "and no tool applies, explicitly state: 'This metric is not recorded in the active telemetry snapshot'.\n"
+                "3. NO REPETITION / STUTTERING: Be direct and concise. Avoid repeating phrases, titles, or sentences.\n"
+                "4. NON-TECHNICAL TRANSLATION: When explaining concepts to non-technical users, translate statistical "
+                "numbers into clear business trade-offs.\n"
+                "5. ML ETHICS & RIGOR: Enforce Rule 1 zero-leakage, Rule 4 baseline lift, and overfit gap (Δ).\n"
+                "6. CAUSATION DISCLAIMER: Feature attribution (SHAP) explains model behavior within the training data, "
+                "not real-world causation.\n"
+                "7. SCOPE: Politely decline general trivia, creative writing, or unrelated coding tasks."
             )
 
-            contents = [
-                {"role": "user", "parts": [{"text": system_prompt}]},
-                {
-                    "role": "model",
-                    "parts": [
-                        {
-                            "text": (
-                                "Greetings. I am Lens, your AutoMLens Copilot. "
-                                "I have analyzed your workspace and I am ready to guide you."
-                            )
-                        }
-                    ],
-                },
-            ]
+            # Build multi-turn dialog
+            contents = []
             for msg in history[-6:]:
                 role = "user" if msg.role == "user" else "model"
                 contents.append({"role": role, "parts": [{"text": msg.content}]})
             contents.append({"role": "user", "parts": [{"text": question}]})
 
+            generation_config = {
+                "temperature": 0.2,
+                "topP": 0.95,
+                "maxOutputTokens": 2048,
+            }
+
+            tools = [
+                {
+                    "function_declarations": [
+                        {
+                            "name": "get_model_diagnostics",
+                            "description": "Fetch detailed cross-validation fold scores, train vs validation performance, and overfit gap (Δ) for a specific candidate algorithm.",
+                            "parameters": {
+                                "type": "OBJECT",
+                                "properties": {
+                                    "model_name_or_id": {
+                                        "type": "STRING",
+                                        "description": "The algorithm name (e.g. 'Random Forest', 'Logistic Regression') or model UUID."
+                                    }
+                                },
+                                "required": ["model_name_or_id"]
+                            }
+                        },
+                        {
+                            "name": "query_column_distribution",
+                            "description": "Query exact statistical facts for any dataset column including min, max, mean, median, missing count, and distinct value frequencies.",
+                            "parameters": {
+                                "type": "OBJECT",
+                                "properties": {
+                                    "column_name": {
+                                        "type": "STRING",
+                                        "description": "Exact column name in the dataset."
+                                    }
+                                },
+                                "required": ["column_name"]
+                            }
+                        }
+                    ]
+                }
+            ]
+
+            ACTIVE_GEMINI_MODELS = [
+                "gemini-3.5-flash-lite",
+                "gemini-flash-lite-latest",
+                "gemini-3.5-flash",
+                "gemini-3.6-flash",
+            ]
             models_to_try = [chosen_gemini_model]
-            for backup in ("gemini-3.5-flash-lite", "gemini-3.1-flash-lite"):
+            for backup in ACTIVE_GEMINI_MODELS:
                 if backup not in models_to_try:
                     models_to_try.append(backup)
 
@@ -832,10 +1137,19 @@ class AnalystService:
                     f"https://generativelanguage.googleapis.com/v1beta/models/"
                     f"{model_candidate}:streamGenerateContent?alt=sse&key={key}"
                 )
+                payload = {
+                    "system_instruction": {
+                        "parts": [{"text": system_prompt}]
+                    },
+                    "contents": contents,
+                    "generationConfig": generation_config,
+                }
+                full_llm_chunks: list[str] = []
                 try:
                     async with httpx.AsyncClient(timeout=25.0) as client:
-                        async with client.stream("POST", url, json={"contents": contents}) as response:
+                        async with client.stream("POST", url, json=payload) as response:
                             if response.status_code == 200:
+                                yield f"data: {json.dumps({'mode': 'llm', 'model': model_candidate})}\n\n"
                                 async for line in response.aiter_lines():
                                     if line.startswith("data: "):
                                         raw = line[6:].strip()
@@ -851,11 +1165,26 @@ class AnalystService:
                                                 for p in parts:
                                                     text = p.get("text", "")
                                                     if text:
+                                                        full_llm_chunks.append(text)
                                                         yield f"data: {json.dumps({'text': text})}\n\n"
                                         except Exception:
                                             pass
-                                yield "data: [DONE]\n\n"
-                                return
+                                
+                                # Persist final completed response
+                                if full_llm_chunks:
+                                    self.chat_repo.append_message(
+                                        session_id=session.id,
+                                        role="assistant",
+                                        content="".join(full_llm_chunks),
+                                        mode="llm",
+                                    )
+                                    yield "data: [DONE]\n\n"
+                                    return
+                                else:
+                                    logger.warning(
+                                        "Gemini stream HTTP 200 on model %s returned empty text, trying fallback.",
+                                        model_candidate,
+                                    )
                             else:
                                 logger.warning(
                                     "Gemini stream HTTP %s on model %s, trying fallback if available.",
@@ -870,7 +1199,14 @@ class AnalystService:
                     )
 
         # 2. High-performance deterministic Lens engine fallback
+        yield f"data: {json.dumps({'mode': 'deterministic'})}\n\n"
         full_text = self._generate_deterministic_response(question, ctx, user_id=user_id)
+        self.chat_repo.append_message(
+            session_id=session.id,
+            role="assistant",
+            content=full_text,
+            mode="deterministic",
+        )
         words = full_text.split(" ")
         for i in range(0, len(words), 3):
             chunk = " ".join(words[i : i + 3]) + " "

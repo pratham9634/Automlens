@@ -4,7 +4,12 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
-from app.api.v1.schemas.analyst import ChatRequest, ChatSuggestion
+from app.api.v1.schemas.analyst import (
+    ChatRequest,
+    ChatSuggestion,
+    ClearChatResponse,
+    PersistedMessageResponse,
+)
 from app.api.v1.schemas.common import ErrorResponse
 from app.core.auth import get_current_user, get_gemini_api_key, get_gemini_model
 from app.core.config import get_settings
@@ -57,6 +62,49 @@ def get_chat_suggestions(
     _verify_project_ownership(project_id, current_user, db)
     service = AnalystService(db)
     return service.get_suggestions(project_id, user_id=current_user)
+
+
+@router.get(
+    "/messages",
+    response_model=list[PersistedMessageResponse],
+    status_code=status.HTTP_200_OK,
+    summary="Get persisted conversation history for this project",
+    responses={
+        status.HTTP_404_NOT_FOUND: {"model": ErrorResponse},
+        status.HTTP_403_FORBIDDEN: {"model": ErrorResponse},
+    },
+)
+def get_chat_messages(
+    project_id: str,
+    db: Session = Depends(get_db),
+    current_user: str = Depends(get_current_user),
+) -> list[PersistedMessageResponse]:
+    """Return all stored conversation messages for the current user and project session."""
+    _verify_project_ownership(project_id, current_user, db)
+    service = AnalystService(db)
+    return service.get_messages(project_id, user_id=current_user)
+
+
+@router.delete(
+    "/messages",
+    response_model=ClearChatResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Clear active conversation history for this project",
+    responses={
+        status.HTTP_404_NOT_FOUND: {"model": ErrorResponse},
+        status.HTTP_403_FORBIDDEN: {"model": ErrorResponse},
+    },
+)
+def clear_chat_messages(
+    project_id: str,
+    db: Session = Depends(get_db),
+    current_user: str = Depends(get_current_user),
+) -> ClearChatResponse:
+    """Wipe all persisted conversation messages for the current user in this project."""
+    _verify_project_ownership(project_id, current_user, db)
+    service = AnalystService(db)
+    count = service.clear_messages(project_id, user_id=current_user)
+    return ClearChatResponse(cleared_count=count)
 
 
 @router.post(

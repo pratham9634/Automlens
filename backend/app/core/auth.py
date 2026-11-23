@@ -123,7 +123,14 @@ async def get_gemini_model(
     settings: Settings = Depends(get_settings),
 ) -> str:
     """Extract BYOK Gemini Model from header or server settings fallback."""
-    if x_gemini_model and x_gemini_model.strip():
+    deprecated = {
+        "gemini-2.0-flash",
+        "gemini-2.5-flash",
+        "gemini-2.5-pro",
+        "gemini-1.5-flash",
+        "gemini-1.5-pro",
+    }
+    if x_gemini_model and x_gemini_model.strip() and x_gemini_model.strip() not in deprecated:
         return x_gemini_model.strip()
     return settings.GEMINI_MODEL
 

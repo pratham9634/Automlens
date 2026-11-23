@@ -28,3 +28,20 @@ class ChatSuggestion(BaseModel):
     title: str
     prompt: str
     category: Literal["quality", "models", "features", "executive", "guidance", "security"]
+
+
+class PersistedMessageResponse(BaseModel):
+    """Persisted conversation turn returned to client."""
+
+    id: str
+    role: str
+    content: str
+    mode: str | None = None
+    created_at: str | None = None
+
+
+class ClearChatResponse(BaseModel):
+    """Confirmation of deleted session messages."""
+
+    cleared_count: int
+    message: str = "Chat history cleared successfully."

@@ -34,6 +34,16 @@ class RunRepository:
         )
         return list(self.db.execute(stmt).scalars().all())
 
+    def list_completed_runs(self, project_id: str, limit: int = 50) -> list[TrainingRun]:
+        """List completed training runs for a specific project, ordered newest first."""
+        stmt = (
+            select(TrainingRun)
+            .where(TrainingRun.project_id == project_id, TrainingRun.status == "completed")
+            .order_by(TrainingRun.created_at.desc())
+            .limit(limit)
+        )
+        return list(self.db.execute(stmt).scalars().all())
+
     def update(self, run: TrainingRun) -> TrainingRun:
         """Save updates to an existing TrainingRun entity."""
         self.db.add(run)

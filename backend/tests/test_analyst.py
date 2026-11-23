@@ -227,3 +227,112 @@ def test_analyst_build_context_with_audit_events(client: TestClient) -> None:
         actions = [e["action"] for e in ctx["audit_timeline"]]
         assert "project_created" in actions
         assert "upload_completed" in actions
+
+
+def test_analyst_build_grounding_card() -> None:
+    """Verify that _build_grounding_card synthesizes a structured Markdown card."""
+    with SessionLocal() as db:
+        service = AnalystService(db)
+        mock_ctx = {
+            "project_name": "Titanic Surv",
+            "project_id": "test-pid-1",
+            "authenticated_user_id": "dev_usr",
+            "stage_name": "Stage 4: Training",
+            "next_action": "Inspect predictions.",
+            "dataset": {
+                "total_rows": 891,
+                "total_columns": 11,
+                "quality_score": 88.0,
+                "duplicate_rows_pct": 0.0,
+                "numeric_cols": ["Age", "Fare"],
+                "categorical_cols": ["Sex"],
+                "warnings": [
+                    {"code": "NULLS", "severity": "medium", "col": "Age", "msg": "177 missing"}
+                ],
+                "high_correlations": [{"a": "Pclass", "b": "Fare", "corr": -0.55}],
+            },
+            "leaderboard": {
+                "target_column": "Survived",
+                "task_type": "binary_classification",
+                "primary_metric": "macro_f1",
+                "lower_is_better": False,
+                "top_model": {
+                    "name": "Random Forest",
+                    "score": 0.825,
+                    "train_score": 0.840,
+                    "overfit_gap": 0.015,
+                    "overfit_risk": "low",
+                    "duration_sec": 1.45,
+                },
+                "models": [{"name": "Random Forest", "score": 0.825, "std": 0.02, "is_baseline": False}],
+                "lift_summary": "+15.2% accuracy lift",
+            },
+            "top_features": [{"name": "Sex", "shap": 0.38}],
+            "audit_timeline": [{"action": "target_confirmed", "reason": "Target locked"}],
+        }
+
+        card = service._build_grounding_card(mock_ctx)
+        assert "WORKSPACE CONTEXT: Titanic Surv" in card
+        assert "DATASET TELEMETRY (VERIFIED FACTS)" in card
+        assert "891 rows × 11 features" in card
+        assert "CROSS-VALIDATION LEADERBOARD" in card
+        assert "Random Forest" in card
+        assert "Validation Score: 0.825" in card
+        assert "GLOBAL FEATURE IMPORTANCE" in card
+        assert "mean |SHAP| = 0.38" in card
+
+
+def test_analyst_chat_persistence_and_clearing(client: TestClient) -> None:
+    """Verify that conversation turns are persisted in database and can be fetched and cleared."""
+    unique_name = f"PersistChat {uuid.uuid4().hex[:8]}"
+    create_res = client.post("/api/v1/projects", json={"name": unique_name})
+    assert create_res.status_code == 201
+    project_id = create_res.json()["id"]
+
+    # 1. Send chat message
+    chat_payload = {"message": "What is the status of my workspace?", "history": []}
+    chat_res = client.post(
+        f"/api/v1/projects/{project_id}/chat",
+        json=chat_payload,
+        headers={"X-Gemini-API-Key": ""},
+    )
+    assert chat_res.status_code == 200
+
+    # 2. Fetch persisted messages
+    msgs_res = client.get(f"/api/v1/projects/{project_id}/chat/messages")
+    assert msgs_res.status_code == 200
+    messages = msgs_res.json()
+    assert len(messages) >= 2
+    assert messages[0]["role"] == "user"
+    assert messages[0]["content"] == "What is the status of my workspace?"
+    assert messages[1]["role"] == "assistant"
+    assert len(messages[1]["content"]) > 0
+
+    # 3. Clear conversation
+    del_res = client.delete(f"/api/v1/projects/{project_id}/chat/messages")
+    assert del_res.status_code == 200
+    assert del_res.json()["cleared_count"] >= 2
+
+    # 4. Confirm messages are gone
+    msgs_after = client.get(f"/api/v1/projects/{project_id}/chat/messages")
+    assert msgs_after.status_code == 200
+    assert len(msgs_after.json()) == 0
+
+
+def test_analyst_tool_execution_safety() -> None:
+    """Verify safe execution of telemetry tools on a project."""
+    with SessionLocal() as db:
+        service = AnalystService(db)
+
+        # 1. Unknown tool
+        unknown_res = service.execute_tool("fake-proj", "non_existent_tool", {})
+        assert "error" in unknown_res
+        assert "Unknown tool" in unknown_res["error"]
+
+        # 2. Missing model
+        model_res = service.execute_tool("fake-proj", "get_model_diagnostics", {"model_name_or_id": "XGBoost"})
+        assert "error" in model_res
+
+        # 3. Column distribution for unprofiled project
+        col_res = service.execute_tool("fake-proj", "query_column_distribution", {"column_name": "Age"})
+        assert "error" in col_res

@@ -501,6 +501,23 @@ export const apiClient = {
   getChatSuggestions: (projectId: string) =>
     request<ChatSuggestion[]>(`/projects/${projectId}/chat/suggestions`),
 
+  getChatMessages: (projectId: string) =>
+    request<
+      Array<{
+        id: string;
+        role: "user" | "assistant" | "system";
+        content: string;
+        mode?: string | null;
+        created_at?: string | null;
+      }>
+    >(`/projects/${projectId}/chat/messages`),
+
+  clearChatMessages: (projectId: string) =>
+    request<{ cleared_count: number; message: string }>(
+      `/projects/${projectId}/chat/messages`,
+      { method: "DELETE" }
+    ),
+
   streamChat: async (
     projectId: string,
     message: string,
@@ -509,6 +526,7 @@ export const apiClient = {
       onChunk: (text: string) => void;
       onDone: () => void;
       onError: (err: string) => void;
+      onMode?: (mode: "llm" | "deterministic") => void;
     }
   ): Promise<() => void> => {
     const controller = new AbortController();
@@ -525,7 +543,16 @@ export const apiClient = {
         if (geminiKey && geminiKey.trim()) {
           headers["X-Gemini-API-Key"] = geminiKey.trim();
         }
-        const geminiModel = localStorage.getItem("automlens_gemini_model") || "gemini-3.5-flash-lite";
+        let geminiModel =
+          localStorage.getItem("automlens_gemini_model") || "gemini-3.5-flash-lite";
+        if (
+          geminiModel.includes("2.0") ||
+          geminiModel.includes("1.5") ||
+          geminiModel.includes("2.5")
+        ) {
+          geminiModel = "gemini-3.5-flash-lite";
+          localStorage.setItem("automlens_gemini_model", geminiModel);
+        }
         headers["X-Gemini-Model"] = geminiModel;
       }
 
@@ -554,31 +581,44 @@ export const apiClient = {
             const { value, done } = await reader.read();
             if (done) break;
             buffer += decoder.decode(value, { stream: true });
-            const lines = buffer.split("\n\n");
-            buffer = lines.pop() || "";
 
-            for (const line of lines) {
-              const trimmed = line.trim();
-              if (trimmed.startsWith("data: ")) {
-                const dataPart = trimmed.slice(6).trim();
-                if (dataPart === "[DONE]") {
-                  callbacks.onDone();
-                  return;
-                }
-                try {
-                  const parsed = JSON.parse(dataPart);
-                  if (parsed.text) {
-                    callbacks.onChunk(parsed.text);
+            // Process all complete SSE blocks terminated by double newline
+            let boundary = buffer.indexOf("\n\n");
+            while (boundary !== -1) {
+              const rawEvent = buffer.slice(0, boundary);
+              buffer = buffer.slice(boundary + 2);
+
+              const lines = rawEvent.split("\n");
+              for (const rawLine of lines) {
+                const line = rawLine.trim();
+                if (line.startsWith("data: ")) {
+                  const dataPart = line.slice(6).trim();
+                  if (dataPart === "[DONE]") {
+                    callbacks.onDone();
+                    return;
                   }
-                } catch {
-                  callbacks.onChunk(dataPart);
+                  try {
+                    const parsed = JSON.parse(dataPart);
+                    if (parsed.mode && callbacks.onMode) {
+                      callbacks.onMode(parsed.mode);
+                    }
+                    if (parsed.text) {
+                      callbacks.onChunk(parsed.text);
+                    }
+                  } catch {
+                    // Prevent raw JSON, unparsed fragments, or duplicate tokens from polluting the UI
+                    if (!dataPart.startsWith("{") && !dataPart.startsWith("[")) {
+                      callbacks.onChunk(dataPart);
+                    }
+                  }
                 }
               }
+              boundary = buffer.indexOf("\n\n");
             }
           }
           callbacks.onDone();
-        } catch (err: any) {
-          if (err.name !== "AbortError") {
+        } catch (err: unknown) {
+          if (err instanceof Error && err.name !== "AbortError") {
             callbacks.onError(err.message || "Stream read error");
           }
         }
