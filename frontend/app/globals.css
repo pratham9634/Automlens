@@ -346,6 +346,45 @@ html.lenis body {
   font-feature-settings: 'tnum' 1;
 }
 
+/* Motion & Reduced-Motion Guards */
+@keyframes am-panel-enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.am-panel-enter {
+  animation: am-panel-enter 180ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.am-collapse {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.am-collapse[data-open="true"] {
+  grid-template-rows: 1fr;
+}
+
+.am-collapse > div {
+  overflow: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .am-panel-enter {
+    animation: none !important;
+  }
+  .am-collapse {
+    transition: none !important;
+  }
+}
+
 /* Print Styles for Viva Defense Summary */
 @media print {
   body {

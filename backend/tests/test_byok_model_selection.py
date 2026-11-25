@@ -9,9 +9,9 @@ from app.core.config import Settings
 @pytest.mark.asyncio
 async def test_get_gemini_model_custom_header():
     """Test extracting custom X-Gemini-Model header."""
-    settings = Settings(GEMINI_MODEL="gemini-2.0-flash")
-    result = await get_gemini_model(x_gemini_model="gemini-1.5-pro", settings=settings)
-    assert result == "gemini-1.5-pro"
+    settings = Settings(GEMINI_MODEL="gemini-2.5-flash")
+    result = await get_gemini_model(x_gemini_model="gemini-3.0-pro", settings=settings)
+    assert result == "gemini-3.0-pro"
 
 
 @pytest.mark.asyncio

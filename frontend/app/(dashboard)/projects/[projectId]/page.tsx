@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import {
   ArrowLeft,
   Calendar,
@@ -94,6 +94,34 @@ const secondaryTabs = [
   { id: "audit", label: "Audit Ledger", icon: History },
 ];
 
+const VALID_TABS = new Set([
+  "dataset",
+  "target",
+  "training",
+  "leaderboard",
+  "predict",
+  "explanations",
+  "audit",
+  "exports",
+]);
+
+function TabParamSync({
+  onSyncTab,
+}: {
+  onSyncTab: (tab: string) => void;
+}) {
+  const searchParams = useSearchParams();
+  const tabParam = searchParams?.get("tab");
+
+  useEffect(() => {
+    if (tabParam && VALID_TABS.has(tabParam)) {
+      onSyncTab(tabParam);
+    }
+  }, [tabParam, onSyncTab]);
+
+  return null;
+}
+
 export default function ProjectWorkspacePage() {
   const params = useParams();
   const router = useRouter();
@@ -107,6 +135,19 @@ export default function ProjectWorkspacePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("dataset");
+  const selectTab = useCallback(
+    (nextTab: string) => {
+      if (!VALID_TABS.has(nextTab)) return;
+      setActiveTab(nextTab);
+      if (projectId) {
+        router.replace(`/projects/${projectId}?tab=${nextTab}`, { scroll: false });
+      }
+    },
+    [projectId, router]
+  );
+  const syncTabFromUrl = useCallback((tabFromUrl: string) => {
+    setActiveTab((prev) => (prev === tabFromUrl ? prev : tabFromUrl));
+  }, []);
   const [deleting, setDeleting] = useState(false);
   const [resetting, setResetting] = useState(false);
   const [cloning, setCloning] = useState(false);
@@ -185,7 +226,7 @@ export default function ProjectWorkspacePage() {
     try {
       const updated = await apiClient.resetProject(project.id);
       setProject(updated);
-      setActiveTab("dataset");
+      selectTab("dataset");
       setShowResetModal(false);
     } catch (err) {
       setResetError(err instanceof Error ? err.message : "Failed to reset workspace");
@@ -272,6 +313,10 @@ export default function ProjectWorkspacePage() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
+      <Suspense fallback={null}>
+        <TabParamSync onSyncTab={syncTabFromUrl} />
+      </Suspense>
+
       {/* Top Navigation & Workspace Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <Link
@@ -285,7 +330,7 @@ export default function ProjectWorkspacePage() {
         {/* Header Action Suite: Clone, Reset, Delete, Executive Report */}
         <div className="flex items-center gap-2 flex-wrap">
           <button
-            onClick={() => setActiveTab("exports")}
+            onClick={() => selectTab("exports")}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border-2 border-border bg-yellow-200 dark:bg-yellow-900/60 hover:bg-yellow-300 dark:hover:bg-yellow-800/80 text-xs font-mono font-bold text-slate-950 dark:text-yellow-200 shadow-neo-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-neo active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all cursor-pointer"
             title="Jump to Executive Report & Exports"
           >
@@ -377,16 +422,22 @@ export default function ProjectWorkspacePage() {
               (step.id === "training" && isTrainingReady) ||
               (step.id === "predict" && isResultsReady);
 
+            const isCompleted =
+              (step.id === "dataset" && isTargetReady) ||
+              (step.id === "target" && isTrainingReady) ||
+              (step.id === "training" && isResultsReady) ||
+              (step.id === "predict" && isResultsReady);
+
             return (
               <button
                 key={step.id}
                 onClick={() => {
                   if (isAccessible) {
-                    setActiveTab(step.id);
+                    selectTab(step.id);
                   }
                 }}
                 disabled={!isAccessible}
-                className={`p-3.5 rounded-card border-2 border-border text-left transition-all duration-100 flex flex-col justify-between ${
+                className={`p-3.5 rounded-card border-2 border-border text-left transition-all duration-150 flex flex-col justify-between ${
                   isCurrent
                     ? "bg-sky-100 dark:bg-sky-950/80 shadow-neo -translate-x-0.5 -translate-y-0.5 font-bold text-text-primary"
                     : isAccessible
@@ -399,14 +450,18 @@ export default function ProjectWorkspacePage() {
                     className={`p-1.5 rounded-md border-2 border-border ${
                       isCurrent
                         ? "bg-surface text-accent shadow-[2px_2px_0px_0px_var(--neo-shadow-color)]"
+                        : isCompleted
+                        ? "bg-emerald-100 dark:bg-emerald-950/60 text-success"
                         : "bg-surface-subtle text-text-muted"
                     }`}
                   >
                     <Icon className="w-3.5 h-3.5" />
                   </span>
-                  {isCurrent && (
+                  {isCurrent ? (
                     <span className="w-2.5 h-2.5 rounded-full bg-accent animate-pulse" />
-                  )}
+                  ) : isCompleted ? (
+                    <CheckCircle2 className="w-3.5 h-3.5 text-success" />
+                  ) : null}
                 </div>
                 <div>
                   <div
@@ -428,7 +483,7 @@ export default function ProjectWorkspacePage() {
         {/* Secondary Sub-Tabs for Fast Access */}
         <div className="flex items-center gap-1 border-b-2 border-border overflow-x-auto pb-px text-xs font-mono font-bold">
           <button
-            onClick={() => setActiveTab("dataset")}
+            onClick={() => selectTab("dataset")}
             className={`px-3 py-2 border-b-2 transition-all cursor-pointer ${
               activeTab === "dataset"
                 ? "border-accent text-accent font-black bg-surface-subtle/50"
@@ -438,20 +493,20 @@ export default function ProjectWorkspacePage() {
             Dataset &amp; Quality
           </button>
           <button
-            onClick={() => setActiveTab("target")}
+            onClick={() => selectTab("target")}
             disabled={!isTargetReady}
-            className={`px-3 py-1.5 border-b-2 transition-colors ${
+            className={`px-3 py-2 border-b-2 transition-all cursor-pointer ${
               activeTab === "target"
-                ? "border-cyan-400 text-cyan-400 font-semibold shadow-[0_2px_8px_rgba(6,182,212,0.3)]"
+                ? "border-accent text-accent font-black bg-surface-subtle/50"
                 : isTargetReady
-                ? "border-transparent text-ink-muted hover:text-ink"
-                : "border-transparent text-ink-faint cursor-not-allowed opacity-40"
+                ? "border-transparent text-text-muted hover:text-text-primary hover:bg-surface-subtle/30"
+                : "border-transparent text-text-subtle cursor-not-allowed opacity-40"
             }`}
           >
             Target &amp; Decision
           </button>
           <button
-            onClick={() => setActiveTab("training")}
+            onClick={() => selectTab("training")}
             disabled={!isTrainingReady}
             className={`px-3 py-2 border-b-2 transition-all cursor-pointer ${
               activeTab === "training"
@@ -464,7 +519,7 @@ export default function ProjectWorkspacePage() {
             Training Monitor
           </button>
           <button
-            onClick={() => setActiveTab("leaderboard")}
+            onClick={() => selectTab("leaderboard")}
             disabled={!isResultsReady}
             className={`px-3 py-2 border-b-2 transition-all cursor-pointer ${
               activeTab === "leaderboard"
@@ -477,7 +532,7 @@ export default function ProjectWorkspacePage() {
             Leaderboard
           </button>
           <button
-            onClick={() => setActiveTab("predict")}
+            onClick={() => selectTab("predict")}
             disabled={!isResultsReady}
             className={`px-3 py-2 border-b-2 transition-all cursor-pointer ${
               activeTab === "predict"
@@ -490,7 +545,7 @@ export default function ProjectWorkspacePage() {
             Predict &amp; What-If
           </button>
           <button
-            onClick={() => setActiveTab("explanations")}
+            onClick={() => selectTab("explanations")}
             disabled={!isResultsReady}
             className={`px-3 py-2 border-b-2 transition-all cursor-pointer ${
               activeTab === "explanations"
@@ -503,7 +558,7 @@ export default function ProjectWorkspacePage() {
             SHAP Explainability
           </button>
           <button
-            onClick={() => setActiveTab("audit")}
+            onClick={() => selectTab("audit")}
             className={`px-3 py-2 border-b-2 transition-all cursor-pointer ${
               activeTab === "audit"
                 ? "border-accent text-accent font-black bg-surface-subtle/50"
@@ -513,7 +568,7 @@ export default function ProjectWorkspacePage() {
             Audit Ledger
           </button>
           <button
-            onClick={() => setActiveTab("exports")}
+            onClick={() => selectTab("exports")}
             className={`px-3 py-2 border-b-2 transition-all cursor-pointer ${
               activeTab === "exports"
                 ? "border-accent text-accent font-black bg-surface-subtle/50"
@@ -654,7 +709,7 @@ export default function ProjectWorkspacePage() {
                 </div>
 
                 <button
-                  onClick={() => setActiveTab("target")}
+                  onClick={() => selectTab("target")}
                   className="inline-flex items-center gap-2 px-4 py-2 rounded-md border-2 border-border bg-sky-200 dark:bg-sky-900/80 hover:bg-sky-300 dark:hover:bg-sky-800 text-slate-950 dark:text-sky-200 text-xs font-mono font-bold shadow-neo-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-neo active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all cursor-pointer shrink-0"
                 >
                   <span>Proceed to Step 2: AI Strategy &amp; Target</span>
@@ -678,77 +733,91 @@ export default function ProjectWorkspacePage() {
 
       {/* Active Tab: AI Target & Decision Engine */}
       {activeTab === "target" && (
-        <TargetDecisionView
-          projectId={project.id}
-          onTargetConfirmed={() => {
-            setProject((prev) =>
-              prev ? { ...prev, status: "target_confirmed" } : null
-            );
-          }}
-          onNavigateToTraining={() => {
-            setActiveTab("training");
-          }}
-        />
+        <div key="target" className="am-panel-enter">
+          <TargetDecisionView
+            projectId={project.id}
+            onTargetConfirmed={() => {
+              setProject((prev) =>
+                prev ? { ...prev, status: "target_confirmed" } : null
+              );
+            }}
+            onNavigateToTraining={() => {
+              selectTab("training");
+            }}
+          />
+        </div>
       )}
 
       {/* Active Tab: Parallel Multi-Model Training */}
       {activeTab === "training" && (
-        <TrainingDashboard
-          projectId={project.id}
-          onTrainingCompleted={() => {
-            setProject((prev) =>
-              prev ? { ...prev, status: "trained" } : null
-            );
-          }}
-          onNavigateToLeaderboard={() => {
-            setActiveTab("leaderboard");
-          }}
-        />
+        <div key="training" className="am-panel-enter">
+          <TrainingDashboard
+            projectId={project.id}
+            onTrainingCompleted={() => {
+              setProject((prev) =>
+                prev ? { ...prev, status: "trained" } : null
+              );
+            }}
+            onNavigateToLeaderboard={() => {
+              selectTab("leaderboard");
+            }}
+          />
+        </div>
       )}
 
       {/* Active Tab: Model Leaderboard & Inspector */}
       {activeTab === "leaderboard" && (
-        <ModelLeaderboard
-          projectId={project.id}
-          onNavigateToPredict={(modelId) => {
-            setSelectedPredictModelId(modelId);
-            setActiveTab("predict");
-          }}
-          onNavigateToTraining={() => {
-            setActiveTab("training");
-          }}
-        />
+        <div key="leaderboard" className="am-panel-enter">
+          <ModelLeaderboard
+            projectId={project.id}
+            onNavigateToPredict={(modelId) => {
+              setSelectedPredictModelId(modelId);
+              selectTab("predict");
+            }}
+            onNavigateToTraining={() => {
+              selectTab("training");
+            }}
+          />
+        </div>
       )}
 
       {/* Active Tab: Single, Batch & What-If Predictions */}
       {activeTab === "predict" && (
-        <PredictionView
-          projectId={project.id}
-          initialSelectedModelId={selectedPredictModelId}
-          onNavigateToTraining={() => {
-            setActiveTab("training");
-          }}
-        />
+        <div key="predict" className="am-panel-enter">
+          <PredictionView
+            projectId={project.id}
+            initialSelectedModelId={selectedPredictModelId}
+            onNavigateToTraining={() => {
+              selectTab("training");
+            }}
+          />
+        </div>
       )}
 
       {/* Active Tab: SHAP Model Interpretability */}
       {activeTab === "explanations" && (
-        <ExplanationView
-          projectId={project.id}
-          onNavigateToTraining={() => {
-            setActiveTab("training");
-          }}
-        />
+        <div key="explanations" className="am-panel-enter">
+          <ExplanationView
+            projectId={project.id}
+            onNavigateToTraining={() => {
+              selectTab("training");
+            }}
+          />
+        </div>
       )}
 
       {/* Active Tab: Immutable Audit Ledger (Phase 9) */}
       {activeTab === "audit" && (
-        <AuditLedger projectId={project.id} />
+        <div key="audit" className="am-panel-enter">
+          <AuditLedger projectId={project.id} />
+        </div>
       )}
 
       {/* Active Tab: Artifact Export Hub & Executive Report */}
       {activeTab === "exports" && (
-        <ExportView projectId={project.id} projectName={project.name} />
+        <div key="exports" className="am-panel-enter">
+          <ExportView projectId={project.id} projectName={project.name} />
+        </div>
       )}
 
       {/* Floating Tabular AI Analyst Trigger & Drawer */}

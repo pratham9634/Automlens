@@ -1,0 +1,103 @@
+/* AutoMLens Look for Stageshow — mapped directly from app/globals.css tokens
+   (Warm Titanium / Alabaster in Light Mode, Deep Obsidian in Dark Mode) */
+
+.look-automlens .ss-stage {
+  --ss-well: #EBE8DF;
+  --ss-canvas: #F4F3EE;
+  --ss-surface: #FCFCFA;
+  --ss-chrome: #FCFCFA;
+  --ss-raised: #FFFFFF;
+
+  --ss-ink-1: rgba(30, 36, 43, 0.045);
+  --ss-ink-2: rgba(30, 36, 43, 0.075);
+  --ss-ink-3: rgba(30, 36, 43, 0.11);
+  --ss-fill: #E2DFD5;
+  --ss-ink-4: rgba(30, 36, 43, 0.15);
+  --ss-ink-5: rgba(30, 36, 43, 0.22);
+
+  --ss-line: rgba(30, 36, 43, 0.14);
+  --ss-line-faint: rgba(30, 36, 43, 0.07);
+
+  --ss-text-strong: #181B1F;
+  --ss-text: #3E4651;
+  --ss-text-faint: #667080;
+  --ss-icon: #3E4651;
+  --ss-icon-faint: #98A2B3;
+
+  --ss-accent: #0284C7;
+  --ss-accent-2: #007A87;
+  --ss-accent-soft: rgba(2, 132, 199, 0.12);
+  --ss-accent-text: #0369A1;
+
+  --ss-success: #059669;
+  --ss-success-soft: rgba(5, 150, 105, 0.12);
+  --ss-success-text: #047857;
+  --ss-warning: #D97706;
+  --ss-warning-soft: rgba(217, 119, 6, 0.14);
+  --ss-warning-text: #B45309;
+  --ss-danger: #DC2626;
+  --ss-danger-soft: rgba(220, 38, 38, 0.12);
+  --ss-danger-text: #B91C1C;
+
+  --ss-font: var(--font-sans), 'Arimo', system-ui, sans-serif;
+  --ss-mono: var(--font-mono), 'Geist Mono', ui-monospace, monospace;
+
+  --ss-radius-sm: 6px;
+  --ss-radius-md: 8px;
+  --ss-radius-lg: 10px;
+  --ss-radius-window: 12px;
+  --ss-radius-pill: 999px;
+  --ss-control: 34px;
+  --ss-row: 28px;
+
+  --ss-shadow-window: 0 0 0 1.5px rgba(30, 36, 43, 0.16), 0 10px 28px -8px rgba(30, 36, 43, 0.16);
+  --ss-shadow-hero: 0 0 0 1.5px rgba(30, 36, 43, 0.2), 0 28px 56px -16px rgba(24, 27, 31, 0.22), 0 12px 24px -12px rgba(24, 27, 31, 0.14);
+  --ss-shadow-satellite: 0 0 0 1.5px rgba(30, 36, 43, 0.22), 0 18px 38px -10px rgba(24, 27, 31, 0.24), 0 4px 10px -4px rgba(24, 27, 31, 0.12);
+  --ss-shadow-ground: 0 0 0 1.5px rgba(30, 36, 43, 0.14), 0 20px 40px -20px rgba(24, 27, 31, 0.18);
+  --ss-shadow-float: 0 0 0 1.5px rgba(30, 36, 43, 0.18), 0 10px 28px -6px rgba(24, 27, 31, 0.18);
+}
+
+.look-automlens .ss-stage[data-theme="dark"] {
+  --ss-well: #090D16;
+  --ss-canvas: #0E1525;
+  --ss-surface: #0F172A;
+  --ss-chrome: #131C31;
+  --ss-raised: #1E293B;
+
+  --ss-ink-1: rgba(248, 250, 252, 0.05);
+  --ss-ink-2: rgba(248, 250, 252, 0.08);
+  --ss-ink-3: rgba(248, 250, 252, 0.12);
+  --ss-fill: #243247;
+  --ss-ink-4: rgba(248, 250, 252, 0.16);
+  --ss-ink-5: rgba(248, 250, 252, 0.24);
+
+  --ss-line: rgba(148, 163, 184, 0.22);
+  --ss-line-faint: rgba(148, 163, 184, 0.12);
+
+  --ss-text-strong: #F8FAFC;
+  --ss-text: #CBD5E1;
+  --ss-text-faint: #94A3B8;
+  --ss-icon: #CBD5E1;
+  --ss-icon-faint: #64748B;
+
+  --ss-accent: #38BDF8;
+  --ss-accent-2: #06B6D4;
+  --ss-accent-soft: rgba(56, 189, 248, 0.16);
+  --ss-accent-text: #7DD3FC;
+
+  --ss-success: #10B981;
+  --ss-success-soft: rgba(16, 185, 129, 0.16);
+  --ss-success-text: #34D399;
+  --ss-warning: #F59E0B;
+  --ss-warning-soft: rgba(245, 158, 11, 0.16);
+  --ss-warning-text: #FBBF24;
+  --ss-danger: #EF4444;
+  --ss-danger-soft: rgba(239, 68, 68, 0.16);
+  --ss-danger-text: #F87171;
+
+  --ss-shadow-window: 0 0 0 1px rgba(148, 163, 184, 0.2), 0 8px 24px rgba(0, 0, 0, 0.5);
+  --ss-shadow-hero: 0 0 0 1px rgba(148, 163, 184, 0.24), 0 30px 60px -12px rgba(0, 0, 0, 0.72);
+  --ss-shadow-satellite: 0 0 0 1px rgba(148, 163, 184, 0.28), 0 18px 38px -8px rgba(0, 0, 0, 0.78);
+  --ss-shadow-ground: 0 0 0 1px rgba(148, 163, 184, 0.2), 0 24px 48px -20px rgba(0, 0, 0, 0.65);
+  --ss-shadow-float: 0 0 0 1px rgba(148, 163, 184, 0.26), 0 12px 32px rgba(0, 0, 0, 0.65);
+}

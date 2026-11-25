@@ -44,9 +44,9 @@ export function Scene04Experiment() {
       <div className="my-auto py-2 space-y-3">
         
         {/* Architectural Explanatory Pill */}
-        <div className="p-2 rounded-md bg-[var(--story-surface-subtle)] border border-[var(--story-border)] text-[10px] font-mono text-[var(--story-text-secondary)] flex items-center justify-between">
-          <span>DATASET SPLIT $\rightarrow$ FIT PREPROCESSING ON TRAIN $\rightarrow$ FIT ESTIMATORS $\rightarrow$ EVALUATE VALIDATION</span>
-          <span className="font-bold text-[var(--story-text-primary)]">sklearn.pipeline.Pipeline</span>
+        <div className="p-2 rounded-md bg-[var(--story-surface-subtle)] border border-[var(--story-border)] text-[10px] font-mono text-[var(--story-text-secondary)] flex items-center justify-between gap-2">
+          <span className="truncate">DATASET SPLIT → FIT PREPROCESSING ON TRAIN → FIT ESTIMATORS → EVALUATE VALIDATION</span>
+          <span className="font-bold text-[var(--story-text-primary)] shrink-0">sklearn.pipeline.Pipeline</span>
         </div>
 
         {/* 5 Distinct Folds Pipeline Grid */}

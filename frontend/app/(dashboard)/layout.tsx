@@ -16,7 +16,7 @@ export default function DashboardLayout({
   return (
     <ELI5Provider>
       <AuthSync />
-      <div className="flex min-h-screen bg-canvas text-text-primary selection:bg-cyan-500/25 selection:text-cyan-200">
+      <div className="flex min-h-screen bg-canvas text-text-primary selection:bg-accent/20 selection:text-text-primary">
         <Sidebar />
         <MobileSidebarDrawer
           isOpen={mobileOpen}

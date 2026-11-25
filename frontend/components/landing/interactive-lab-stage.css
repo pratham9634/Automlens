@@ -1,0 +1,143 @@
+/* Optical Lab Bench Stage — scoped under .am-lab-stage */
+.am-lab-stage .ss-stage {
+  border-radius: 16px;
+  overflow: hidden;
+  border: 2px solid var(--border);
+  box-shadow: var(--neo-shadow);
+}
+
+.am-lab-stage .am-lab-win {
+  position: absolute;
+  left: 24px;
+  top: 22px;
+  width: 872px;
+  height: 368px;
+  box-shadow: var(--ss-shadow-hero);
+}
+
+.am-lab-stage .ss-stage[data-layout="compact"] .am-lab-win {
+  left: 14px;
+  top: 14px;
+  width: 330px;
+  height: 376px;
+}
+
+.am-lab-stage .am-lab-body {
+  padding: 16px 20px;
+  display: grid;
+  gap: 12px;
+}
+
+.am-lab-stage .ss-stage[data-layout="compact"] .am-lab-body {
+  padding: 12px 13px;
+  gap: 10px;
+}
+
+.am-lab-stage .am-lab-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--ss-mono);
+  font-size: 11.5px;
+}
+
+.am-lab-stage .am-lab-table th {
+  text-align: left;
+  padding: 6px 10px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ss-text-faint);
+  border-bottom: 1px solid var(--ss-line);
+}
+
+.am-lab-stage .am-lab-table td {
+  padding: 9px 10px;
+  border-bottom: 1px solid var(--ss-line-faint);
+  color: var(--ss-text-strong);
+}
+
+.am-lab-stage .am-lab-row-flag {
+  background: var(--ss-warning-soft);
+  transition: background 240ms ease;
+}
+
+.am-lab-stage .am-lab-row-flag[data-fixed="true"] {
+  background: var(--ss-success-soft);
+}
+
+.am-lab-stage .am-lab-nan {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px;
+  border-radius: var(--ss-radius-sm);
+  border: 1px solid color-mix(in srgb, var(--ss-danger) 45%, transparent);
+  background: var(--ss-danger-soft);
+  color: var(--ss-danger-text);
+  font-weight: 700;
+  font-size: 10.5px;
+  transition: transform 120ms ease, background 200ms ease;
+}
+
+.am-lab-stage .am-lab-nan[data-fixed="true"] {
+  border-color: color-mix(in srgb, var(--ss-success) 50%, transparent);
+  background: var(--ss-success-soft);
+  color: var(--ss-success-text);
+}
+
+.am-lab-stage .am-lab-audit {
+  padding: 10px 13px;
+  border-radius: var(--ss-radius-md);
+  border: 1px dashed color-mix(in srgb, var(--ss-accent) 45%, transparent);
+  background: var(--ss-accent-soft);
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--ss-text-strong);
+}
+
+.am-lab-stage .am-lab-stream {
+  padding: 11px 14px;
+  border-radius: var(--ss-radius-md);
+  border: 1px solid var(--ss-line);
+  background: var(--ss-canvas);
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--ss-text-strong);
+  display: grid;
+  gap: 5px;
+}
+
+.am-lab-stage .am-race-card {
+  padding: 11px 14px;
+  border-radius: var(--ss-radius-md);
+  border: 1px solid var(--ss-line);
+  background: var(--ss-surface);
+  display: grid;
+  gap: 8px;
+}
+
+.am-lab-stage .am-race-card[data-champ="true"] {
+  border-color: color-mix(in srgb, var(--ss-success) 55%, transparent);
+  background: color-mix(in srgb, var(--ss-success-soft) 50%, var(--ss-surface));
+}
+
+.am-lab-stage .am-race-card[data-base="true"] {
+  border-style: dashed;
+  opacity: 0.78;
+}
+
+.am-lab-stage .am-race-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.am-lab-stage .am-xray-row {
+  padding: 10px 12px;
+  border-radius: var(--ss-radius-md);
+  border: 1px solid var(--ss-line-faint);
+  background: var(--ss-canvas);
+  display: grid;
+  gap: 6px;
+}

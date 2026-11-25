@@ -137,10 +137,10 @@ export function DatasetUploadZone({
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         onClick={() => !uploading && fileInputRef.current?.click()}
-        className={`relative rounded-card border-2 border-dashed p-8 sm:p-10 text-center transition-all cursor-pointer flex flex-col items-center justify-center space-y-3 ${
+        className={`group relative rounded-card border-2 border-dashed p-8 sm:p-10 text-center transition-all duration-150 cursor-pointer flex flex-col items-center justify-center space-y-3 ${
           isDragging
-            ? "border-accent bg-accent/5 scale-[1.005]"
-            : "border-border hover:border-border-strong bg-surface hover:bg-surface-subtle"
+            ? "border-accent bg-accent/10 shadow-neo scale-[1.01]"
+            : "border-border hover:border-border-strong bg-surface hover:bg-surface-subtle shadow-neo-sm hover:shadow-neo"
         } ${uploading ? "pointer-events-none opacity-80" : ""}`}
       >
         <input
@@ -219,7 +219,7 @@ export function DatasetUploadZone({
               e.stopPropagation();
               handleDemoLoad("titanic");
             }}
-            className="p-3.5 rounded-card border border-border bg-surface-subtle hover:bg-surface-hover/80 hover:border-accent/40 text-left transition-all disabled:opacity-50 group flex flex-col justify-between cursor-pointer"
+            className="p-3.5 rounded-card border-2 border-border bg-surface-subtle hover:bg-surface shadow-neo-sm hover:shadow-neo hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 active:shadow-none text-left transition-all duration-150 disabled:opacity-50 group flex flex-col justify-between cursor-pointer"
           >
             <div>
               <div className="flex items-center justify-between mb-1.5">
@@ -246,7 +246,7 @@ export function DatasetUploadZone({
               e.stopPropagation();
               handleDemoLoad("california_housing");
             }}
-            className="p-3.5 rounded-card border border-border bg-surface-subtle hover:bg-surface-hover/80 hover:border-success/40 text-left transition-all disabled:opacity-50 group flex flex-col justify-between cursor-pointer"
+            className="p-3.5 rounded-card border-2 border-border bg-surface-subtle hover:bg-surface shadow-neo-sm hover:shadow-neo hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 active:shadow-none text-left transition-all duration-150 disabled:opacity-50 group flex flex-col justify-between cursor-pointer"
           >
             <div>
               <div className="flex items-center justify-between mb-1.5">

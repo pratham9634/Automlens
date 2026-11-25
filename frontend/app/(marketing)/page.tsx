@@ -7,7 +7,7 @@ import { StoryCtaSection } from "@/components/landing/story-cta-section";
 
 export default function HomePage() {
   return (
-    <div className="flex flex-col w-full selection:bg-cyan-500/25 selection:text-cyan-200">
+    <div className="flex flex-col w-full selection:bg-accent/20 selection:text-text-primary">
       <HeroSection />
       <DatasetMetamorphosis />
       <SketchbookSection />

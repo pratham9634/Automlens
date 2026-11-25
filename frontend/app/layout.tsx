@@ -50,7 +50,7 @@ export default function RootLayout({
         <head>
           <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         </head>
-        <body className="bg-canvas text-text-primary min-h-screen font-sans antialiased selection:bg-cyan-500/25 selection:text-cyan-200">
+        <body className="bg-canvas text-text-primary min-h-screen font-sans antialiased selection:bg-accent/20 selection:text-text-primary">
           <ThemeProvider>
             <SmoothScrollProvider>
               {children}
