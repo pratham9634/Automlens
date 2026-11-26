@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import {
   Layers,
   Cpu,
@@ -29,6 +29,49 @@ export const projectPipelineNav = [
   { id: "audit", label: "Audit Ledger", icon: History },
   { id: "exports", label: "Reports & Exports", icon: HardDriveDownload },
 ];
+
+function SidebarPipelineLinks({
+  projectId,
+  collapsed = false,
+  onNavigate,
+  mobile = false,
+}: {
+  projectId: string;
+  collapsed?: boolean;
+  onNavigate?: () => void;
+  mobile?: boolean;
+}) {
+  const searchParams = useSearchParams();
+  const rawTab = searchParams?.get("tab") || "dataset";
+  const normalizedTab = rawTab === "leaderboard" ? "training" : rawTab;
+
+  return (
+    <div className="space-y-1">
+      {projectPipelineNav.map((item) => {
+        const Icon = item.icon;
+        const isActive = normalizedTab === item.id;
+        return (
+          <Link
+            key={item.id}
+            href={`/projects/${projectId}?tab=${item.id}`}
+            onClick={onNavigate}
+            title={item.label}
+            className={cn(
+              "flex items-center rounded-md transition-all duration-150 font-sans border-2",
+              mobile ? "gap-3 px-3 py-2 text-xs" : "gap-2.5 px-2.5 py-1.5 text-xs",
+              isActive
+                ? "bg-accent/12 text-accent border-border font-bold shadow-neo-sm"
+                : "border-transparent hover:border-border hover:bg-surface-hover hover:shadow-neo-sm font-medium text-text-primary"
+            )}
+          >
+            <Icon className={cn(mobile ? "w-4 h-4" : "w-3.5 h-3.5", "shrink-0", isActive ? "text-accent" : "text-text-muted")} />
+            {!collapsed && <span className="truncate">{item.label}</span>}
+          </Link>
+        );
+      })}
+    </div>
+  );
+}
 
 export function Sidebar() {
   const pathname = usePathname();
@@ -134,24 +177,11 @@ export function Sidebar() {
                 </div>
               )}
 
-              <div className="space-y-1">
-                {projectPipelineNav.map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <Link
-                      key={item.id}
-                      href={`/projects/${projectId}?tab=${item.id}`}
-                      title={item.label}
-                      className={cn(
-                        "flex items-center gap-2.5 px-2.5 py-1.5 text-xs rounded-md transition-all duration-100 font-sans border-2 border-transparent hover:border-border hover:bg-surface-hover hover:shadow-neo-sm font-medium text-text-primary"
-                      )}
-                    >
-                      <Icon className="w-3.5 h-3.5 shrink-0 text-text-muted" />
-                      {!collapsed && <span className="truncate">{item.label}</span>}
-                    </Link>
-                  );
-                })}
-              </div>
+              {projectId && (
+                <Suspense fallback={null}>
+                  <SidebarPipelineLinks projectId={projectId} collapsed={collapsed} />
+                </Suspense>
+              )}
             </div>
           )}
         </nav>
@@ -283,22 +313,15 @@ export function MobileSidebarDrawer({
                     all
                   </Link>
                 </div>
-                <div className="space-y-1">
-                  {projectPipelineNav.map((item) => {
-                    const Icon = item.icon;
-                    return (
-                      <Link
-                        key={item.id}
-                        href={`/projects/${projectId}?tab=${item.id}`}
-                        onClick={onClose}
-                        className="flex items-center gap-3 px-3 py-2 text-xs rounded-md transition-all font-sans border-2 border-transparent hover:border-border hover:bg-surface-hover font-medium text-text-primary"
-                      >
-                        <Icon className="w-4 h-4 shrink-0 text-text-muted" />
-                        <span className="truncate">{item.label}</span>
-                      </Link>
-                    );
-                  })}
-                </div>
+                {projectId && (
+                  <Suspense fallback={null}>
+                    <SidebarPipelineLinks
+                      projectId={projectId}
+                      mobile
+                      onNavigate={onClose}
+                    />
+                  </Suspense>
+                )}
               </div>
             )}
           </nav>

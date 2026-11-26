@@ -6,6 +6,7 @@ import { ArrowRight, Sparkles, ShieldCheck, Cpu, Terminal, ChevronRight } from "
 import { Button } from "@/components/ui/button";
 import { DoodleUnderline, TapeSticker, SketchStamp, MarkerBadge, DoodleArrow } from "./doodle-elements";
 import { HeroGridBackground } from "./hero-grid-background";
+import { HeroProductStage } from "./hero-product-stage";
 
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
@@ -29,27 +30,27 @@ const itemVariants: Variants = {
 
 export function HeroSection() {
   return (
-    <section id="hero-section" className="relative isolate pt-24 pb-20 sm:pt-36 sm:pb-32 lg:pt-40 border-b-2 border-border overflow-hidden bg-canvas">
+    <section id="hero-section" className="relative isolate pt-24 pb-16 sm:pt-32 sm:pb-24 lg:pt-36 border-b-2 border-border overflow-hidden bg-canvas">
       {/* Eye-Soothing Ambient Dual-Mesh Aurora (Cyan + Warm Amber) */}
-      <div className="absolute -top-24 left-1/4 -translate-x-1/2 w-96 sm:w-[540px] h-96 sm:h-[480px] bg-cyan-500/10 dark:bg-cyan-500/8 rounded-full blur-[100px] pointer-events-none" />
-      <div className="absolute top-10 right-1/4 translate-x-1/2 w-80 sm:w-[500px] h-80 sm:h-[440px] bg-amber-400/10 dark:bg-amber-400/6 rounded-full blur-[110px] pointer-events-none" />
+      <div className="absolute -top-24 left-1/4 -translate-x-1/2 w-96 sm:w-[540px] h-96 sm:h-[480px] bg-cyan-500/8 dark:bg-cyan-500/6 rounded-full blur-[100px] pointer-events-none" />
+      <div className="absolute top-10 right-1/4 translate-x-1/2 w-80 sm:w-[500px] h-80 sm:h-[440px] bg-amber-400/8 dark:bg-amber-400/5 rounded-full blur-[110px] pointer-events-none" />
 
       {/* Precision Grid with Lighting Animation (Light & Dark Mode) */}
       <HeroGridBackground />
 
-      {/* Floating decorative sketch stickers in margins */}
-      <div className="hidden xl:block absolute left-10 top-32 lg:top-36 pointer-events-none">
+      {/* Floating decorative sketch stickers in wide margins */}
+      <div className="hidden 2xl:block absolute left-8 top-32 pointer-events-none opacity-90">
         <motion.div
-          animate={{ y: [0, -8, 0], rotate: [-4, -2, -4] }}
+          animate={{ y: [0, -6, 0], rotate: [-4, -2, -4] }}
           transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
         >
           <SketchStamp label="NO CODING REQUIRED" sublabel="Drop in Any CSV or Excel" rotation="-rotate-6" />
         </motion.div>
       </div>
 
-      <div className="hidden xl:block absolute right-12 top-36 lg:top-40 pointer-events-none">
+      <div className="hidden 2xl:block absolute right-8 top-36 pointer-events-none opacity-90">
         <motion.div
-          animate={{ y: [0, 8, 0], rotate: [3, 5, 3] }}
+          animate={{ y: [0, 6, 0], rotate: [3, 5, 3] }}
           transition={{ duration: 6, repeat: Infinity, ease: "easeInOut", delay: 1 }}
         >
           <SketchStamp
@@ -175,6 +176,11 @@ export function HeroSection() {
               </motion.div>
             );
           })}
+        </motion.div>
+
+        {/* Stageshow Interactive Hero Product Stage */}
+        <motion.div variants={itemVariants} className="w-full">
+          <HeroProductStage />
         </motion.div>
       </motion.div>
     </section>

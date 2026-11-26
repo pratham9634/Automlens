@@ -1,74 +1,142 @@
 "use client";
 
-import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import React, { useState } from "react";
+import { Sparkles, Flame, BrainCircuit, RotateCcw } from "lucide-react";
+import { useTheme } from "@/components/theme-provider";
 import {
-  Sparkles,
-  Trophy,
-  CheckCircle2,
-  TrendingUp,
-  BrainCircuit,
-  BarChart2,
-  Cpu,
-  Layers,
-  Flame,
-} from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { SketchStamp, MarkerBadge } from "./doodle-elements";
+  Badge,
+  Collapse,
+  Count,
+  Icon,
+  Meter,
+  Segmented,
+  Stage,
+  States,
+  Stream,
+  Swap,
+  Text,
+  Window,
+  type Act,
+} from "@/components/stageshow/kit";
+import "@/components/stageshow/automlens-look.css";
+import "./interactive-lab-stage.css";
+
+type LensId = "scanner" | "speedway" | "xray";
+
+/* ---------------- Lens 1: AI Data Scanner ---------------- */
+
+type ScannerState = {
+  fixed: boolean;
+  showAudit: boolean;
+  words: number;
+};
+
+const SCANNER_NOTE =
+  "Target 'Survived' shows 38.4% positive class balance. Missing Age imputed via 5-fold local median (28.0 yrs) with zero validation leakage.";
+const SCANNER_WORDS = SCANNER_NOTE.split(" ").length;
+
+async function scannerScript(a: Act<ScannerState>) {
+  await a.wait(600);
+  await a.move("nan-cell");
+  await a.wait(260);
+  await a.click();
+  await a.set({ fixed: true, showAudit: true });
+  await a.move("rest");
+  await a.wait(320);
+
+  for (let i = 4; i <= SCANNER_WORDS; i += 4) {
+    await a.set({ words: Math.min(i, SCANNER_WORDS) });
+    await a.wait(110);
+  }
+  await a.set({ words: SCANNER_WORDS });
+  await a.wait(2800);
+  await a.snap({ fixed: false, showAudit: false, words: 0 });
+  await a.wait(240);
+}
+
+/* ---------------- Lens 2: Kinetic Race Arena ---------------- */
+
+type SpeedwayState = {
+  done: boolean;
+  lgbm: number;
+  rf: number;
+  base: number;
+};
+
+async function speedwayScript(a: Act<SpeedwayState>) {
+  await a.wait(500);
+  await a.move("run-race");
+  await a.wait(220);
+  await a.click();
+  await a.set({ done: true, lgbm: 84.2, rf: 83.5, base: 61.6 });
+  await a.move("rest");
+  await a.wait(3000);
+  await a.snap({ done: false, lgbm: 0, rf: 0, base: 61.6 });
+  await a.wait(260);
+}
+
+/* ---------------- Lens 3: SHAP X-Ray Vectors ---------------- */
+
+type XrayState = {
+  mode: 0 | 1;
+  barsOpen: boolean;
+};
+
+async function xrayScript(a: Act<XrayState>) {
+  await a.wait(500);
+  await a.set({ barsOpen: true });
+  await a.wait(1400);
+  await a.move("xray-math");
+  await a.wait(240);
+  await a.click();
+  await a.set({ mode: 1 });
+  await a.move("rest");
+  await a.wait(2200);
+  await a.move("xray-eli5");
+  await a.wait(240);
+  await a.click();
+  await a.set({ mode: 0 });
+  await a.move("rest");
+  await a.wait(2000);
+}
 
 export function InteractiveExampleSection() {
-  const [activeLens, setActiveLens] = useState<"scanner" | "speedway" | "xray">("scanner");
+  const { resolvedTheme } = useTheme();
+  const [activeLens, setActiveLens] = useState<LensId>("scanner");
+  const [replayKey, setReplayKey] = useState(0);
 
   const lenses = [
     {
-      id: "scanner",
+      id: "scanner" as const,
       icon: Sparkles,
       label: "Lens 01: AI Data Scanner",
       tag: "Live Inspection",
-      accent: "from-amber-500/20 to-amber-500/0 text-amber-500",
     },
     {
-      id: "speedway",
+      id: "speedway" as const,
       icon: Flame,
       label: "Lens 02: Kinetic Race Arena",
       tag: "5-Model Duel",
-      accent: "from-cyan-500/20 to-cyan-500/0 text-accent",
     },
     {
-      id: "xray",
+      id: "xray" as const,
       icon: BrainCircuit,
       label: "Lens 03: SHAP X-Ray Vectors",
       tag: "Plain-English Why",
-      accent: "from-emerald-500/20 to-emerald-500/0 text-emerald-500",
     },
-  ] as const;
+  ];
 
   return (
-    <section id="example" className="py-20 sm:py-28 border-b-2 border-border bg-[#F4F6F9]/70 dark:bg-[#0C0E14] relative overflow-hidden transition-colors">
-      {/* Eye-Soothing Arena Spotlight Glow behind Interactive Container */}
-      <div
-        className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[750px] sm:w-[900px] h-[450px] pointer-events-none rounded-full blur-[100px]"
-        style={{
-          background: "radial-gradient(circle, rgba(14, 165, 233, 0.12) 0%, rgba(99, 102, 241, 0.06) 55%, transparent 80%)",
-        }}
-      />
-      {/* Subtle Horizontal Telemetry Beam */}
-      <div
-        className="absolute top-1/3 left-0 right-0 h-px pointer-events-none opacity-30 dark:opacity-20"
-        style={{
-          background: "linear-gradient(90deg, transparent 0%, rgba(14, 165, 233, 0.6) 50%, transparent 100%)",
-        }}
-      />
-
+    <section
+      id="example"
+      className="py-20 sm:py-28 border-b-2 border-border bg-[#F4F6F9]/70 dark:bg-[#0C0E14] relative overflow-hidden transition-colors"
+    >
       <div className="relative max-w-7xl mx-auto px-4 sm:px-8">
         {/* Section Header */}
-        <div className="text-center max-w-3xl mx-auto mb-12">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border-2 border-border bg-white dark:bg-surface shadow-neo-sm text-xs font-mono font-bold text-accent mb-3">
+        <div className="text-center max-w-3xl mx-auto mb-10">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border-2 border-border bg-surface shadow-neo-sm text-xs font-mono font-bold text-accent mb-3">
             <Flame className="w-3.5 h-3.5 text-amber-500" />
             <span>CHAPTER 03 // THE OPTICAL LAB BENCH</span>
-            <span className="font-marker text-sm font-bold text-amber-500 dark:text-amber-400 -rotate-2 ml-1">
-              ★ The &quot;Lens&quot; in AutoMLens
-            </span>
           </div>
 
           <h2 className="font-display text-3xl sm:text-5xl font-bold tracking-tight text-text-primary mb-3">
@@ -79,19 +147,16 @@ export function InteractiveExampleSection() {
           </h2>
 
           <p className="text-sm sm:text-base text-text-secondary font-sans max-w-2xl mx-auto">
-            Raw tabular data goes in. Switch between three optical inspection lenses below to see the hidden machine learning machinery reveal itself in real-time.
-            <span className="block font-marker text-base sm:text-lg text-emerald-600 dark:text-emerald-400 font-bold mt-1">
-              ✏️ Zero black boxes: every number, recommendation, and prediction is fully explainable.
-            </span>
+            Switch between three interactive optical inspection lenses below to watch data cleaning, 5-fold cross-validation, and SHAP explainability unfold step by step.
           </p>
         </div>
 
-        {/* Optical Lens Selector Dial (Not a generic card tab bar!) */}
-        <div className="max-w-4xl mx-auto mb-8">
+        {/* Optical Lens Selector Dial + Replay */}
+        <div className="max-w-4xl mx-auto mb-6 flex flex-col gap-3">
           <div className="p-1.5 sm:p-2 rounded-2xl border-2 border-border bg-surface shadow-neo flex flex-col sm:flex-row items-stretch justify-between gap-2">
             {lenses.map((lens) => {
               const isSelected = activeLens === lens.id;
-              const Icon = lens.icon;
+              const IconComp = lens.icon;
               return (
                 <button
                   key={lens.id}
@@ -99,8 +164,8 @@ export function InteractiveExampleSection() {
                   onClick={() => setActiveLens(lens.id)}
                   className={`relative flex-1 px-4 py-3 rounded-xl border-2 transition-all cursor-pointer text-left flex items-center justify-between group ${
                     isSelected
-                      ? "border-accent bg-accent/10 shadow-neo-sm scale-[1.01]"
-                      : "border-transparent hover:border-border hover:bg-canvas opacity-80 hover:opacity-100"
+                      ? "border-accent bg-accent/10 shadow-neo-sm"
+                      : "border-transparent hover:border-border hover:bg-canvas opacity-85 hover:opacity-100"
                   }`}
                 >
                   <div className="flex items-center gap-3">
@@ -111,7 +176,7 @@ export function InteractiveExampleSection() {
                           : "bg-surface-subtle text-text-secondary group-hover:text-text-primary"
                       }`}
                     >
-                      <Icon className="w-4 h-4" />
+                      <IconComp className="w-4 h-4" />
                     </div>
                     <div>
                       <span className="font-display text-xs sm:text-sm font-bold text-text-primary block">
@@ -122,360 +187,355 @@ export function InteractiveExampleSection() {
                       </span>
                     </div>
                   </div>
-
-                  {isSelected && (
-                    <span className="w-2 h-2 rounded-full bg-accent animate-ping mr-1" />
-                  )}
                 </button>
               );
             })}
           </div>
+
+          <div className="flex items-center justify-between px-1 text-[11px] font-mono text-text-muted">
+            <span>BENCHMARK ILLUSTRATION // TITANIC SURVIVAL (891 ROWS)</span>
+            <button
+              type="button"
+              onClick={() => setReplayKey((k) => k + 1)}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border-2 border-border bg-surface hover:bg-surface-subtle font-bold text-text-primary shadow-neo-sm cursor-pointer"
+            >
+              <RotateCcw className="w-3 h-3 text-accent" />
+              <span>Replay Lens</span>
+            </button>
+          </div>
         </div>
 
-        {/* The Open Optical Stage (Unboxed, Asymmetric, Living Telemetry) */}
-        <div className="max-w-5xl mx-auto relative">
-          <AnimatePresence mode="wait">
-            {activeLens === "scanner" && (
-              <motion.div
-                key="scanner"
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -16 }}
-                transition={{ type: "spring", stiffness: 380, damping: 24 }}
-                className="space-y-6"
-              >
-                {/* Visual Spreadsheet Strip with Optical Target */}
-                <div className="p-5 sm:p-7 rounded-2xl border-2 border-border bg-surface shadow-neo relative overflow-hidden">
-                  <div className="flex flex-wrap items-center justify-between gap-2 border-b-2 border-border pb-3 mb-4">
-                    <div className="flex items-center gap-2 text-xs font-mono font-bold">
-                      <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse" />
-                      <span>RAW SPREADSHEET SCANNER: titanic_survival_q1.xlsx</span>
-                    </div>
-                    <span className="font-marker font-bold text-sm text-amber-500 -rotate-2">
-                      ★ 891 Rows Analyzed
-                    </span>
-                  </div>
+        {/* Stageshow Interactive Bench */}
+        <div className="max-w-5xl mx-auto am-lab-stage look-automlens">
+          {activeLens === "scanner" && (
+            <Stage<ScannerState>
+              key={`scanner-${replayKey}`}
+              width={920}
+              height={390}
+              compact={{ below: 640, width: 358, height: 390 }}
+              initial={{ fixed: false, showAudit: false, words: 0 }}
+              poster={{ fixed: true, showAudit: true, words: SCANNER_WORDS }}
+              script={scannerScript}
+              theme={resolvedTheme}
+              cursor={{
+                at: { wide: { x: 740, y: 120 }, compact: { x: 290, y: 110 } },
+                ripple: true,
+              }}
+              play="loop"
+            >
+              {(s, _rect, layout) => {
+                const isCompact = layout === "compact";
+                return (
+                  <>
+                    <Window
+                      className="am-lab-win"
+                      title="titanic_survival_q1.xlsx — Health Scanner"
+                      toolbar={
+                        <Badge tone={s.fixed ? "success" : "warning"}>
+                          <States
+                            value={s.fixed ? "clean" : "scan"}
+                            states={{
+                              scan: "1 Missing Value",
+                              clean: "Fold-Safe Ready",
+                            }}
+                          />
+                        </Badge>
+                      }
+                      body={{ "data-crop": true }}
+                    >
+                      <div className="am-lab-body">
+                        <table className="am-lab-table">
+                          <thead>
+                            <tr>
+                              <th>Passenger</th>
+                              {!isCompact && <th>Gender</th>}
+                              <th>Age</th>
+                              {!isCompact && <th>Class</th>}
+                              <th>Target</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <tr>
+                              <td>Owen Harris</td>
+                              {!isCompact && <td>male</td>}
+                              <td>22.0 yrs</td>
+                              {!isCompact && <td>3rd Class</td>}
+                              <td style={{ color: "var(--ss-danger-text)", fontWeight: 700 }}>
+                                0 (Perished)
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>Florence Briggs</td>
+                              {!isCompact && <td>female</td>}
+                              <td>38.0 yrs</td>
+                              {!isCompact && <td>1st Class</td>}
+                              <td style={{ color: "var(--ss-success-text)", fontWeight: 700 }}>
+                                1 (Survived)
+                              </td>
+                            </tr>
+                            <tr className="am-lab-row-flag" data-fixed={s.fixed}>
+                              <td>James Moran</td>
+                              {!isCompact && <td>male</td>}
+                              <td>
+                                <span
+                                  className="am-lab-nan"
+                                  data-target="nan-cell"
+                                  data-cursor="pointer"
+                                  data-fixed={s.fixed}
+                                >
+                                  <States
+                                    value={s.fixed ? "done" : "nan"}
+                                    states={{
+                                      nan: "NaN [MISSING]",
+                                      done: "28.0 yrs (Fold Median)",
+                                    }}
+                                  />
+                                </span>
+                              </td>
+                              {!isCompact && <td>3rd Class</td>}
+                              <td style={{ color: "var(--ss-text-faint)" }}>Hold-out</td>
+                            </tr>
+                          </tbody>
+                        </table>
 
-                  {/* Table Slice */}
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left font-mono text-xs border-collapse">
-                      <thead>
-                        <tr className="border-b border-border text-text-muted text-[11px]">
-                          <th className="py-2 px-3">Passenger</th>
-                          <th className="py-2 px-3">Gender</th>
-                          <th className="py-2 px-3">Age</th>
-                          <th className="py-2 px-3">Class</th>
-                          <th className="py-2 px-3">Ticket Fare</th>
-                          <th className="py-2 px-3">Target</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-border/60 text-text-primary">
-                        <tr>
-                          <td className="py-2.5 px-3 font-sans font-bold">Owen Harris</td>
-                          <td className="py-2.5 px-3">male</td>
-                          <td className="py-2.5 px-3">22.0 yrs</td>
-                          <td className="py-2.5 px-3">3rd Class</td>
-                          <td className="py-2.5 px-3">$7.25</td>
-                          <td className="py-2.5 px-3 text-rose-500 font-bold">0 (Perished)</td>
-                        </tr>
-                        <tr className="bg-amber-50/60 dark:bg-amber-950/20">
-                          <td className="py-2.5 px-3 font-sans font-bold">Florence Briggs</td>
-                          <td className="py-2.5 px-3">female</td>
-                          <td className="py-2.5 px-3">38.0 yrs</td>
-                          <td className="py-2.5 px-3">1st Class</td>
-                          <td className="py-2.5 px-3 font-black text-accent">$71.28</td>
-                          <td className="py-2.5 px-3 text-emerald-600 dark:text-emerald-400 font-bold">1 (Survived)</td>
-                        </tr>
-                        {/* Target Anomaly Row with Optical Magnifier Ring */}
-                        <tr className="bg-rose-50/70 dark:bg-rose-950/30 ring-2 ring-rose-400/80 rounded-lg">
-                          <td className="py-2.5 px-3 font-sans font-bold">James Moran</td>
-                          <td className="py-2.5 px-3">male</td>
-                          <td className="py-2.5 px-3">
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-rose-500 text-white font-black text-[10px] animate-pulse">
-                              NaN [MISSING]
-                            </span>
-                          </td>
-                          <td className="py-2.5 px-3">3rd Class</td>
-                          <td className="py-2.5 px-3">$8.05</td>
-                          <td className="py-2.5 px-3 text-text-muted">Uncertain</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
+                        <Collapse open={s.showAudit}>
+                          <div className="am-lab-audit">
+                            <strong>In-Fold Imputation Guard (ML Rule 1):</strong>{" "}
+                            Missing age imputed strictly inside each training fold (28.0 yrs)—zero test data leakage.
+                          </div>
+                        </Collapse>
 
-                  {/* Optical Annotation Marker Note */}
-                  <div className="mt-4 p-3.5 rounded-xl border-2 border-dashed border-amber-500/60 bg-amber-50/80 dark:bg-amber-950/30 flex items-start gap-3">
-                    <span className="text-xl">🔍</span>
-                    <div>
-                      <strong className="block font-marker text-base text-amber-900 dark:text-amber-200">
-                        AutoMLens Optical Fix Detected:
-                      </strong>
-                      <p className="text-xs font-mono text-text-secondary mt-0.5">
-                        James Moran&apos;s missing age was imputed with the 5-fold local median (28.0 yrs). Notice that zero future test fold data was leaked, maintaining 100% mathematical validity.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* AI Thought Stream Bubble */}
-                <div className="p-5 rounded-2xl border-2 border-border bg-canvas shadow-neo-sm flex items-start gap-4">
-                  <div className="p-3 rounded-xl border-2 border-border bg-accent text-white shadow-neo-sm shrink-0">
-                    <Sparkles className="w-5 h-5 animate-spin" />
-                  </div>
-                  <div className="space-y-1.5">
-                    <div className="flex items-center gap-2">
-                      <span className="font-display text-sm font-bold text-text-primary">
-                        Google Gemini 2.0 Flash AI Analyst:
-                      </span>
-                      <SketchStamp label="STREAMED" color="border-cyan-500 text-cyan-600 dark:text-cyan-400" />
-                    </div>
-                    <p className="text-xs sm:text-sm font-sans text-text-secondary leading-relaxed">
-                      &quot;I scanned your Titanic dataset. Target &apos;Survived&apos; has a 38.4% balance. High-influence drivers: Gender, Ticket Class, and Cabin Location. I have structured a 5-model tournament using Stratified 5-Fold Cross Validation. Ready to race!&quot;
-                    </p>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-
-            {activeLens === "speedway" && (
-              <motion.div
-                key="speedway"
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -16 }}
-                transition={{ type: "spring", stiffness: 380, damping: 24 }}
-                className="space-y-4"
-              >
-                <div className="flex flex-wrap items-center justify-between gap-2 px-2 text-xs font-mono text-text-muted">
-                  <span className="font-bold">5-MODEL CROSS-VALIDATION HORSEPOWER ARENA</span>
-                  <span className="font-marker font-bold text-sm text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2.5 py-0.5 rounded border border-border">
-                    🔥 +22.6% over naive guessing!
-                  </span>
-                </div>
-
-                {/* Champion Track: LightGBM */}
-                <div className="p-5 rounded-2xl border-2 border-border bg-pastel-cyan/30 dark:bg-cyan-950/30 shadow-neo hover:shadow-neo-lg transition-all relative">
-                  <div className="flex flex-wrap items-center justify-between gap-4 mb-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl border-2 border-border bg-yellow-300 text-slate-950 font-mono font-black text-base flex items-center justify-center shadow-neo-sm">
-                        #1
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-display font-bold text-base sm:text-lg text-text-primary">
-                            LightGBM Classifier
-                          </span>
-                          <span className="font-marker text-xs font-bold px-2 py-0.5 rounded border border-border bg-emerald-300 text-slate-950 shadow-[1px_1px_0px_0px_var(--neo-shadow-color)]">
-                            ★ TOURNAMENT CHAMPION
-                          </span>
+                        <div className="am-lab-stream">
+                          <div className="flex items-center justify-between text-[10px] font-mono font-bold" style={{ color: "var(--ss-accent-text)" }}>
+                            <span>GEMINI 3.5 FLASH-LITE / RULE ENGINE</span>
+                            <Badge tone="accent">Streamed</Badge>
+                          </div>
+                          <Stream text={SCANNER_NOTE} count={s.words} />
                         </div>
-                        <span className="text-xs font-mono text-text-muted">
-                          Pipeline: Fold-Safe Median + OneHotEncoder + EarlyStopping
+                      </div>
+                    </Window>
+                    <span
+                      data-target="rest"
+                      style={{
+                        position: "absolute",
+                        left: isCompact ? 290 : 740,
+                        top: isCompact ? 110 : 120,
+                        width: 1,
+                        height: 1,
+                      }}
+                    />
+                  </>
+                );
+              }}
+            </Stage>
+          )}
+
+          {activeLens === "speedway" && (
+            <Stage<SpeedwayState>
+              key={`speedway-${replayKey}`}
+              width={920}
+              height={390}
+              compact={{ below: 640, width: 358, height: 390 }}
+              initial={{ done: false, lgbm: 0, rf: 0, base: 61.6 }}
+              poster={{ done: true, lgbm: 84.2, rf: 83.5, base: 61.6 }}
+              script={speedwayScript}
+              theme={resolvedTheme}
+              cursor={{
+                at: { wide: { x: 640, y: 120 }, compact: { x: 240, y: 110 } },
+                ripple: true,
+              }}
+              play="loop"
+            >
+              {(s, _rect, layout) => {
+                const isCompact = layout === "compact";
+                return (
+                  <>
+                    <Window
+                      className="am-lab-win"
+                      title="5-Fold Cross-Validation Tournament"
+                      toolbar={
+                        <span
+                          data-target="run-race"
+                          data-cursor="pointer"
+                          className="px-2.5 py-1 rounded-md border border-border text-[11px] font-mono font-bold"
+                          style={{
+                            background: s.done ? "var(--ss-success-soft)" : "var(--ss-accent)",
+                            color: s.done ? "var(--ss-success-text)" : "#fff",
+                          }}
+                        >
+                          <States
+                            value={s.done ? "done" : "run"}
+                            states={{ run: "Benchmark Models", done: "5/5 Folds Complete" }}
+                          />
                         </span>
-                      </div>
-                    </div>
+                      }
+                      body={{ "data-crop": true }}
+                    >
+                      <div className="am-lab-body">
+                        <div className="am-race-card" data-champ={s.done}>
+                          <div className="am-race-top">
+                            <div className="flex items-center gap-2">
+                              <Badge tone="success">#1 Champion</Badge>
+                              <Text style={{ fontWeight: 700, fontSize: 13 }}>
+                                HistGradientBoosting
+                              </Text>
+                            </div>
+                            <span style={{ fontFamily: "var(--ss-mono)", fontWeight: 700, fontSize: 15, color: "var(--ss-success-text)" }}>
+                              <Count value={s.lgbm} duration={650} format={(n) => `${n.toFixed(1)}%`} />
+                            </span>
+                          </div>
+                          <Meter value={s.lgbm / 100} tone="success" />
+                          {!isCompact && (
+                            <span style={{ fontFamily: "var(--ss-mono)", fontSize: 10.5, color: "var(--ss-text-faint)" }}>
+                              +22.6% lift over Dummy Baseline · Pipeline: MedianImputer + OneHotEncoder
+                            </span>
+                          )}
+                        </div>
 
-                    <div className="flex items-center gap-6 font-mono text-xs">
-                      <div>
-                        <span className="text-text-muted block text-[10px] font-bold">ACCURACY</span>
-                        <span className="font-black text-accent text-lg">84.2%</span>
-                      </div>
-                      <div>
-                        <span className="text-text-muted block text-[10px] font-bold">CONFIDENCE</span>
-                        <span className="font-bold text-text-primary text-base">0.887</span>
-                      </div>
-                      <div>
-                        <span className="text-text-muted block text-[10px] font-bold">TRAIN TIME</span>
-                        <span className="font-bold text-text-secondary text-sm">124ms</span>
-                      </div>
-                    </div>
-                  </div>
+                        <div className="am-race-card">
+                          <div className="am-race-top">
+                            <div className="flex items-center gap-2">
+                              <Badge tone="neutral">#2</Badge>
+                              <Text style={{ fontWeight: 600, fontSize: 12.5 }}>
+                                Random Forest Classifier
+                              </Text>
+                            </div>
+                            <span style={{ fontFamily: "var(--ss-mono)", fontWeight: 700, fontSize: 14, color: "var(--ss-text-strong)" }}>
+                              <Count value={s.rf} duration={650} format={(n) => `${n.toFixed(1)}%`} />
+                            </span>
+                          </div>
+                          <Meter value={s.rf / 100} tone="accent" />
+                        </div>
 
-                  {/* Kinetic Speed Fuel Gauge */}
-                  <div className="w-full h-3 rounded-full border border-border bg-canvas overflow-hidden">
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{ width: "84.2%" }}
-                      transition={{ duration: 0.9, ease: "easeOut" }}
-                      className="h-full bg-accent rounded-full"
+                        <div className="am-race-card" data-base="true">
+                          <div className="am-race-top">
+                            <div className="flex items-center gap-2">
+                              <Badge tone="warning">Baseline</Badge>
+                              <Text style={{ fontSize: 12 }}>
+                                DummyClassifier (Most Frequent)
+                              </Text>
+                            </div>
+                            <span style={{ fontFamily: "var(--ss-mono)", fontWeight: 700, fontSize: 13, color: "var(--ss-text-faint)" }}>
+                              61.6%
+                            </span>
+                          </div>
+                          <Meter value={0.616} tone="warning" />
+                        </div>
+                      </div>
+                    </Window>
+                    <span
+                      data-target="rest"
+                      style={{
+                        position: "absolute",
+                        left: isCompact ? 240 : 640,
+                        top: isCompact ? 110 : 120,
+                        width: 1,
+                        height: 1,
+                      }}
                     />
-                  </div>
-                </div>
+                  </>
+                );
+              }}
+            </Stage>
+          )}
 
-                {/* Runner-Up Track: Random Forest */}
-                <div className="p-4 sm:p-5 rounded-2xl border-2 border-border bg-surface shadow-neo-sm hover:shadow-neo transition-all">
-                  <div className="flex flex-wrap items-center justify-between gap-4 mb-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-xl border-2 border-border bg-surface-subtle text-text-primary font-mono font-bold text-sm flex items-center justify-center">
-                        #2
-                      </div>
-                      <div>
-                        <span className="font-display font-bold text-base text-text-primary block">
-                          Random Forest Classifier
-                        </span>
-                        <span className="text-xs font-mono text-text-muted">
-                          Pipeline: SimpleImputer + StandardScale + 100 Estimator Trees
-                        </span>
-                      </div>
+          {activeLens === "xray" && (
+            <Stage<XrayState>
+              key={`xray-${replayKey}`}
+              width={920}
+              height={390}
+              compact={{ below: 640, width: 358, height: 390 }}
+              initial={{ mode: 0, barsOpen: false }}
+              poster={{ mode: 0, barsOpen: true }}
+              script={xrayScript}
+              theme={resolvedTheme}
+              cursor={{
+                at: { wide: { x: 640, y: 120 }, compact: { x: 240, y: 110 } },
+                ripple: true,
+              }}
+              play="loop"
+            >
+              {(s, _rect, layout) => (
+                <>
+                  <Window
+                    className="am-lab-win"
+                    title="SHAP Local Attribution — Florence Briggs (84.2%)"
+                    toolbar={
+                      <Segmented
+                        value={s.mode}
+                        items={["Plain English", "SHAP Math"]}
+                        targets={["xray-eli5", "xray-math"]}
+                        cursor="pointer"
+                      />
+                    }
+                    body={{ "data-crop": true }}
+                  >
+                    <div className="am-lab-body">
+                      {[
+                        {
+                          feature: "1. Gender: Female",
+                          eli5: "Evacuation protocol prioritized women & children for lifeboats.",
+                          math: "phi = +0.284 (TreeExplainer · 100 samples)",
+                          pct: 0.88,
+                          tone: "success" as const,
+                          delta: "+28.4%",
+                        },
+                        {
+                          feature: "2. Ticket Class: 1st Class",
+                          eli5: "Upper-deck cabins sat directly adjacent to boat stations.",
+                          math: "phi = +0.192 (In-fold OneHot feature)",
+                          pct: 0.62,
+                          tone: "accent" as const,
+                          delta: "+19.2%",
+                        },
+                        {
+                          feature: "3. Ticket Fare: $71.28",
+                          eli5: "Higher fare tier correlated with upper-deck berths.",
+                          math: "phi = +0.118 (StandardScaled numeric)",
+                          pct: 0.41,
+                          tone: "warning" as const,
+                          delta: "+11.8%",
+                        },
+                      ].map((row) => (
+                        <div key={row.feature} className="am-xray-row">
+                          <div className="flex items-center justify-between gap-2 text-xs">
+                            <span style={{ fontWeight: 700, color: "var(--ss-text-strong)" }}>
+                              {row.feature}
+                            </span>
+                            <span style={{ fontFamily: "var(--ss-mono)", fontWeight: 700, color: "var(--ss-success-text)" }}>
+                              {row.delta}
+                            </span>
+                          </div>
+                          <Meter value={s.barsOpen ? row.pct : 0.05} tone={row.tone} />
+                          <div style={{ fontSize: 11, color: "var(--ss-text)" }}>
+                            <Swap id={s.mode}>
+                              {s.mode === 0 ? (
+                                <span>{row.eli5}</span>
+                              ) : (
+                                <code style={{ fontFamily: "var(--ss-mono)", fontSize: 10.5 }}>
+                                  {row.math}
+                                </code>
+                              )}
+                            </Swap>
+                          </div>
+                        </div>
+                      ))}
                     </div>
-
-                    <div className="flex items-center gap-6 font-mono text-xs">
-                      <div>
-                        <span className="text-text-muted block text-[10px] font-bold">ACCURACY</span>
-                        <span className="font-bold text-text-primary text-base">83.5%</span>
-                      </div>
-                      <div>
-                        <span className="text-text-muted block text-[10px] font-bold">CONFIDENCE</span>
-                        <span className="font-bold text-text-primary text-base">0.871</span>
-                      </div>
-                      <div>
-                        <span className="text-text-muted block text-[10px] font-bold">TRAIN TIME</span>
-                        <span className="font-bold text-text-secondary text-sm">340ms</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="w-full h-2.5 rounded-full border border-border bg-canvas overflow-hidden">
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{ width: "83.5%" }}
-                      transition={{ duration: 0.9, ease: "easeOut", delay: 0.15 }}
-                      className="h-full bg-pastel-cyan rounded-full"
-                    />
-                  </div>
-                </div>
-
-                {/* Baseline Track: Dummy Guessing */}
-                <div className="p-3.5 sm:p-4 rounded-xl border-2 border-dashed border-border bg-surface-subtle/40 opacity-70 flex flex-wrap items-center justify-between gap-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg border border-border text-text-muted font-mono font-bold text-xs flex items-center justify-center">
-                      BASE
-                    </div>
-                    <div>
-                      <span className="font-display font-bold text-sm text-text-muted block">
-                        Zero-Intelligence Baseline (Most Frequent)
-                      </span>
-                      <span className="text-[10px] font-mono text-text-muted">
-                        Benchmark verification: real algorithms beating naive baselines
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-6 font-mono text-xs text-text-muted">
-                    <div>
-                      <span className="block text-[10px]">ACCURACY</span>
-                      <span className="font-bold">61.6%</span>
-                    </div>
-                    <div>
-                      <span className="block text-[10px]">CONFIDENCE</span>
-                      <span className="font-bold">0.500</span>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-
-            {activeLens === "xray" && (
-              <motion.div
-                key="xray"
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -16 }}
-                transition={{ type: "spring", stiffness: 380, damping: 24 }}
-                className="space-y-4 font-mono text-xs"
-              >
-                {/* Single Passenger Diagnosis Header */}
-                <div className="p-4 rounded-xl border-2 border-border bg-surface flex flex-wrap items-center justify-between gap-3 shadow-neo-sm">
-                  <div>
-                    <span className="text-[10px] uppercase tracking-wider text-text-muted font-bold block">
-                      DIAGNOSING PASSENGER: FLORENCE BRIGGS
-                    </span>
-                    <span className="font-sans text-sm font-bold text-text-primary">
-                      Female, Age 38, 1st Class, Ticket Fare $71.28
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <span className="font-display font-black text-emerald-600 dark:text-emerald-400 text-lg">
-                      84.2% Likely to Survive
-                    </span>
-                    <span className="px-2 py-0.5 rounded border border-border bg-emerald-100 dark:bg-emerald-950/60 font-bold text-[11px] text-emerald-800 dark:text-emerald-200">
-                      ✓ HIGH CONFIDENCE
-                    </span>
-                  </div>
-                </div>
-
-                {/* Force Vector 1 */}
-                <div className="p-4 rounded-xl border-2 border-border bg-canvas shadow-neo-sm space-y-2">
-                  <div className="flex justify-between items-center text-xs">
-                    <span className="font-bold text-text-primary font-sans text-sm">
-                      1. Gender: Female
-                    </span>
-                    <span className="text-emerald-600 dark:text-emerald-400 font-black font-mono">
-                      +28.4% Boost Towards Survival
-                    </span>
-                  </div>
-                  <div className="w-full h-3 rounded-full border border-border bg-surface overflow-hidden">
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{ width: "88%" }}
-                      transition={{ duration: 0.8, ease: "easeOut" }}
-                      className="h-full bg-emerald-500 rounded-full"
-                    />
-                  </div>
-                  <p className="text-[11px] font-sans text-text-secondary">
-                    💡 <strong>ELI5 Explanation:</strong> Emergency evacuation protocol gave women and children priority access to the primary lifeboats.
-                  </p>
-                </div>
-
-                {/* Force Vector 2 */}
-                <div className="p-4 rounded-xl border-2 border-border bg-canvas shadow-neo-sm space-y-2">
-                  <div className="flex justify-between items-center text-xs">
-                    <span className="font-bold text-text-primary font-sans text-sm">
-                      2. Ticket Class: 1st Class
-                    </span>
-                    <span className="text-accent font-black font-mono">
-                      +19.2% Boost Towards Survival
-                    </span>
-                  </div>
-                  <div className="w-full h-3 rounded-full border border-border bg-surface overflow-hidden">
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{ width: "62%" }}
-                      transition={{ duration: 0.8, ease: "easeOut", delay: 0.15 }}
-                      className="h-full bg-accent rounded-full"
-                    />
-                  </div>
-                  <p className="text-[11px] font-sans text-text-secondary">
-                    💡 <strong>ELI5 Explanation:</strong> 1st class staterooms were located on the upper promenade decks, directly adjacent to lifeboat stations.
-                  </p>
-                </div>
-
-                {/* Force Vector 3 */}
-                <div className="p-4 rounded-xl border-2 border-border bg-canvas shadow-neo-sm space-y-2">
-                  <div className="flex justify-between items-center text-xs">
-                    <span className="font-bold text-text-primary font-sans text-sm">
-                      3. Ticket Price: Higher Fare ($71.28)
-                    </span>
-                    <span className="text-amber-500 font-black font-mono">
-                      +11.8% Boost Towards Survival
-                    </span>
-                  </div>
-                  <div className="w-full h-3 rounded-full border border-border bg-surface overflow-hidden">
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{ width: "41%" }}
-                      transition={{ duration: 0.8, ease: "easeOut", delay: 0.3 }}
-                      className="h-full bg-amber-400 rounded-full"
-                    />
-                  </div>
-                  <p className="text-[11px] font-sans text-text-secondary">
-                    💡 <strong>ELI5 Explanation:</strong> Higher fare tiers correlated with private cabins and personal emergency stewards.
-                  </p>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+                  </Window>
+                  <span
+                    data-target="rest"
+                    style={{
+                      position: "absolute",
+                      left: layout === "compact" ? 240 : 640,
+                      top: layout === "compact" ? 110 : 120,
+                      width: 1,
+                      height: 1,
+                    }}
+                  />
+                </>
+              )}
+            </Stage>
+          )}
         </div>
       </div>
     </section>
